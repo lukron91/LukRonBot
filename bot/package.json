@@ -1,0 +1,14 @@
+{
+  "name": "discord-bot-core",
+  "version": "1.0.0",
+  "description": "Podstawowa struktura bota Discord z integracją panelu",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "deploy": "node deploy-commands.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1"
+  }
+}
