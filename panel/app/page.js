@@ -3,16 +3,8 @@ import { useEffect } from "react";
 
 export default function Home() {
   useEffect(() => {
-    // Sprawdź czy jest sesja
-    const getCookie = (name) => {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop().split(';').shift();
-      return null;
-    };
-
-    const session = getCookie('session');
-    if (session) {
+    const stored = localStorage.getItem('session');
+    if (stored) {
       window.location.href = '/dashboard';
     }
   }, []);
