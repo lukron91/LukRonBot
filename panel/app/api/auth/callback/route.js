@@ -9,7 +9,6 @@ export async function GET(request) {
   }
 
   try {
-    // Wymień kod na token
     const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
       method: 'POST',
       headers: {
@@ -27,10 +26,10 @@ export async function GET(request) {
     const tokenData = await tokenResponse.json();
     
     if (!tokenData.access_token) {
+      console.error('No access token:', tokenData);
       return NextResponse.redirect(new URL('/', request.url));
     }
 
-    // Pobierz dane użytkownika
     const userResponse = await fetch('https://discord.com/api/users/@me', {
       headers: {
         Authorization: `Bearer ${tokenData.access_token}`,
@@ -39,7 +38,6 @@ export async function GET(request) {
 
     const userData = await userResponse.json();
 
-    // Pobierz serwery użytkownika
     const guildsResponse = await fetch('https://discord.com/api/users/@me/guilds', {
       headers: {
         Authorization: `Bearer ${tokenData.access_token}`,
@@ -48,24 +46,24 @@ export async function GET(request) {
 
     const guildsData = await guildsResponse.json();
 
-    // Stwórz sesję (prosty token w cookie)
-    const sessionToken = btoa(JSON.stringify({
+    const sessionData = JSON.stringify({
       userId: userData.id,
       username: userData.username,
       avatar: userData.avatar,
       email: userData.email,
       accessToken: tokenData.access_token,
       guilds: guildsData,
-    }));
+    });
 
+    // Ustaw cookie (bez httpOnly, żeby JS mógł odczytać)
     const response = NextResponse.redirect(new URL('/dashboard', request.url));
     
-    // Ustaw cookie z sesją
-    response.cookies.set('session', sessionToken, {
-      httpOnly: true,
+    response.cookies.set('session', sessionData, {
+      httpOnly: false, // WAŻNE: false żeby JavaScript mógł odczytać
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24 * 7, // 7 dni
+      maxAge: 60 * 60 * 24 * 7,
       path: '/',
+      sameSite: 'lax',
     });
 
     return response;
