@@ -1,4 +1,11 @@
-"use client";
+useEffect(() => {
+  alert('useEffect started'); // DODAJ TO
+  const params = new URLSearchParams(window.location.search);
+  const guild = params.get('guild');
+  alert('Guild ID: ' + guild); // I TO
+  
+  // ... reszta kodu
+  "use client";
 import { Suspense, useEffect, useState } from "react";
 
 function ConfigContent() {
