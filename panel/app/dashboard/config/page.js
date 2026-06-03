@@ -1,11 +1,4 @@
-useEffect(() => {
-  alert('useEffect started'); // DODAJ TO
-  const params = new URLSearchParams(window.location.search);
-  const guild = params.get('guild');
-  alert('Guild ID: ' + guild); // I TO
-  
-  // ... reszta kodu
-  "use client";
+"use client";
 import { Suspense, useEffect, useState } from "react";
 
 function ConfigContent() {
@@ -13,29 +6,85 @@ function ConfigContent() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
+    alert('useEffect started');
     const params = new URLSearchParams(window.location.search);
     const guild = params.get('guild');
+    alert('Guild ID: ' + guild);
     
     if (!guild) {
+      alert('No guild ID, redirecting to dashboard');
       window.location.href = '/dashboard';
       return;
     }
     
     setGuildId(guild);
+    alert('Fetching config for guild: ' + guild);
 
     fetch(`/api/config?guildId=${guild}`)
-      .then(res => res.json())
+      .then(res => {
+        alert('API Response status: ' + res.status);
+        if (!res.ok) {
+          throw new Error(`API error: ${res.status}`);
+        }
+        return res.json();
+      })
       .then(data => {
+        alert('Config data received: ' + JSON.stringify(data).substring(0, 50));
         setConfig(data);
         setLoading(false);
+        alert('Loading set to false');
       })
       .catch(err => {
+        alert('Error: ' + err.message);
         console.error('Config load error:', err);
-        window.location.href = '/dashboard';
+        setError(err.message);
+        setLoading(false);
       });
   }, []);
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", backgroundColor: "#1a1d20", color: "#fff" }}>
+        <p>Ładowanie konfiguracji...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", backgroundColor: "#1a1d20", color: "#fff", padding: "32px" }}>
+        <div style={{ textAlign: "center" }}>
+          <h2 style={{ color: "#ed4245", marginBottom: "16px" }}>Błąd ładowania konfiguracji</h2>
+          <p style={{ color: "#99aab5", marginBottom: "24px" }}>{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            style={{ 
+              backgroundColor: "#5865f2", 
+              color: "white", 
+              padding: "12px 24px", 
+              borderRadius: "6px", 
+              border: "none", 
+              cursor: "pointer",
+              fontWeight: "bold"
+            }}
+          >
+            Odśwież stronę
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!config) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", backgroundColor: "#1a1d20", color: "#fff" }}>
+        <p>Brak danych konfiguracji</p>
+      </div>
+    );
+  }
 
   const handleSave = async () => {
     setSaving(true);
@@ -66,13 +115,6 @@ function ConfigContent() {
     }));
   };
 
-  const updateTicket = (key, value) => {
-    setConfig(prev => ({
-      ...prev,
-      tickets: { ...prev.tickets, [key]: value }
-    }));
-  };
-
   const updateAutomod = (key, value) => {
     setConfig(prev => ({
       ...prev,
@@ -91,60 +133,12 @@ function ConfigContent() {
     updateAutomod('badWords', config.automod.badWords.filter(w => w !== word));
   };
 
-  if (loading || !config) {
-    return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", backgroundColor: "#1a1d20", color: "#fff" }}>
-        <p>Ładowanie konfiguracji...</p>
-      </div>
-    );
-  }
-
   return (
     <div style={{ backgroundColor: "#1a1d20", minHeight: "100vh", color: "#fff", padding: "32px" }}>
       <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
         <h1 style={{ fontSize: "32px", marginBottom: "24px", color: "#5865f2" }}>Konfiguracja bota</h1>
+        <p style={{ color: "#99aab5", marginBottom: "24px" }}>Serwer: {guildId}</p>
         
-        <section style={{ backgroundColor: "#23272a", padding: "24px", borderRadius: "12px", marginBottom: "24px" }}>
-          <h2 style={{ fontSize: "20px", marginBottom: "16px", color: "#fff" }}>⚙️ Ustawienia ogólne</h2>
-          
-          <div style={{ marginBottom: "16px" }}>
-            <label style={{ display: "block", marginBottom: "8px", color: "#99aab5" }}>Prefix komend:</label>
-            <input
-              type="text"
-              value={config.prefix}
-              onChange={(e) => setConfig({ ...config, prefix: e.target.value })}
-              style={{ 
-                width: "100px", 
-                padding: "8px 12px", 
-                backgroundColor: "#2c2f33", 
-                border: "1px solid #23272a", 
-                borderRadius: "6px", 
-                color: "#fff",
-                fontSize: "16px"
-              }}
-            />
-          </div>
-
-          <div>
-            <label style={{ display: "block", marginBottom: "8px", color: "#99aab5" }}>Język:</label>
-            <select
-              value={config.language}
-              onChange={(e) => setConfig({ ...config, language: e.target.value })}
-              style={{ 
-                padding: "8px 12px", 
-                backgroundColor: "#2c2f33", 
-                border: "1px solid #23272a", 
-                borderRadius: "6px", 
-                color: "#fff",
-                fontSize: "16px"
-              }}
-            >
-              <option value="pl">Polski</option>
-              <option value="en">English</option>
-            </select>
-          </div>
-        </section>
-
         <section style={{ backgroundColor: "#23272a", padding: "24px", borderRadius: "12px", marginBottom: "24px" }}>
           <h2 style={{ fontSize: "20px", marginBottom: "16px", color: "#fff" }}>🔧 Moduły</h2>
           
@@ -184,53 +178,6 @@ function ConfigContent() {
             ))}
           </div>
         </section>
-
-        {config.modules.tickets && (
-          <section style={{ backgroundColor: "#23272a", padding: "24px", borderRadius: "12px", marginBottom: "24px" }}>
-            <h2 style={{ fontSize: "20px", marginBottom: "16px", color: "#fff" }}>🎫 Ustawienia ticketów</h2>
-            
-            <div style={{ display: "grid", gap: "16px" }}>
-              <div>
-                <label style={{ display: "block", marginBottom: "8px", color: "#99aab5" }}>Nazwa ticketa:</label>
-                <input
-                  type="text"
-                  value={config.tickets.ticketName}
-                  onChange={(e) => updateTicket('ticketName', e.target.value)}
-                  placeholder="ticket-{number}"
-                  style={{ 
-                    width: "100%", 
-                    padding: "8px 12px", 
-                    backgroundColor: "#2c2f33", 
-                    border: "1px solid #23272a", 
-                    borderRadius: "6px", 
-                    color: "#fff",
-                    fontSize: "14px"
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: "block", marginBottom: "8px", color: "#99aab5" }}>Limit ticketów:</label>
-                <input
-                  type="number"
-                  value={config.tickets.ticketLimit}
-                  onChange={(e) => updateTicket('ticketLimit', parseInt(e.target.value))}
-                  min="1"
-                  max="10"
-                  style={{ 
-                    width: "100px", 
-                    padding: "8px 12px", 
-                    backgroundColor: "#2c2f33", 
-                    border: "1px solid #23272a", 
-                    borderRadius: "6px", 
-                    color: "#fff",
-                    fontSize: "14px"
-                  }}
-                />
-              </div>
-            </div>
-          </section>
-        )}
 
         {config.modules.automod && (
           <section style={{ backgroundColor: "#23272a", padding: "24px", borderRadius: "12px", marginBottom: "24px" }}>
