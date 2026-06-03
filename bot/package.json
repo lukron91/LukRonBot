@@ -1,0 +1,15 @@
+{
+  "name": "lukron-bot",
+  "version": "1.0.0",
+  "description": "LukRon Bot Discord",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "mongodb": "^6.3.0",
+    "dotenv": "^16.4.1"
+  }
+}
