@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
-export default function ConfigPage() {
+function ConfigContent() {
   const [guildId, setGuildId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -95,23 +95,4 @@ export default function ConfigPage() {
   return (
     <div style={{ backgroundColor: "#1a1d20", minHeight: "100vh", color: "#fff", padding: "32px" }}>
       <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-        <h1 style={{ fontSize: "32px", marginBottom: "24px", color: "#5865f2" }}>Konfiguracja bota</h1>
-        
-        {/* Ogólne ustawienia */}
-        <section style={{ backgroundColor: "#23272a", padding: "24px", borderRadius: "12px", marginBottom: "24px" }}>
-          <h2 style={{ fontSize: "20px", marginBottom: "16px", color: "#fff" }}>⚙️ Ustawienia ogólne</h2>
-          
-          <div style={{ marginBottom: "16px" }}>
-            <label style={{ display: "block", marginBottom: "8px", color: "#99aab5" }}>Prefix komend:</label>
-            <input
-              type="text"
-              value={config.prefix}
-              onChange={(e) => setConfig({ ...config, prefix: e.target.value })}
-              style={{ 
-                width: "100px", 
-                padding: "8px 12px", 
-                backgroundColor: "#2c2f33", 
-                border: "1px solid #23272a", 
-                borderRadius: "6px", 
-                color: "#fff",
-                fontSize: "16px"
+        <h1 style={{ fontSize: "32px", marginBottom: "24px", color: "#5865f2" }}>Kon
