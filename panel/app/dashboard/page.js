@@ -1,10 +1,28 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
 
+// Sprawdź czy użytkownik ma uprawnienia do zarządzania serwerem
+const canManageGuild = (guild) => {
+  const perms = guild.permissions_new 
+    ? BigInt(guild.permissions_new) 
+    : BigInt(guild.permissions || 0);
+  const ADMINISTRATOR = 0x8n;
+  const MANAGE_GUILD = 0x20n;
+  return (perms & ADMINISTRATOR) !== 0n || (perms & MANAGE_GUILD) !== 0n;
+};
+
 function DashboardContent() {
   const [user, setUser] = useState(null);
-  const [guilds, setGuilds] = useState([]);
+  const [manageableGuilds, setManageableGuilds] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Zamień na ID swojego bota z Discord Developer Portal
+  const BOT_CLIENT_ID = "1401384199558140025";
+
+  const getBotInviteUrl = () => {
+    const permissions = 8; // Administrator
+    return `https://discord.com/api/oauth2/authorize?client_id=${BOT_CLIENT_ID}&permissions=${permissions}&scope=bot%20applications.commands`;
+  };
 
   useEffect(() => {
     const session = localStorage.getItem('session');
@@ -17,7 +35,11 @@ function DashboardContent() {
     try {
       const data = JSON.parse(session);
       setUser(data);
-      setGuilds(data.guilds || []);
+      
+      // Filtruj tylko serwery gdzie użytkownik ma uprawnienia
+      const allGuilds = data.guilds || [];
+      const manageable = allGuilds.filter(canManageGuild);
+      setManageableGuilds(manageable);
       setLoading(false);
     } catch (err) {
       console.error('Session parse error:', err);
@@ -83,9 +105,29 @@ function DashboardContent() {
 
       {/* Main content */}
       <main style={{ padding: "32px", maxWidth: "1200px", margin: "0 auto" }}>
-        <h2 style={{ fontSize: "28px", marginBottom: "24px", color: "#fff" }}>Twoje serwery</h2>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+          <h2 style={{ fontSize: "28px", color: "#fff", margin: 0 }}>
+            Twoje serwery ({manageableGuilds.length})
+          </h2>
+          <a
+            href={getBotInviteUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              padding: "12px 24px",
+              backgroundColor: "#5865f2",
+              color: "#fff",
+              textDecoration: "none",
+              borderRadius: "8px",
+              fontWeight: "bold",
+              fontSize: "14px"
+            }}
+          >
+            ➕ Dodaj bota na nowy serwer
+          </a>
+        </div>
         
-        {guilds.length === 0 ? (
+        {manageableGuilds.length === 0 ? (
           <div style={{ 
             backgroundColor: "#23272a", 
             padding: "48px", 
@@ -93,12 +135,12 @@ function DashboardContent() {
             textAlign: "center",
             color: "#99aab5"
           }}>
-            <p style={{ fontSize: "18px", marginBottom: "16px" }}>Nie znaleziono żadnych serwerów</p>
-            <p>Sprawdź czy bot jest na Twoich serwerach i masz uprawnienia administratora</p>
+            <p style={{ fontSize: "18px", marginBottom: "16px" }}>Nie masz serwerów z uprawnieniami</p>
+            <p>Nie jesteś właścicielem ani administratorem żadnego serwera Discord</p>
           </div>
         ) : (
           <div style={{ display: "grid", gap: "16px" }}>
-            {guilds.map((guild) => (
+            {manageableGuilds.map((guild) => (
               <div
                 key={guild.id}
                 style={{
@@ -108,12 +150,8 @@ function DashboardContent() {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  border: "2px solid #2c2f33",
-                  transition: "border-color 0.2s",
-                  cursor: "pointer"
+                  border: "2px solid #2c2f33"
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.borderColor = "#5865f2"}
-                onMouseLeave={(e) => e.currentTarget.style.borderColor = "#2c2f33"}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                   {guild.icon ? (
@@ -140,27 +178,42 @@ function DashboardContent() {
                   
                   <div>
                     <h3 style={{ fontSize: "20px", marginBottom: "4px", color: "#fff" }}>{guild.name}</h3>
-                    <p style={{ color: "#99aab5", fontSize: "14px" }}>ID: {guild.id}</p>
+                    <p style={{ color: "#99aab5", fontSize: "14px", margin: 0 }}>ID: {guild.id}</p>
                   </div>
                 </div>
 
-                <a
-                  href={`/dashboard/config?guild=${guild.id}`}
-                  style={{
-                    padding: "12px 24px",
-                    backgroundColor: "#5865f2",
-                    color: "#fff",
-                    textDecoration: "none",
-                    borderRadius: "8px",
-                    fontWeight: "bold",
-                    fontSize: "16px",
-                    transition: "background-color 0.2s"
-                  }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = "#4752c4"}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = "#5865f2"}
-                >
-                  ⚙️ Konfiguracja
-                </a>
+                <div style={{ display: "flex", gap: "12px" }}>
+                  <a
+                    href={getBotInviteUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      padding: "12px 20px",
+                      backgroundColor: "#5865f2",
+                      color: "#fff",
+                      textDecoration: "none",
+                      borderRadius: "8px",
+                      fontWeight: "bold",
+                      fontSize: "14px"
+                    }}
+                  >
+                    ➕ Dodaj bota
+                  </a>
+                  <a
+                    href={`/dashboard/config?guild=${guild.id}`}
+                    style={{
+                      padding: "12px 20px",
+                      backgroundColor: "#23a559",
+                      color: "#fff",
+                      textDecoration: "none",
+                      borderRadius: "8px",
+                      fontWeight: "bold",
+                      fontSize: "14px"
+                    }}
+                  >
+                    ⚙️ Konfiguracja
+                  </a>
+                </div>
               </div>
             ))}
           </div>
