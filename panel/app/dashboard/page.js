@@ -17,7 +17,7 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
 
   // Zamień na ID swojego bota z Discord Developer Portal
-  const BOT_CLIENT_ID = "1401384199558140025";
+  const BOT_CLIENT_ID = "MTUxMTU2MTYyODczMzI3NjI4MA.GHrhjU.n-XWN7JcBYCR1ncYjTJuwZMaONB94naHw-W0vk";
 
   const getBotInviteUrl = () => {
     const permissions = 8; // Administrator
