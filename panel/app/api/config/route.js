@@ -19,10 +19,7 @@ async function dbConnect() {
   }
 
   if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-    };
-
+    const opts = { bufferCommands: false };
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
       return mongoose;
     });
@@ -37,7 +34,6 @@ async function dbConnect() {
 
   return cached.conn;
 }
-
 const configSchema = new mongoose.Schema({
   guildId: { type: String, required: true, unique: true },
   prefix: { type: String, default: '!' },
@@ -77,7 +73,6 @@ const configSchema = new mongoose.Schema({
 });
 
 const Config = mongoose.models.Config || mongoose.model('Config', configSchema);
-
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const guildId = searchParams.get('guildId');
@@ -143,13 +138,7 @@ export async function POST(request) {
 
   try {
     await dbConnect();
-    
-    await Config.findOneAndUpdate(
-      { guildId },
-      config,
-      { upsert: true, new: true }
-    );
-
+    await Config.findOneAndUpdate({ guildId }, config, { upsert: true, new: true });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Config POST error:', error);
