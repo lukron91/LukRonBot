@@ -55,18 +55,11 @@ export async function GET(request) {
       guilds: guildsData,
     });
 
-    // Ustaw cookie (bez httpOnly, żeby JS mógł odczytać)
-    const response = NextResponse.redirect(new URL('/dashboard', request.url));
+    // Przekieruj na dashboard z danymi w hash URL
+    const redirectUrl = new URL('/dashboard', request.url);
+    redirectUrl.hash = btoa(encodeURIComponent(sessionData));
     
-    response.cookies.set('session', sessionData, {
-      httpOnly: false, // WAŻNE: false żeby JavaScript mógł odczytać
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24 * 7,
-      path: '/',
-      sameSite: 'lax',
-    });
-
-    return response;
+    return NextResponse.redirect(redirectUrl);
   } catch (error) {
     console.error('Auth callback error:', error);
     return NextResponse.redirect(new URL('/', request.url));
