@@ -27,7 +27,7 @@ export default async function Dashboard() {
           <div key={guild.id} style={{ backgroundColor: "#23272a", padding: "1.5rem", borderRadius: "8px", border: "1px solid #2c2f33" }}>
             <h4 style={{ margin: "0 0 0.5rem 0" }}>{guild.name}</h4>
             <a
-              href={`https://discord.com/api/oauth2/authorize?client_id=${process.env.BOT_CLIENT_ID}&permissions=8&scope=bot%20applications.commands&guild_id=${guild.id}`}
+              href={`https://discord.com/oauth2/authorize?client_id=${process.env.BOT_CLIENT_ID}&permissions=8&scope=bot%20applications.commands&guild_id=${guild.id}`}
               target="_blank"
               rel="noopener noreferrer"
               style={{ display: "inline-block", marginTop: "1rem", backgroundColor: "#23a559", color: "white", padding: "8px 16px", borderRadius: "4px", fontWeight: "bold", fontSize: "0.9rem" }}
