@@ -1,209 +1,71 @@
 "use client";
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 
-function SidebarLink({ href, children }) {
-  const pathname = usePathname();
-  const isActive = pathname === href;
-
-  return (
-    <Link
-      href={href}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "12px",
-        padding: "12px 16px",
-        borderRadius: "10px",
-        textDecoration: "none",
-        color: isActive ? "#fff" : "#99aab5",
-        backgroundColor: isActive ? "rgba(88, 101, 242, 0.2)" : "transparent",
-        borderLeft: isActive ? "3px solid #5865f2" : "3px solid transparent",
-        transition: "all 0.2s",
-        fontSize: "14px",
-        fontWeight: isActive ? "600" : "400"
-      }}
-    >
-      {children}
-    </Link>
-  );
-}
-
-export default function DashboardLayout({ children }) {
-  const [user, setUser] = useState(null);
-  const [guildId, setGuildId] = useState(null);
-  const [guilds, setGuilds] = useState([]);
-  const [selectedGuild, setSelectedGuild] = useState(null);
-  const pathname = usePathname();
-
+export default function Home() {
+  // Automatyczny przekierowanie jeśli ktoś jest już zalogowany
   useEffect(() => {
     const session = localStorage.getItem('session');
-    if (!session) {
-      window.location.href = '/';
-      return;
-    }
-    try {
-      const data = JSON.parse(session);
-      setUser(data);
-      const manageable = (data.guilds || []).filter(g => {
-        const perms = BigInt(g.permissions_new || g.permissions || 0);
-        return (perms & 0x8n) !== 0n || (perms & 0x20n) !== 0n;
-      });
-      setGuilds(manageable);
-    } catch (err) {
-      window.location.href = '/';
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    const guild = params.get('guild');
-    if (guild) {
-      setGuildId(guild);
-      const sessionData = JSON.parse(localStorage.getItem('session'));
-      const found = sessionData.guilds.find(g => g.id === guild);
-      if (found) setSelectedGuild(found);
+    if (session) {
+      window.location.href = '/dashboard';
     }
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('session');
-    window.location.href = '/';
-  };
+  // WAŻNE: Zmień na swoje Client ID z Discord Developer Portal!
+  const CLIENT_ID = "1511561628733276280"; 
+  
+  // Upewnij się, że ten URL jest identyczny jak w ustawieniach OAuth2 w Discord Developer Portal
+  const REDIRECT_URI = "https://lukronbot.vercel.app/api/auth/callback"; 
+  const SCOPE = "identify guilds";
 
-  const selectGuild = (id) => {
-    window.location.href = `${pathname}?guild=${id}`;
-  };
-
-  const getLink = (path) => guildId ? `${path}?guild=${guildId}` : path;
-
-  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/dashboard';
+  const loginUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(SCOPE)}`;
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#0f1115", color: "#fff", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-      <aside style={{
-        width: "260px",
-        backgroundColor: "#16181d",
-        borderRight: "1px solid #1e2029",
-        display: "flex",
-        flexDirection: "column",
-        position: "fixed",
-        height: "100vh",
-        overflow: "hidden"
-      }}>
-        <div style={{ padding: "24px 20px", borderBottom: "1px solid #1e2029" }}>
-          <h1 style={{ fontSize: "20px", margin: 0, color: "#fff", fontWeight: "700" }}>
-            <span style={{ color: "#5865f2" }}>Luk</span>Ron Bot
-          </h1>
-          <p style={{ fontSize: "11px", color: "#6d7280", margin: "4px 0 0 0", textTransform: "uppercase", letterSpacing: "1px" }}>Panel sterowania</p>
-        </div>
+    <div style={{ 
+      minHeight: "100vh", 
+      backgroundColor: "#0f1115", 
+      color: "#fff", 
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      textAlign: "center",
+      padding: "20px",
+      position: "relative"
+    }}>
+      <h1 style={{ fontSize: "48px", fontWeight: "800", margin: "0 0 16px 0" }}>
+        <span style={{ color: "#5865f2" }}>Luk</span>Ron Bot
+      </h1>
+      <p style={{ fontSize: "18px", color: "#99aab5", margin: "0 0 40px 0", maxWidth: "500px", lineHeight: "1.5" }}>
+        Zaawansowany panel zarządzania botem Discord. Konfiguruj moduły, tickety, automoderację i wiele więcej w jednym miejscu.
+      </p>
+      
+      <a 
+        href={loginUrl}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "12px",
+          padding: "16px 32px",
+          backgroundColor: "#5865f2",
+          color: "#fff",
+          textDecoration: "none",
+          borderRadius: "12px",
+          fontSize: "16px",
+          fontWeight: "600",
+          boxShadow: "0 8px 24px rgba(88, 101, 242, 0.4)",
+          transition: "transform 0.2s, box-shadow 0.2s"
+        }}
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+        </svg>
+        Zaloguj przez Discord
+      </a>
 
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid #1e2029" }}>
-          <label style={{ fontSize: "11px", color: "#6d7280", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "8px" }}>Serwer</label>
-          <select
-            value={guildId || ''}
-            onChange={(e) => selectGuild(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "10px",
-              backgroundColor: "#1e2029",
-              border: "1px solid #2d3139",
-              borderRadius: "8px",
-              color: "#fff",
-              fontSize: "13px",
-              cursor: "pointer",
-              outline: "none"
-            }}
-          >
-            {guilds.map(g => (
-              <option key={g.id} value={g.id}>{g.name}</option>
-            ))}
-          </select>
-        </div>
-
-        <nav style={{ flex: 1, padding: "16px 12px", overflowY: "auto" }}>
-          <p style={{ fontSize: "11px", color: "#6d7280", textTransform: "uppercase", letterSpacing: "1px", padding: "0 8px", marginBottom: "8px" }}>Menu</p>
-          <SidebarLink href={getLink('/dashboard')}>
-             <span>Dashboard</span>
-          </SidebarLink>
-          <SidebarLink href={getLink('/dashboard/config')}>
-            ⚙️ <span>Ustawienia</span>
-          </SidebarLink>
-
-          <p style={{ fontSize: "11px", color: "#6d7280", textTransform: "uppercase", letterSpacing: "1px", padding: "0 8px", marginTop: "20px", marginBottom: "8px" }}>Moduły</p>
-          <SidebarLink href={getLink('/dashboard/tickets')}>
-            🎫 <span>Tickety</span>
-          </SidebarLink>
-          <SidebarLink href={getLink('/dashboard/automod')}>
-            🤖 <span>Auto-moderacja</span>
-          </SidebarLink>
-          <SidebarLink href={getLink('/dashboard/welcome')}>
-            👋 <span>Powitania</span>
-          </SidebarLink>
-          <SidebarLink href={getLink('/dashboard/logs')}>
-             <span>Logi</span>
-          </SidebarLink>
-          <SidebarLink href={getLink('/dashboard/moderation')}>
-            🛡️ <span>Moderacja</span>
-          </SidebarLink>
-        </nav>
-
-        <div style={{ padding: "16px", borderTop: "1px solid #1e2029", display: "flex", alignItems: "center", gap: "12px" }}>
-          {user?.avatar && (
-            <img
-              src={`https://cdn.discordapp.com/avatars/${user.userId}/${user.avatar}.png`}
-              style={{ width: "36px", height: "36px", borderRadius: "50%" }}
-            />
-          )}
-          <div style={{ flex: 1, overflow: "hidden" }}>
-            <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user?.username}</p>
-            <p style={{ margin: 0, fontSize: "11px", color: "#6d7280" }}>Online</p>
-          </div>
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: "8px 14px",
-              backgroundColor: "#ed4245",
-              border: "none",
-              borderRadius: "8px",
-              color: "#fff",
-              cursor: "pointer",
-              fontSize: "12px",
-              fontWeight: "600",
-              whiteSpace: "nowrap"
-            }}
-          >
-            🚪 Wyloguj
-          </button>
-        </div>
-      </aside>
-
-      <main style={{ marginLeft: "260px", flex: 1, padding: "32px 40px" }}>
-        {selectedGuild && (
-          <div style={{
-            marginBottom: "24px",
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            padding: "16px 20px",
-            backgroundColor: "#16181d",
-            borderRadius: "12px",
-            border: "1px solid #1e2029"
-          }}>
-            {selectedGuild.icon ? (
-              <img src={`https://cdn.discordapp.com/icons/${selectedGuild.id}/${selectedGuild.icon}.png`} style={{ width: "40px", height: "40px", borderRadius: "10px" }} />
-            ) : (
-              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "linear-gradient(135deg, #5865f2, #7c8aff)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700" }}>
-                {selectedGuild.name.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div>
-              <h2 style={{ margin: 0, fontSize: "18px", fontWeight: "600" }}>{selectedGuild.name}</h2>
-              <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: "#6d7280" }}>ID: {selectedGuild.id}</p>
-            </div>
-          </div>
-        )}
-        {children}
-      </main>
+      <footer style={{ position: "absolute", bottom: "20px", fontSize: "12px", color: "#6d7280" }}>
+        LukRon Bot © 2026. Wszelkie prawa zastrzeżone.
+      </footer>
     </div>
   );
 }
