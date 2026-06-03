@@ -1,4 +1,4 @@
-import { SessionProvider } from "next-auth/react";
+import Providers from "./providers";
 import "./globals.css";
 
 export const metadata = {
@@ -10,7 +10,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="pl">
       <body style={{ margin: 0 }}>
-        <SessionProvider>{children}</SessionProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
