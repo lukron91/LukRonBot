@@ -1,13 +1,19 @@
 "use client";
-import { signIn } from "next-auth/react";
 import { useState } from "react";
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     setLoading(true);
-    await signIn("discord", { callbackUrl: "/dashboard" });
+    // Otwórz Discord bezpośrednio przez protocol handler
+    const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID;
+    const redirectUri = encodeURIComponent(process.env.NEXT_PUBLIC_REDIRECT_URI);
+    
+    // Discord protocol handler - otwiera aplikację Discord
+    const discordUrl = `discord://-/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=identify%20guilds`;
+    
+    window.location.href = discordUrl;
   };
 
   return (
@@ -35,7 +41,7 @@ export default function Home() {
           fontSize: "16px"
         }}
       >
-        {loading ? "Logowanie..." : "Zaloguj przez Discord"}
+        {loading ? "Otwieranie Discord..." : "Zaloguj przez Discord"}
       </button>
     </div>
   );
