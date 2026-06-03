@@ -6,35 +6,46 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Odczytaj sesję z cookie
-    const getCookie = (name) => {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop().split(';').shift();
-      return null;
-    };
-
-    const sessionCookie = getCookie('session');
-    
-    if (!sessionCookie) {
-      window.location.href = '/';
-      return;
-    }
-
-    try {
-      const data = JSON.parse(decodeURIComponent(sessionCookie));
-      const manageableGuilds = data.guilds.filter(g => (BigInt(g.permissions) & 0x20n) === 0x20n);
-      setUserData({ ...data, guilds: manageableGuilds });
-      setLoading(false);
-    } catch (error) {
-      console.error('Session parse error:', error);
-      window.location.href = '/';
+    // Sprawdź hash URL (dane z callback)
+    if (window.location.hash) {
+      try {
+        const sessionData = decodeURIComponent(atob(window.location.hash.substring(1)));
+        const data = JSON.parse(sessionData);
+        
+        // Zapisz w localStorage
+        localStorage.setItem('session', JSON.stringify(data));
+        
+        // Usuń hash z URL
+        window.history.replaceState({}, document.title, '/dashboard');
+        
+        const manageableGuilds = data.guilds.filter(g => (BigInt(g.permissions) & 0x20n) === 0x20n);
+        setUserData({ ...data, guilds: manageableGuilds });
+        setLoading(false);
+      } catch (error) {
+        console.error('Session parse error:', error);
+        window.location.href = '/';
+      }
+    } else {
+      // Spróbuj odczytać z localStorage
+      try {
+        const stored = localStorage.getItem('session');
+        if (stored) {
+          const data = JSON.parse(stored);
+          const manageableGuilds = data.guilds.filter(g => (BigInt(g.permissions) & 0x20n) === 0x20n);
+          setUserData({ ...data, guilds: manageableGuilds });
+          setLoading(false);
+        } else {
+          window.location.href = '/';
+        }
+      } catch (error) {
+        console.error('Local storage error:', error);
+        window.location.href = '/';
+      }
     }
   }, []);
 
   const handleLogout = () => {
-    // Usuń cookie
-    document.cookie = 'session=; max-age=0; path=/';
+    localStorage.removeItem('session');
     window.location.href = '/';
   };
 
@@ -53,7 +64,7 @@ export default function Dashboard() {
   return (
     <div style={{ backgroundColor: "#1a1d20", minHeight: "100vh", color: "#fff" }}>
       <header style={{ backgroundColor: "#23272a", padding: "16px 32px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #2c2f33" }}>
-        <h1 style={{ color: "#5865f2", fontSize: "20px", margin: 0 }}> LukRon Bot</h1>
+        <h1 style={{ color: "#5865f2", fontSize: "20px", margin: 0 }}>🤖 LukRon Bot</h1>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <img 
