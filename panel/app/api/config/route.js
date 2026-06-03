@@ -38,7 +38,6 @@ async function dbConnect() {
   return cached.conn;
 }
 
-// Schema i model
 const configSchema = new mongoose.Schema({
   guildId: { type: String, required: true, unique: true },
   prefix: { type: String, default: '!' },
@@ -99,33 +98,6 @@ export async function GET(request) {
         tickets: true,
         moderation: true,
         welcome: false,
-        logs: false,import { NextResponse } from 'next/server';
-import { MongoClient } from 'mongodb';
-
-const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
-
-export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  const guildId = searchParams.get('guildId');
-
-  if (!guildId) {
-    return NextResponse.json({ error: 'Missing guildId' }, { status: 400 });
-  }
-
-  try {
-    await client.connect();
-    const db = client.db('LukRonBot');
-    const config = await db.collection('configs').findOne({ guildId });
-
-    return NextResponse.json(config || {
-      guildId,
-      prefix: '!',
-      language: 'pl',
-      modules: {
-        tickets: true,
-        moderation: true,
-        welcome: false,
         logs: false,
         automod: true,
       },
@@ -158,8 +130,6 @@ export async function GET(request) {
   } catch (error) {
     console.error('Config GET error:', error);
     return NextResponse.json({ error: 'Database error' }, { status: 500 });
-  } finally {
-    await client.close();
   }
 }
 
@@ -172,20 +142,17 @@ export async function POST(request) {
   }
 
   try {
-    await client.connect();
-    const db = client.db('LukRonBot');
+    await dbConnect();
     
-    await db.collection('configs').updateOne(
+    await Config.findOneAndUpdate(
       { guildId },
-      { $set: config },
-      { upsert: true }
+      config,
+      { upsert: true, new: true }
     );
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Config POST error:', error);
     return NextResponse.json({ error: 'Database error' }, { status: 500 });
-  } finally {
-    await client.close();
   }
 }
