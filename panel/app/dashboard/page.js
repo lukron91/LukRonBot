@@ -56,6 +56,8 @@ export default function Dashboard() {
     ? `https://cdn.discordapp.com/avatars/${userData.userId}/${userData.avatar}.png`
     : `https://cdn.discordapp.com/embed/avatars/0.png`;
 
+  const botClientId = process.env.NEXT_PUBLIC_BOT_CLIENT_ID;
+
   return (
     <div style={{ backgroundColor: "#1a1d20", minHeight: "100vh", color: "#fff" }}>
       <header style={{ backgroundColor: "#23272a", padding: "16px 32px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #2c2f33" }}>
@@ -115,7 +117,7 @@ export default function Dashboard() {
                     <h4 style={{ margin: 0, fontSize: "16px", flex: 1 }}>{guild.name}</h4>
                   </div>
                   <a
-                    href={`https://discord.com/oauth2/authorize?client_id=${process.env.NEXT_PUBLIC_BOT_CLIENT_ID}&permissions=8&scope=bot%20applications.commands&guild_id=${guild.id}`}
+                    href={`https://discord.com/oauth2/authorize?client_id=${botClientId}&permissions=8&scope=bot%20applications.commands&guild_id=${guild.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ 
@@ -127,10 +129,27 @@ export default function Dashboard() {
                       borderRadius: "6px", 
                       fontWeight: "bold", 
                       fontSize: "14px",
-                      textDecoration: "none"
+                      textDecoration: "none",
+                      marginBottom: "8px"
                     }}
                   >
                     Dodaj bota
+                  </a>
+                  <a
+                    href={`/dashboard/config?guild=${guild.id}`}
+                    style={{ 
+                      display: "block", 
+                      textAlign: "center",
+                      backgroundColor: "#5865f2", 
+                      color: "white", 
+                      padding: "10px 16px", 
+                      borderRadius: "6px", 
+                      fontWeight: "bold", 
+                      fontSize: "14px",
+                      textDecoration: "none"
+                    }}
+                  >
+                    ⚙️ Konfiguracja
                   </a>
                 </div>
               );
