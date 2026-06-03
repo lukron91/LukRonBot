@@ -6,16 +6,12 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Sprawdź hash URL (dane z callback)
     if (window.location.hash) {
       try {
         const sessionData = decodeURIComponent(atob(window.location.hash.substring(1)));
         const data = JSON.parse(sessionData);
         
-        // Zapisz w localStorage
         localStorage.setItem('session', JSON.stringify(data));
-        
-        // Usuń hash z URL
         window.history.replaceState({}, document.title, '/dashboard');
         
         const manageableGuilds = data.guilds.filter(g => (BigInt(g.permissions) & 0x20n) === 0x20n);
@@ -26,7 +22,6 @@ export default function Dashboard() {
         window.location.href = '/';
       }
     } else {
-      // Spróbuj odczytać z localStorage
       try {
         const stored = localStorage.getItem('session');
         if (stored) {
@@ -64,7 +59,7 @@ export default function Dashboard() {
   return (
     <div style={{ backgroundColor: "#1a1d20", minHeight: "100vh", color: "#fff" }}>
       <header style={{ backgroundColor: "#23272a", padding: "16px 32px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #2c2f33" }}>
-        <h1 style={{ color: "#5865f2", fontSize: "20px", margin: 0 }}>🤖 LukRon Bot</h1>
+        <h1 style={{ color: "#5865f2", fontSize: "20px", margin: 0 }}> LukRon Bot</h1>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <img 
@@ -120,7 +115,7 @@ export default function Dashboard() {
                     <h4 style={{ margin: 0, fontSize: "16px", flex: 1 }}>{guild.name}</h4>
                   </div>
                   <a
-                    href={`discord://-/oauth2/authorize?client_id=${process.env.NEXT_PUBLIC_BOT_CLIENT_ID}&permissions=8&scope=bot%20applications.commands&guild_id=${guild.id}`}
+                    href={`https://discord.com/oauth2/authorize?client_id=${process.env.NEXT_PUBLIC_BOT_CLIENT_ID}&permissions=8&scope=bot%20applications.commands&guild_id=${guild.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ 
