@@ -1,321 +1,335 @@
-// modules/moderation.js
+const mongoose = require('mongoose');
+
 module.exports = (app, client, registerModule, unregisterModule, moduleName) => {
-  // Rejestracja modułu
-  registerModule(moduleName);
+  registerModule('moderation', false, 'System moderacji, kar i zarządzania użytkownikami');
 
-  // Pamięć tymczasowa (fallback)
-  const memoryConfigs = new Map();
-  const memoryWarns = new Map();
-  const memoryMutes = new Map();
-  const memoryBans = new Map();
+  // ===== MODELE MONGODB =====
+  const WarnSchema = new mongoose.Schema({
+    guildId: String,
+    userId: String,
+    moderatorId: String,
+    reason: String,
+    date: { type: Date, default: Date.now }
+  });
 
-  let Guild = null;
-  let Warn = null;
-  let Mute = null;
-  let Ban = null;
-  let dbConnected = false;
+  const MuteSchema = new mongoose.Schema({
+    guildId: String,
+    userId: String,
+    moderatorId: String,
+    reason: String,
+    duration: Number,
+    date: { type: Date, default: Date.now },
+    expiresAt: Date
+  });
 
-  // Inicjalizacja modeli z mongoose (jeśli istnieją)
-  const initModels = () => {
-    const mongoose = require('mongoose');
-    if (mongoose.models.Guild) {
-      Guild = mongoose.models.Guild;
-      Warn = mongoose.models.Warn;
-      Mute = mongoose.models.Mute;
-      Ban = mongoose.models.Ban;
-      dbConnected = true;
-      console.log('[moderation] Modele zaimportowane z głównego pliku');
-    } else {
-      console.log('[moderation] Brak modeli – używam pamięci tymczasowej');
-    }
-  };
-  initModels();
+  const BanSchema = new mongoose.Schema({
+    guildId: String,
+    userId: String,
+    moderatorId: String,
+    reason: String,
+    type: { type: String, default: 'discord' },
+    roleId: String,
+    date: { type: Date, default: Date.now }
+  });
 
-  // Funkcje pomocnicze (kopiuj z poprzedniego moderation.js, ale bez definiowania schematów)
-  async function getConfig(guildId) {
-    if (dbConnected && Guild) {
-      try {
-        let config = await Guild.findOne({ guildId });
-        if (!config) {
-          config = new Guild({ guildId });
-          await config.save();
+  const Warn = mongoose.models.Warn || mongoose.model('Warn', WarnSchema);
+  const Mute = mongoose.models.Mute || mongoose.model('Mute', MuteSchema);
+  const Ban = mongoose.models.Ban || mongoose.model('Ban', BanSchema);
+
+  // ===== CACHE CZŁONKÓW =====
+  const membersCache = new Map();
+  const MEMBERS_CACHE_TTL = 10 * 60 * 1000;
+
+  // ===== POBIERANIE CZŁONKÓW (BEZ BOTÓW) =====
+  app.get('/api/guilds/:guildId/members', async (req, res) => {
+    try {
+      const { guildId } = req.params;
+
+      const cached = membersCache.get(guildId);
+      if (cached && Date.now() - cached.timestamp < MEMBERS_CACHE_TTL) {
+        return res.json(cached.data);
+      }
+
+      const guild = client.guilds.cache.get(guildId);
+      if (!guild) {
+        return res.status(404).json({ error: 'Bot nie jest na tym serwerze' });
+      }
+
+      let members = guild.members.cache
+        .filter(member => !member.user.bot)
+        .map(member => ({
+          id: member.id,
+          username: member.user.username,
+          displayName: member.displayName,
+          avatar: member.user.avatar,
+          joinedAt: member.joinedAt,
+          roles: member.roles.cache
+            .filter(r => r.id !== guild.id)
+            .map(r => ({ id: r.id, name: r.name }))
+        }));
+
+      if (members.length < 10) {
+        try {
+          const fetched = await guild.members.fetch({ limit: 1000 });
+          members = fetched
+            .filter(member => !member.user.bot)
+            .map(member => ({
+              id: member.id,
+              username: member.user.username,
+              displayName: member.displayName,
+              avatar: member.user.avatar,
+              joinedAt: member.joinedAt,
+              roles: member.roles.cache
+                .filter(r => r.id !== guild.id)
+                .map(r => ({ id: r.id, name: r.name }))
+            }));
+        } catch (fetchErr) {
+          console.warn('[Members] Rate limit - używam cache:', fetchErr.message);
         }
-        return config.toObject();
-      } catch (err) {
-        console.error('Błąd odczytu z bazy:', err);
       }
+
+      membersCache.set(guildId, { data: members, timestamp: Date.now() });
+      res.json(members);
+    } catch (error) {
+      console.error('[Members] Błąd:', error);
+      res.status(500).json({ error: error.message });
     }
-    if (!memoryConfigs.has(guildId)) {
-      memoryConfigs.set(guildId, {
-        guildId,
-        prefix: '!',
-        language: 'pl',
-        timezone: 'Europe/Warsaw',
-        autoModEnabled: false,
-        blockLinks: false,
-        blockInvites: false,
-        welcomeEnabled: false,
-        logEnabled: false,
-        warnThreshold: 3,
-        banMethod: 'discord',
-        banRoleId: null,
-        modLogChannel: null,
+  });
+
+  // ===== HISTORIA KAR DLA UŻYTKOWNIKA =====
+  app.get('/api/guilds/:guildId/punishments/:userId', async (req, res) => {
+    try {
+      const { guildId, userId } = req.params;
+
+      const warns = await Warn.find({ guildId, userId }).sort({ date: -1 });
+      const mutes = await Mute.find({ guildId, userId }).sort({ date: -1 });
+      const bans = await Ban.find({ guildId, userId }).sort({ date: -1 });
+
+      res.json({
+        warnings: warns.map(w => ({
+          id: w._id.toString(),
+          reason: w.reason,
+          moderatorId: w.moderatorId,
+          date: w.date,
+          type: 'warn'
+        })),
+        mutes: mutes.map(m => ({
+          id: m._id.toString(),
+          reason: m.reason,
+          moderatorId: m.moderatorId,
+          duration: m.duration,
+          date: m.date,
+          expiresAt: m.expiresAt,
+          type: 'mute'
+        })),
+        bans: bans.map(b => ({
+          id: b._id.toString(),
+          reason: b.reason,
+          moderatorId: b.moderatorId,
+          banType: b.type || 'discord',
+          roleId: b.roleId,
+          date: b.date,
+          type: 'ban'
+        }))
       });
+    } catch (error) {
+      console.error('[Punishments] Błąd:', error);
+      res.status(500).json({ error: error.message });
     }
-    return memoryConfigs.get(guildId);
-  }
+  });
 
-  async function setConfig(guildId, update) {
-    if (dbConnected && Guild) {
+  // ===== NADAWANIE WARNU =====
+  app.post('/api/guilds/:guildId/moderation/warn', async (req, res) => {
+    try {
+      const { guildId } = req.params;
+      const { userId, moderatorId, reason } = req.body;
+
+      const warn = new Warn({ guildId, userId, moderatorId, reason });
+      await warn.save();
+
       try {
-        const config = await Guild.findOneAndUpdate(
-          { guildId },
-          { ...update, guildId },
-          { upsert: true, new: true }
-        );
-        return config.toObject();
-      } catch (err) {
-        console.error('Błąd zapisu do bazy:', err);
-        throw err;
+        const user = await client.users.fetch(userId);
+        await user.send(`⚠️ Otrzymałeś ostrzeżenie na serwerze. Powód: ${reason}`);
+      } catch (e) {}
+
+      res.json({ success: true, warn });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===== WYCISZANIE =====
+  app.post('/api/guilds/:guildId/moderation/mute', async (req, res) => {
+    try {
+      const { guildId } = req.params;
+      const { userId, moderatorId, reason, duration } = req.body;
+
+      const mute = new Mute({
+        guildId,
+        userId,
+        moderatorId,
+        reason,
+        duration,
+        expiresAt: duration > 0 ? new Date(Date.now() + duration * 60000) : null
+      });
+      await mute.save();
+
+      const guild = client.guilds.cache.get(guildId);
+      if (guild) {
+        const member = await guild.members.fetch(userId).catch(() => null);
+        if (member) {
+          try {
+            await member.timeout(duration * 60 * 1000, reason);
+          } catch (e) {
+            console.warn('[Mute] Timeout error:', e.message);
+          }
+        }
       }
-    }
-    const current = memoryConfigs.get(guildId) || { guildId };
-    const updated = { ...current, ...update };
-    memoryConfigs.set(guildId, updated);
-    return updated;
-  }
 
-  async function getPunishments(guildId, userId) {
-    if (dbConnected) {
-      try {
-        const [warns, mutes, bans] = await Promise.all([
-          Warn.findOne({ guildId, userId }),
-          Mute.findOne({ guildId, userId }),
-          Ban.findOne({ guildId, userId })
-        ]);
-        return {
-          warnings: warns?.warnings || [],
-          mutes: mutes ? [mutes] : [],
-          bans: bans ? [bans] : []
-        };
-      } catch (err) { console.error(err); }
+      res.json({ success: true, mute });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
     }
-    return {
-      warnings: memoryWarns.get(`${guildId}_${userId}`) || [],
-      mutes: memoryMutes.get(`${guildId}_${userId}`) ? [memoryMutes.get(`${guildId}_${userId}`)] : [],
-      bans: memoryBans.get(`${guildId}_${userId}`) ? [memoryBans.get(`${guildId}_${userId}`)] : []
-    };
-  }
+  });
 
-  async function addWarn(guildId, userId, reason, moderatorId) {
-    if (dbConnected && Warn) {
-      const warnDoc = await Warn.findOneAndUpdate(
-        { guildId, userId },
-        { $push: { warnings: { reason, moderatorId, date: new Date() } } },
-        { upsert: true, new: true }
-      );
-      return warnDoc.warnings;
-    } else {
-      const key = `${guildId}_${userId}`;
-      const warns = memoryWarns.get(key) || [];
-      warns.push({ reason, moderatorId, date: new Date() });
-      memoryWarns.set(key, warns);
-      return warns;
-    }
-  }
-
-  async function addMute(guildId, userId, reason, moderatorId, duration) {
-    const mute = { guildId, userId, reason, moderatorId, duration, endTime: new Date(Date.now() + duration * 1000), date: new Date() };
-    if (dbConnected && Mute) {
-      await Mute.findOneAndUpdate({ guildId, userId }, mute, { upsert: true });
-    } else {
-      memoryMutes.set(`${guildId}_${userId}`, mute);
-    }
-    return mute;
-  }
-
-  async function addBan(guildId, userId, reason, moderatorId, type, roleId = null) {
-    const ban = { guildId, userId, reason, moderatorId, type, roleId, date: new Date() };
-    if (dbConnected && Ban) {
-      await Ban.findOneAndUpdate({ guildId, userId }, ban, { upsert: true });
-    } else {
-      memoryBans.set(`${guildId}_${userId}`, ban);
-    }
-    return ban;
-  }
-
-  async function sendLog(guildId, embedData) {
+  // ===== BANOWANIE (systemowe lub przez rolę) =====
+  app.post('/api/guilds/:guildId/moderation/ban', async (req, res) => {
     try {
-      const config = await getConfig(guildId);
-      const logChannelId = config.modLogChannel;
-      if (!logChannelId) return;
+      const { guildId } = req.params;
+      const { userId, moderatorId, reason, banType, roleId } = req.body;
+
+      const ban = new Ban({
+        guildId,
+        userId,
+        moderatorId,
+        reason,
+        type: banType || 'discord',
+        roleId: roleId || null
+      });
+      await ban.save();
+
       const guild = client.guilds.cache.get(guildId);
-      if (!guild) return;
-      const channel = guild.channels.cache.get(logChannelId);
-      if (!channel || !channel.isTextBased()) return;
-      await channel.send({ embeds: [embedData] });
-    } catch (err) { console.error('Błąd logowania:', err); }
-  }
+      if (guild) {
+        if (banType === 'role' && roleId) {
+          const member = await guild.members.fetch(userId).catch(() => null);
+          if (member) {
+            await member.roles.add(roleId, reason);
+          }
+        } else {
+          await guild.members.ban(userId, { reason });
+        }
+      }
 
-  function createLogEmbed(title, description, color, fields = []) {
-    return {
-      title,
-      description,
-      color,
-      timestamp: new Date().toISOString(),
-      fields,
-      footer: { text: 'LukRon Bot - System kar' }
-    };
-  }
+      res.json({ success: true, ban });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
 
-  // ---------- ENDPOINTY ----------
+  // ===== USUWANIE KARY =====
+  app.delete('/api/guilds/:guildId/punishments/:type/:punishmentId', async (req, res) => {
+    try {
+      const { guildId, type, punishmentId } = req.params;
+
+      let result;
+      switch (type) {
+        case 'warn':
+          result = await Warn.findByIdAndDelete(punishmentId);
+          break;
+        case 'mute':
+          result = await Mute.findByIdAndDelete(punishmentId);
+          if (result) {
+            const guild = client.guilds.cache.get(guildId);
+            if (guild) {
+              const member = await guild.members.fetch(result.userId).catch(() => null);
+              if (member) {
+                try { await member.timeout(null); } catch (e) {}
+              }
+            }
+          }
+          break;
+        case 'ban':
+          result = await Ban.findByIdAndDelete(punishmentId);
+          if (result && result.type === 'role' && result.roleId) {
+            const guild = client.guilds.cache.get(guildId);
+            if (guild) {
+              const member = await guild.members.fetch(result.userId).catch(() => null);
+              if (member) {
+                try { await member.roles.remove(result.roleId); } catch (e) {}
+              }
+            }
+          } else if (result && (!result.type || result.type === 'discord')) {
+            const guild = client.guilds.cache.get(guildId);
+            if (guild) {
+              try { await guild.members.unban(result.userId); } catch (e) {}
+            }
+          }
+          break;
+        default:
+          return res.status(400).json({ error: 'Nieprawidłowy typ kary' });
+      }
+
+      if (!result) {
+        return res.status(404).json({ error: 'Kara nie znaleziona' });
+      }
+
+      res.json({ success: true, message: 'Kara usunięta' });
+    } catch (error) {
+      console.error('[Delete Punishment] Błąd:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===== POBIERANIE RÓL =====
   app.get('/api/guilds/:guildId/roles', async (req, res) => {
-    const { guildId } = req.params;
     try {
-      const guild = client.guilds.cache.get(guildId);
-      if (!guild) return res.status(404).json({ error: 'Bot nie jest na tym serwerze' });
+      const guild = client.guilds.cache.get(req.params.guildId);
+      if (!guild) {
+        return res.status(404).json({ error: 'Serwer nie znaleziony' });
+      }
+
       const roles = guild.roles.cache
         .filter(r => r.id !== guild.id && r.name !== '@everyone')
         .map(r => ({ id: r.id, name: r.name }));
+
       res.json(roles);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.get('/api/guilds/:guildId/channels', async (req, res) => {
-    const { guildId } = req.params;
+  // ===== KONFIGURACJA SERWERA =====
+  app.get('/api/guilds/:guildId/config', async (req, res) => {
     try {
-      const guild = client.guilds.cache.get(guildId);
-      if (!guild) return res.status(404).json({ error: 'Bot nie jest na tym serwerze' });
-      const channels = guild.channels.cache
-        .filter(c => c.isTextBased())
-        .map(c => ({ id: c.id, name: c.name, type: c.type }));
-      res.json(channels);
+      const guildId = req.params.guildId;
+      res.json({
+        guildId,
+        banMethod: 'discord',
+        banRoleId: null
+      });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.get('/api/guilds/:guildId/members', async (req, res) => {
-    const { guildId } = req.params;
+  app.post('/api/guilds/:guildId/config', async (req, res) => {
     try {
-      const guild = client.guilds.cache.get(guildId);
-      if (!guild) return res.status(404).json({ error: 'Bot nie jest na tym serwerze' });
-      await guild.members.fetch();
-      const members = guild.members.cache.filter(m => !m.user.bot);
-      const users = members.map(member => ({
-        id: member.user.id,
-        username: member.user.username,
-        displayName: member.displayName,
-        avatar: member.user.avatar,
-        joinedAt: member.joinedAt
-      }));
-      res.json(users);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Nie udało się pobrać listy użytkowników' });
-    }
-  });
-
-  app.get('/api/guilds/:guildId/punishments/:userId', async (req, res) => {
-    const { guildId, userId } = req.params;
-    try {
-      const punishments = await getPunishments(guildId, userId);
-      res.json(punishments);
+      const { banMethod, banRoleId } = req.body;
+      res.json({ success: true, banMethod, banRoleId });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.post('/api/guilds/:guildId/config/moderation', async (req, res) => {
-    const { guildId } = req.params;
-    const updates = req.body;
-    try {
-      const config = await setConfig(guildId, updates);
-      res.json(config);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.post('/api/guilds/:guildId/warn', async (req, res) => {
-    const { guildId } = req.params;
-    const { userId, reason, moderatorId } = req.body;
-    if (!reason) return res.status(400).json({ error: 'Powód jest wymagany' });
-    try {
-      await addWarn(guildId, userId, reason, moderatorId || 'panel');
-      const guild = client.guilds.cache.get(guildId);
-      if (guild) {
-        const member = await guild.members.fetch(userId).catch(() => null);
-        if (member) {
-          const embed = createLogEmbed('⚠️ Ostrzeżenie', `Użytkownik **${member.user.tag}** otrzymał ostrzeżenie.`, 0xF0B232, [
-            { name: 'Powód', value: reason, inline: true },
-            { name: 'Moderator', value: moderatorId ? `<@${moderatorId}>` : 'Panel', inline: true }
-          ]);
-          await sendLog(guildId, embed);
-        }
+  // ===== CZYSZCZENIE CACHE =====
+  setInterval(() => {
+    const now = Date.now();
+    membersCache.forEach((value, key) => {
+      if (now - value.timestamp > MEMBERS_CACHE_TTL) {
+        membersCache.delete(key);
       }
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+    });
+  }, 15 * 60 * 1000);
 
-  app.post('/api/guilds/:guildId/mute', async (req, res) => {
-    const { guildId } = req.params;
-    const { userId, duration, reason, moderatorId } = req.body;
-    if (!reason) return res.status(400).json({ error: 'Powód jest wymagany' });
-    try {
-      const guild = client.guilds.cache.get(guildId);
-      if (!guild) return res.status(404).json({ error: 'Bot nie jest na tym serwerze' });
-      const member = await guild.members.fetch(userId);
-      await member.timeout(duration * 1000, reason);
-      await addMute(guildId, userId, reason, moderatorId || 'panel', duration);
-      const embed = createLogEmbed('🔇 Wyciszenie', `Użytkownik **${member.user.tag}** został wyciszony.`, 0xF0B232, [
-        { name: 'Powód', value: reason, inline: true },
-        { name: 'Czas', value: `${Math.floor(duration / 60)} minut`, inline: true },
-        { name: 'Moderator', value: moderatorId ? `<@${moderatorId}>` : 'Panel', inline: true }
-      ]);
-      await sendLog(guildId, embed);
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.post('/api/guilds/:guildId/ban', async (req, res) => {
-    const { guildId } = req.params;
-    const { userId, reason, moderatorId, banType, roleId } = req.body;
-    if (!reason) return res.status(400).json({ error: 'Powód jest wymagany' });
-    try {
-      const guild = client.guilds.cache.get(guildId);
-      if (!guild) return res.status(404).json({ error: 'Bot nie jest na tym serwerze' });
-      const member = await guild.members.fetch(userId);
-      const config = await getConfig(guildId);
-      const effectiveType = banType || config.banMethod || 'discord';
-      if (effectiveType === 'discord') {
-        await member.ban({ reason });
-      } else {
-        const roleIdToUse = roleId || config.banRoleId;
-        if (!roleIdToUse) return res.status(400).json({ error: 'Nie wybrano roli do custom bana' });
-        const role = guild.roles.cache.get(roleIdToUse);
-        if (!role) return res.status(404).json({ error: 'Rola nie istnieje' });
-        await member.roles.add(role, reason);
-      }
-      await addBan(guildId, userId, reason, moderatorId || 'panel', effectiveType, effectiveType === 'role' ? (roleId || config.banRoleId) : null);
-      const embed = createLogEmbed('🔨 Ban', `Użytkownik **${member.user.tag}** został zbanowany.`, 0xED4245, [
-        { name: 'Powód', value: reason, inline: true },
-        { name: 'Typ bana', value: effectiveType === 'discord' ? 'Discord Ban' : 'Custom ban (rola)', inline: true },
-        { name: 'Moderator', value: moderatorId ? `<@${moderatorId}>` : 'Panel', inline: true }
-      ]);
-      await sendLog(guildId, embed);
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  console.log('[moderation] Moduł moderacji załadowany (endpointy gotowe)');
-module.exports.description = `Moduł moderacji – zawiera endpointy do zarządzania karami: ostrzeżenia (warn), wyciszenia (mute), bany (ban), lista użytkowników, role, kanały, konfiguracja moderacji.`;
+  console.log('[Moderation] Moduł załadowany, endpointy gotowe');
 };

@@ -1,14 +1,15 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { 
-  FiUsers, FiHash, FiShield, FiUserPlus, FiUserMinus, FiActivity, 
-  FiTrendingUp, FiMessageSquare, FiAward, FiCalendar 
+import {
+  FiUsers, FiHash, FiShield, FiUserPlus, FiUserMinus, FiActivity,
+  FiTrendingUp, FiMessageSquare, FiAward, FiCalendar
 } from 'react-icons/fi';
 
 export default function DashboardHome() {
   const searchParams = useSearchParams();
   const guildId = searchParams.get("guild");
+  
   const [stats, setStats] = useState({ members: null, channels: null, roles: null });
   const [activity, setActivity] = useState({
     joinedToday: null,
@@ -23,13 +24,13 @@ export default function DashboardHome() {
 
   useEffect(() => {
     if (!guildId) return;
-    
+
     // Podstawowe statystyki
     fetch(`http://localhost:3001/api/guilds/${guildId}/stats`)
       .then(res => res.json())
       .then(data => setStats(data))
       .catch(() => setStats({ members: "Błąd", channels: "Błąd", roles: "Błąd" }));
-    
+
     // Statystyki aktywności
     Promise.all([
       fetch(`http://localhost:3001/api/guilds/${guildId}/activity/joined-today`).then(r => r.json()),
@@ -59,8 +60,8 @@ export default function DashboardHome() {
   }
 
   const isLoading = stats.members === null;
-  const maxTrend = activity.activityTrend.length > 0 
-    ? Math.max(...activity.activityTrend.map(d => d.count)) 
+  const maxTrend = activity.activityTrend.length > 0
+    ? Math.max(...activity.activityTrend.map(d => d.count))
     : 0;
 
   return (
@@ -166,10 +167,10 @@ export default function DashboardHome() {
                   {user.avatar ? (
                     <img src={`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`} alt="" />
                   ) : (
-                    <div className="avatar-placeholder">{user.username.charAt(0).toUpperCase()}</div>
+                    <div className="avatar-placeholder">{(user.username || 'U').charAt(0).toUpperCase()}</div>
                   )}
                 </div>
-                <span className="list-name">{user.username}</span>
+                <span className="list-name">{user.username || 'Nieznany użytkownik'}</span>
                 <span className="list-value">{user.count} wiadomości</span>
               </div>
             ))
@@ -191,7 +192,7 @@ export default function DashboardHome() {
           border: 1px solid #25252d;
           transition: all 0.2s;
           display: flex;
-          align-items: center;
+          align-items: center; 
           gap: 1rem;
         }
         .stat-card:hover {
