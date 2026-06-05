@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel zarządzania botem i panelem głównym</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0a0a0f;
+            color: #e1e1e6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { margin-bottom: 0.5rem; }
+        .tabs { display: flex; gap: 0.5rem; border-bottom: 1px solid #2a2a2e; margin-bottom: 1.5rem; }
+        .tab-btn { background: none; border: none; padding: 0.6rem 1.2rem; color: #9c9ca7; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; border-radius: 0.5rem 0.5rem 0 0; transition: all 0.2s; }
+        .tab-btn:hover { color: #e1e1e6; background: #1a1a22; }
+        .tab-btn.active { color: #a5b4fc; border-bottom: 2px solid #5865f2; }
+        .status-card, .logs-card, .commands-card {
+            background: #14141c;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .status-row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+        .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.8rem; font-weight: 500; }
+        .badge-green { background: #10b98120; color: #10b981; border: 1px solid #10b98140; }
+        .badge-red { background: #ef444420; color: #ef4444; border: 1px solid #ef444440; }
+        button { background: #1e1e26; border: 1px solid #2a2a2e; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #2a2a34; }
+        button.danger:hover { background: #ef4444; border-color: #ef4444; }
+        button.success:hover { background: #10b981; border-color: #10b981; }
+        .btn-group { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
+        .logs-area { background: #0a0a0f; border: 1px solid #2a2a2e; border-radius: 0.75rem; padding: 0.5rem; font-family: monospace; font-size: 0.7rem; height: 400px; overflow-y: auto; line-height: 1.2; }
+        .log-entry { border-bottom: 1px solid #1e1e26; padding: 0.1rem 0.2rem; white-space: pre-wrap; }
+        .log-info { color: #8a8a93; }
+        .log-error { color: #ef4444; }
+        .uptime { font-size: 0.9rem; }
+        .commands-note { font-size: 0.7rem; color: #6b6b76; margin-top: 0.5rem; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🛠️ Panel zarządzania</h1>
+    <p>Port API bota: 3001 | Port panelu głównego: 3000 | Panel sterujący: 3002</p>
+
+    <div class="tabs">
+        <button id="tabBotBtn" class="tab-btn active">🤖 Bot</button>
+        <button id="tabPanelBtn" class="tab-btn">📦 Panel główny (Next.js)</button>
+    </div>
+
+    <!-- ZAKŁADKA BOT -->
+    <div id="botTab">
+        <div class="status-card">
+            <h2>📡 Status bota</h2>
+            <div class="status-row">
+                <div id="botStatusBadge" class="badge badge-red">⏳ Sprawdzanie...</div>
+                <div id="botUptime" class="uptime"></div>
+                <button id="startBotBtn" class="success">▶️ Start</button>
+                <button id="stopBotBtn" class="danger">⏹️ Stop</button>
+                <button id="restartBotBtn">⟳ Restart</button>
+                <button id="refreshBotStatusBtn">⟳ Odśwież</button>
+            </div>
+            <div id="botDetails" style="font-size:0.85rem; color:#8a8a93;"></div>
+        </div>
+
+        <div class="commands-card">
+            <h2>⚙️ Zarządzanie komendami</h2>
+            <div class="btn-group">
+                <button id="registerGlobalBtn">🌐 Zarejestruj globalne</button>
+                <button id="clearGlobalBtn">🗑️ Wyczyść globalne</button>
+                <button id="registerLocalBtn">📌 Zarejestruj lokalne (testowy serwer)</button>
+                <button id="clearLocalBtn">✖️ Wyczyść lokalne (testowy serwer)</button>
+            </div>
+            <div class="commands-note">
+                ⚠️ Komendy globalne mogą pojawić się dopiero po godzinie (cache Discord).<br>
+                Testowy serwer ID: <code>1411465107476582432</code> – komendy lokalne działają natychmiast.
+            </div>
+        </div>
+
+        <div class="logs-card">
+            <h2>📜 Logi bota</h2>
+            <button id="refreshBotLogsBtn" style="margin-bottom: 0.5rem;">⟳ Odśwież logi</button>
+            <div id="botLogsContainer" class="logs-area"><div class="log-entry">Ładowanie logów...</div></div>
+        </div>
+    </div>
+
+    <!-- ZAKŁADKA PANEL GŁÓWNY -->
+    <div id="panelTab" style="display: none;">
+        <div class="status-card">
+            <h2>📡 Status panelu głównego (Next.js)</h2>
+            <div class="status-row">
+                <div id="panelStatusBadge" class="badge badge-red">⏳ Sprawdzanie...</div>
+                <div id="panelUptime" class="uptime"></div>
+                <button id="startPanelBtn" class="success">▶️ Start</button>
+                <button id="stopPanelBtn" class="danger">⏹️ Stop</button>
+                <button id="restartPanelBtn">⟳ Restart</button>
+                <button id="refreshPanelStatusBtn">⟳ Odśwież</button>
+            </div>
+        </div>
+        <div class="logs-card">
+            <h2>📜 Logi panelu głównego</h2>
+            <button id="refreshPanelLogsBtn" style="margin-bottom: 0.5rem;">⟳ Odśwież logi</button>
+            <div id="panelLogsContainer" class="logs-area"><div class="log-entry">Ładowanie logów...</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentTab = 'bot';
+
+    // ---------- BOT ----------
+    async function fetchBotStatus() {
+        try {
+            const res = await fetch('/bot/status');
+            const data = await res.json();
+            const badge = document.getElementById('botStatusBadge');
+            const uptimeDiv = document.getElementById('botUptime');
+            const detailsDiv = document.getElementById('botDetails');
+            if (data.running) {
+                badge.className = 'badge badge-green';
+                badge.innerText = '✅ Bot działa';
+                uptimeDiv.innerText = `⏱️ Uptime: ${data.uptime || 0} sekund`;
+                try {
+                    const detRes = await fetch('/api/bot-status');
+                    const det = await detRes.json();
+                    if (det && det.running) detailsDiv.innerHTML = `Serwery: ${det.guilds || '?'} | MongoDB: ${det.mongo ? '✅' : '❌'}`;
+                    else detailsDiv.innerHTML = '';
+                } catch(e) { detailsDiv.innerHTML = ''; }
+            } else {
+                badge.className = 'badge badge-red';
+                badge.innerText = '❌ Bot nie działa';
+                uptimeDiv.innerText = '';
+                detailsDiv.innerHTML = '';
+            }
+        } catch (e) {
+            document.getElementById('botStatusBadge').innerText = '❌ Błąd połączenia';
+        }
+    }
+
+    async function sendBotCommand(action) {
+        try {
+            const res = await fetch(`/bot/${action}`, { method: 'POST' });
+            if (res.ok) { console.log(`Bot ${action}`); fetchBotStatus(); fetchBotLogs(); }
+            else { const data = await res.json(); console.error(`Błąd ${action}:`, data.error); }
+        } catch (e) { console.error(`Błąd ${action}:`, e); }
+    }
+
+    async function fetchBotLogs() {
+        try {
+            const res = await fetch('/api/logs');
+            const logs = await res.json();
+            const container = document.getElementById('botLogsContainer');
+            if (!logs.length) { container.innerHTML = '<div class="log-entry">Brak logów</div>'; return; }
+            container.innerHTML = logs.map(log => `<div class="log-entry ${log.type === 'error' ? 'log-error' : 'log-info'}">[${new Date(log.timestamp).toLocaleTimeString()}] [${log.type.toUpperCase()}] ${log.message}</div>`).join('');
+        } catch (e) { document.getElementById('botLogsContainer').innerHTML = `<div class="log-entry log-error">Błąd ładowania logów: ${e.message}</div>`; }
+    }
+
+    const TEST_GUILD_ID = '1411465107476582432';
+
+    async function sendCommand(action, body = {}) {
+        try {
+            const res = await fetch(`/api/commands/${action}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+            if (res.ok) alert(`✅ ${action} wykonany pomyślnie`);
+            else alert(`❌ Błąd: ${data.error}`);
+        } catch (e) { alert(`❌ Błąd: ${e.message}`); }
+    }
+
+    function confirmAndExecute(action, message, isGlobal = true) {
+        let msg = message || `Czy na pewno chcesz ${action === 'clear-global' ? 'wyczyścić wszystkie komendy globalne' : action === 'register-global' ? 'zarejestrować komendy globalne' : ''}?`;
+        if (isGlobal) msg += '\n\n⚠️ Pamiętaj, że zmiany globalne mogą być widoczne dopiero po godzinie (cache Discord).';
+        if (confirm(msg)) {
+            if (action === 'clear-local') sendCommand('clear-local', { guildId: TEST_GUILD_ID });
+            else if (action === 'register-local') sendCommand('register-local', { guildId: TEST_GUILD_ID });
+            else sendCommand(action);
+        }
+    }
+
+    // ---------- PANEL ----------
+    async function fetchPanelStatus() {
+        try {
+            const res = await fetch('/panel/status');
+            const data = await res.json();
+            const badge = document.getElementById('panelStatusBadge');
+            const uptimeDiv = document.getElementById('panelUptime');
+            if (data.running) {
+                badge.className = 'badge badge-green';
+                badge.innerText = '✅ Panel działa';
+                uptimeDiv.innerText = `⏱️ Uptime: ${data.uptime || 0} sekund`;
+            } else {
+                badge.className = 'badge badge-red';
+                badge.innerText = '❌ Panel nie działa';
+                uptimeDiv.innerText = '';
+            }
+        } catch (e) {
+            document.getElementById('panelStatusBadge').innerText = '❌ Błąd połączenia';
+        }
+    }
+
+    async function sendPanelCommand(action) {
+        try {
+            const res = await fetch(`/panel/${action}`, { method: 'POST' });
+            if (res.ok) { console.log(`Panel ${action}`); fetchPanelStatus(); fetchPanelLogs(); }
+            else { const data = await res.json(); console.error(`Błąd ${action}:`, data.error); }
+        } catch (e) { console.error(`Błąd ${action}:`, e); }
+    }
+
+    async function fetchPanelLogs() {
+        try {
+            const res = await fetch('/api/panel-logs');
+            const logs = await res.json();
+            const container = document.getElementById('panelLogsContainer');
+            if (!logs.length) { container.innerHTML = '<div class="log-entry">Brak logów</div>'; return; }
+            container.innerHTML = logs.map(log => `<div class="log-entry ${log.type === 'error' ? 'log-error' : 'log-info'}">[${new Date(log.timestamp).toLocaleTimeString()}] [${log.type.toUpperCase()}] ${log.message}</div>`).join('');
+        } catch (e) { document.getElementById('panelLogsContainer').innerHTML = `<div class="log-entry log-error">Błąd ładowania logów: ${e.message}</div>`; }
+    }
+
+    // ---------- PRZEŁĄCZANIE ----------
+    function setTab(tab) {
+        currentTab = tab;
+        const botDiv = document.getElementById('botTab');
+        const panelDiv = document.getElementById('panelTab');
+        const botBtn = document.getElementById('tabBotBtn');
+        const panelBtn = document.getElementById('tabPanelBtn');
+        if (tab === 'bot') {
+            botDiv.style.display = 'block';
+            panelDiv.style.display = 'none';
+            botBtn.classList.add('active');
+            panelBtn.classList.remove('active');
+            fetchBotStatus(); fetchBotLogs();
+        } else {
+            botDiv.style.display = 'none';
+            panelDiv.style.display = 'block';
+            botBtn.classList.remove('active');
+            panelBtn.classList.add('active');
+            fetchPanelStatus(); fetchPanelLogs();
+        }
+    }
+
+    // EVENTY
+    document.getElementById('tabBotBtn').onclick = () => setTab('bot');
+    document.getElementById('tabPanelBtn').onclick = () => setTab('panel');
+
+    document.getElementById('startBotBtn').onclick = () => sendBotCommand('start');
+    document.getElementById('stopBotBtn').onclick = () => sendBotCommand('stop');
+    document.getElementById('restartBotBtn').onclick = () => sendBotCommand('restart');
+    document.getElementById('refreshBotStatusBtn').onclick = fetchBotStatus;
+    document.getElementById('refreshBotLogsBtn').onclick = fetchBotLogs;
+
+    document.getElementById('registerGlobalBtn').onclick = () => confirmAndExecute('register-global', 'Zarejestrowaæ komendy globalne (ping, say)?', true);
+    document.getElementById('clearGlobalBtn').onclick = () => confirmAndExecute('clear-global', 'Wyczyścić wszystkie komendy globalne?', true);
+    document.getElementById('registerLocalBtn').onclick = () => confirmAndExecute('register-local', 'Zarejestrować komendy lokalne na serwerze testowym?', false);
+    document.getElementById('clearLocalBtn').onclick = () => confirmAndExecute('clear-local', 'Wyczyścić komendy lokalne na serwerze testowym?', false);
+
+    document.getElementById('startPanelBtn').onclick = () => sendPanelCommand('start');
+    document.getElementById('stopPanelBtn').onclick = () => sendPanelCommand('stop');
+    document.getElementById('restartPanelBtn').onclick = () => sendPanelCommand('restart');
+    document.getElementById('refreshPanelStatusBtn').onclick = fetchPanelStatus;
+    document.getElementById('refreshPanelLogsBtn').onclick = fetchPanelLogs;
+
+    setInterval(() => {
+        if (currentTab === 'bot') { fetchBotStatus(); fetchBotLogs(); }
+        else { fetchPanelStatus(); fetchPanelLogs(); }
+    }, 5000);
+
+    setTab('bot');
+</script>
+</body>
+</html>

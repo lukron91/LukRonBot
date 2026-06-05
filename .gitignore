@@ -1,0 +1,30 @@
+# === GŁÓWNE IGNOROWANIE ===
+# Ignoruje folder node_modules w całym projekcie (panel, bot i każdy inny)
+node_modules/
+
+# === BEZPIECZEŃSTWO ===
+# Pliki ze zmiennymi środowiskowymi (hasła, klucze API, tokeny)
+.env
+.env.local
+.env.*.local
+
+# === LOGI I PLIKI TYMCZASOWE ===
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# === FOLDERY BUILDOWE (na przyszłość) ===
+# Jeśli kiedyś będziesz kompilował kod (np. przez Webpack, Vite, TypeScript)
+dist/
+build/
+out/
+
+# === PLIKI SYSTEMOWE ===
+# Śmieci generowane przez system operacyjny
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~

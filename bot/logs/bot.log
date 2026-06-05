@@ -1,0 +1,13 @@
+[2026-06-04T22:15:09.401Z] [INFO] [logger] Moduł logger załadowany
+[2026-06-04T22:15:09.402Z] [INFO] [console] [logger] Moduł logowania aktywny
+[2026-06-04T22:15:09.405Z] [INFO] [console] [moderation] Brak modeli – używam pamięci tymczasowej
+[2026-06-04T22:15:09.406Z] [INFO] [console] [moderation] Moduł moderacji załadowany (endpointy gotowe)
+[2026-06-04T22:15:09.406Z] [INFO] [console] ✅ Moduł załadowany: moderation.js
+[2026-06-04T22:15:09.419Z] [INFO] [console] 🌐 Bot API on http://localhost:3001
+[2026-06-04T22:15:09.408Z] [INFO] [console] ✅ Moduł załadowany: status.js
+[2026-06-04T22:15:09.402Z] [INFO] [console] ✅ Moduł załadowany: logger.js
+[2026-06-04T22:15:09.855Z] [INFO] [console] ✅ MongoDB connected
+[2026-06-04T22:15:10.187Z] [INFO] [console] ✅ Discord OK
+[2026-06-04T22:15:10.197Z] [INFO] [console] 🤖 Bot zalogowany jako LukRonBot#9023
+[2026-06-04T22:15:10.198Z] [ERROR] [console] (node:21828) DeprecationWarning: The ready event has been renamed to clientReady to distinguish it from the gateway READY event and will only emit under that name in v15. Please use clientReady instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
