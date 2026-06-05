@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { FiSearch, FiX, FiAlertTriangle, FiBellOff, FiLock, FiRefreshCw, FiTrash2 } from 'react-icons/fi';
+import { useEffect, useState, useRef } from "react";
+import { FiSearch, FiX, FiRefreshCw, FiTrash2, FiUnlock, FiBell, FiAlertTriangle } from 'react-icons/fi';
 
 export default function UsersPage() {
   const searchParams = useSearchParams();
@@ -13,16 +13,15 @@ export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const [actionMenu, setActionMenu] = useState(null);
+  const [activeTab, setActiveTab] = useState("apply");
   const [punishments, setPunishments] = useState({ warnings: [], mutes: [], bans: [] });
+  const [activePunishments, setActivePunishments] = useState({ mute: null, ban: null });
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
   const [muteDuration, setMuteDuration] = useState(60);
   const [warnReason, setWarnReason] = useState("");
   const [muteReason, setMuteReason] = useState("");
   const [banReason, setBanReason] = useState("");
-  const [banMethod, setBanMethod] = useState("discord");
-  const [banRoleId, setBanRoleId] = useState("");
-  const [roles, setRoles] = useState([]);
   const fetchAbortRef = useRef(null);
 
   const fetchMembers = async (showRefresh = false) => {
@@ -83,42 +82,40 @@ export default function UsersPage() {
     }
   };
 
-  const fetchRoles = async () => {
+  const fetchActivePunishments = async (userId) => {
     try {
-      const res = await fetch(`http://localhost:3001/api/guilds/${guildId}/roles`);
+      const res = await fetch(`http://localhost:3001/api/guilds/${guildId}/punishments/${userId}/active`);
       const data = await res.json();
-      setRoles(Array.isArray(data) ? data : []);
+      setActivePunishments({
+        mute: data.mute || null,
+        ban: data.ban || null
+      });
     } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const fetchConfig = async () => {
-    try {
-      const res = await fetch(`http://localhost:3001/api/guilds/${guildId}/config`);
-      const data = await res.json();
-      setBanMethod(data.banMethod || 'discord');
-      setBanRoleId(data.banRoleId || '');
-    } catch (err) {
-      console.error(err);
+      console.error('Błąd pobierania aktywnych kar:', err);
+      setActivePunishments({ mute: null, ban: null });
     }
   };
 
   const openActionMenu = async (user) => {
     setSelectedUser(user);
     setActionMenu(user.id);
-    await Promise.all([fetchPunishments(user.id), fetchRoles(), fetchConfig()]);
+    await Promise.all([
+      fetchPunishments(user.id),
+      fetchActivePunishments(user.id)
+    ]);
     setActionMessage("");
     setWarnReason("");
     setMuteReason("");
     setBanReason("");
     setMuteDuration(60);
+    setActiveTab("apply");
   };
 
   const closeActionMenu = () => {
     setSelectedUser(null);
     setActionMenu(null);
     setPunishments({ warnings: [], mutes: [], bans: [] });
+    setActivePunishments({ mute: null, ban: null });
   };
 
   const executeAction = async (action) => {
@@ -148,13 +145,7 @@ export default function UsersPage() {
           setActionLoading(false);
           return;
         }
-        body = { 
-          userId: selectedUser.id, 
-          reason: banReason, 
-          moderatorId: 'panel',
-          banType: banMethod,
-          roleId: banMethod === 'role' ? banRoleId : null
-        };
+        body = { userId: selectedUser.id, reason: banReason, moderatorId: 'panel' };
         break;
       default: return;
     }
@@ -167,11 +158,13 @@ export default function UsersPage() {
       const data = await res.json();
       if (data.success) {
         setActionMessage(`✅ ${action === 'mute' ? 'Wyciszono' : action === 'ban' ? 'Zbanowano' : 'Dodano warn'} pomyślnie`);
-        await fetchPunishments(selectedUser.id);
+        await Promise.all([
+          fetchPunishments(selectedUser.id),
+          fetchActivePunishments(selectedUser.id)
+        ]);
         if (action === 'warn') setWarnReason("");
         if (action === 'mute') setMuteReason("");
         if (action === 'ban') setBanReason("");
-        setTimeout(() => closeActionMenu(), 2000);
       } else {
         setActionMessage(`❌ Błąd: ${data.error}`);
       }
@@ -182,15 +175,15 @@ export default function UsersPage() {
     }
   };
 
-  const deletePunishment = async (type, punishmentId) => {
-    if (!confirm('Czy na pewno chcesz usunąć tę karę?')) return;
+  const deleteWarn = async (warnId) => {
+    if (!confirm('Czy na pewno chcesz usunąć tego warnu?')) return;
     try {
-      const res = await fetch(`http://localhost:3001/api/guilds/${guildId}/punishments/${type}/${punishmentId}`, {
+      const res = await fetch(`http://localhost:3001/api/guilds/${guildId}/punishments/warn/${warnId}`, {
         method: 'DELETE'
       });
       const data = await res.json();
       if (data.success) {
-        setActionMessage("✅ Kara usunięta");
+        setActionMessage("✅ Warn usunięty");
         await fetchPunishments(selectedUser.id);
       } else {
         setActionMessage(`❌ Błąd: ${data.error}`);
@@ -200,19 +193,49 @@ export default function UsersPage() {
     }
   };
 
-  const saveConfig = async () => {
+  const unmuteUser = async () => {
+    if (!confirm('Czy na pewno chcesz odciszyć użytkownika?')) return;
     try {
-      const res = await fetch(`http://localhost:3001/api/guilds/${guildId}/config`, {
+      const res = await fetch(`http://localhost:3001/api/guilds/${guildId}/moderation/unmute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ banMethod, banRoleId })
+        body: JSON.stringify({ userId: selectedUser.id })
       });
       const data = await res.json();
       if (data.success) {
-        setActionMessage("✅ Konfiguracja zapisana");
+        setActionMessage("✅ Użytkownik odciszony");
+        await Promise.all([
+          fetchPunishments(selectedUser.id),
+          fetchActivePunishments(selectedUser.id)
+        ]);
+      } else {
+        setActionMessage(`❌ Błąd: ${data.error}`);
       }
     } catch (err) {
-      console.error(err);
+      setActionMessage(`❌ Błąd: ${err.message}`);
+    }
+  };
+
+  const unbanUser = async () => {
+    if (!confirm('Czy na pewno chcesz odbanować użytkownika?')) return;
+    try {
+      const res = await fetch(`http://localhost:3001/api/guilds/${guildId}/moderation/unban`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: selectedUser.id })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActionMessage("✅ Użytkownik odbanowany");
+        await Promise.all([
+          fetchPunishments(selectedUser.id),
+          fetchActivePunishments(selectedUser.id)
+        ]);
+      } else {
+        setActionMessage(`❌ Błąd: ${data.error}`);
+      }
+    } catch (err) {
+      setActionMessage(`❌ Błąd: ${err.message}`);
     }
   };
 
@@ -276,22 +299,138 @@ export default function UsersPage() {
               <button onClick={closeActionMenu} className="close-btn"><FiX /></button>
             </div>
 
-            {/* Historia kar */}
-            <div className="action-section">
-              <div className="section-title"> Historia kar</div>
-              {!punishments || (punishments.warnings.length === 0 && punishments.mutes.length === 0 && punishments.bans.length === 0) ? (
-                <div className="no-warnings">Brak kar</div>
-              ) : (
-                <>
-                  {punishments.warnings.length > 0 && (
+            {/* Zakładki */}
+            <div className="tabs">
+              <button
+                className={`tab ${activeTab === 'apply' ? 'active' : ''}`}
+                onClick={() => setActiveTab('apply')}
+              >
+                Nałóż karę
+              </button>
+              <button
+                className={`tab ${activeTab === 'active' ? 'active' : ''}`}
+                onClick={() => setActiveTab('active')}
+              >
+                Aktywne kary
+              </button>
+              <button
+                className={`tab ${activeTab === 'warns' ? 'active' : ''}`}
+                onClick={() => setActiveTab('warns')}
+              >
+                Warny
+              </button>
+            </div>
+
+            {/* Zakładka: Nałóż karę */}
+            {activeTab === 'apply' && (
+              <div className="tab-content">
+                <div className="action-section">
+                  <div className="section-title"><FiAlertTriangle className="icon" /> Dodaj warn</div>
+                  <textarea
+                    placeholder="Powód warnu..."
+                    value={warnReason}
+                    onChange={(e) => setWarnReason(e.target.value)}
+                    className="action-input"
+                    rows={2}
+                  />
+                  <button onClick={() => executeAction('warn')} disabled={actionLoading || !warnReason.trim()} className="action-button warn">
+                    {actionLoading ? 'Dodawanie...' : 'Dodaj warn'}
+                  </button>
+                </div>
+
+                <div className="action-section">
+                  <div className="section-title"><FiBell className="icon" /> Wycisz</div>
+                  <select value={muteDuration} onChange={(e) => setMuteDuration(Number(e.target.value))} className="action-select">
+                    <option value={1}>1 minuta</option>
+                    <option value={5}>5 minut</option>
+                    <option value={10}>10 minut</option>
+                    <option value={30}>30 minut</option>
+                    <option value={60}>1 godzina</option>
+                    <option value={1440}>24 godziny</option>
+                  </select>
+                  <textarea
+                    placeholder="Powód wyciszenia..."
+                    value={muteReason}
+                    onChange={(e) => setMuteReason(e.target.value)}
+                    className="action-input"
+                    rows={2}
+                  />
+                  <button onClick={() => executeAction('mute')} disabled={actionLoading || !muteReason.trim()} className="action-button mute">
+                    {actionLoading ? 'Wyciszanie...' : 'Wycisz'}
+                  </button>
+                </div>
+
+                <div className="action-section">
+                  <div className="section-title"><FiAlertTriangle className="icon" /> Zbanuj</div>
+                  <textarea
+                    placeholder="Powód bana..."
+                    value={banReason}
+                    onChange={(e) => setBanReason(e.target.value)}
+                    className="action-input"
+                    rows={2}
+                  />
+                  <button onClick={() => executeAction('ban')} disabled={actionLoading || !banReason.trim()} className="action-button ban">
+                    {actionLoading ? 'Banowanie...' : 'Zbanuj'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Zakładka: Aktywne kary */}
+            {activeTab === 'active' && (
+              <div className="tab-content">
+                {!activePunishments.mute && !activePunishments.ban ? (
+                  <div className="no-warnings">Brak aktywnych kar</div>
+                ) : (
+                  <>
+                    {activePunishments.mute && (
+                      <div className="active-punishment-item mute">
+                        <div className="punishment-info">
+                          <div className="punishment-type"><FiBell className="icon" /> Wyciszenie</div>
+                          <div className="punishment-reason">{activePunishments.mute.reason}</div>
+                          <div className="punishment-meta">
+                            Do: {new Date(activePunishments.mute.expiresAt).toLocaleString()}
+                          </div>
+                        </div>
+                        <button onClick={unmuteUser} className="action-button-small unmute">
+                          <FiBell /> Odcisz
+                        </button>
+                      </div>
+                    )}
+                    {activePunishments.ban && (
+                      <div className="active-punishment-item ban">
+                        <div className="punishment-info">
+                          <div className="punishment-type"><FiAlertTriangle className="icon" /> Ban</div>
+                          <div className="punishment-reason">{activePunishments.ban.reason}</div>
+                          <div className="punishment-meta">
+                            Od: {new Date(activePunishments.ban.date).toLocaleString()}
+                          </div>
+                        </div>
+                        <button onClick={unbanUser} className="action-button-small unban">
+                          <FiUnlock /> Odbanuj
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Zakładka: Warny */}
+            {activeTab === 'warns' && (
+              <div className="tab-content">
+                <div className="punishments-list">
+                  {punishments.warnings.length === 0 ? (
+                    <div className="no-warnings">Brak warnów</div>
+                  ) : (
                     <>
-                      <div className="subsection-title">️ Warny ({punishments.warnings.length})</div>
+                      <div className="subsection-title"><FiAlertTriangle className="icon" /> Warny ({punishments.warnings.length})</div>
                       {punishments.warnings.map((w, idx) => (
                         <div key={idx} className="punishment-item">
                           <div className="punishment-reason">{w.reason}</div>
                           <div className="punishment-meta">
-                            {new Date(w.date).toLocaleString()}
-                            <button onClick={() => deletePunishment('warn', w.id)} className="delete-btn">
+                            <span>{new Date(w.date).toLocaleString()}</span>
+                            <button onClick={() => deleteWarn(w.id)} className="delete-btn">
                               <FiTrash2 />
                             </button>
                           </div>
@@ -299,134 +438,9 @@ export default function UsersPage() {
                       ))}
                     </>
                   )}
-                  {punishments.mutes.length > 0 && (
-                    <>
-                      <div className="subsection-title">🔇 Wyciszenia</div>
-                      {punishments.mutes.map((m, idx) => (
-                        <div key={idx} className="punishment-item">
-                          <div className="punishment-reason">{m.reason}</div>
-                          <div className="punishment-meta">
-                            {Math.floor(m.duration / 60)} min • {new Date(m.date).toLocaleString()}
-                            <button onClick={() => deletePunishment('mute', m.id)} className="delete-btn">
-                              <FiTrash2 />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                  {punishments.bans.length > 0 && (
-                    <>
-                      <div className="subsection-title"> Bany</div>
-                      {punishments.bans.map((b, idx) => (
-                        <div key={idx} className="punishment-item">
-                          <div className="punishment-reason">{b.reason}</div>
-                          <div className="punishment-meta">
-                            {b.type === 'role' ? 'Ban przez rolę' : 'Discord Ban'} • {new Date(b.date).toLocaleString()}
-                            <button onClick={() => deletePunishment('ban', b.id)} className="delete-btn">
-                              <FiTrash2 />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Konfiguracja banowania */}
-            <div className="action-section">
-              <div className="section-title">⚙️ Konfiguracja banowania</div>
-              <div className="config-row">
-                <label>
-                  <input
-                    type="radio"
-                    name="banMethod"
-                    value="discord"
-                    checked={banMethod === 'discord'}
-                    onChange={(e) => setBanMethod(e.target.value)}
-                  />
-                  Systemowy ban Discord
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    name="banMethod"
-                    value="role"
-                    checked={banMethod === 'role'}
-                    onChange={(e) => setBanMethod(e.target.value)}
-                  />
-                  Ban przez rolę
-                </label>
+                </div>
               </div>
-              {banMethod === 'role' && (
-                <select
-                  value={banRoleId}
-                  onChange={(e) => setBanRoleId(e.target.value)}
-                  className="action-select"
-                >
-                  <option value="">Wybierz rolę...</option>
-                  {roles.map(role => (
-                    <option key={role.id} value={role.id}>{role.name}</option>
-                  ))}
-                </select>
-              )}
-              <button onClick={saveConfig} className="config-save-btn">Zapisz konfigurację</button>
-            </div>
-
-            {/* Dodawanie warnu */}
-            <div className="action-section">
-              <div className="section-title">➕ Dodaj warn</div>
-              <textarea
-                placeholder="Powód warnu..."
-                value={warnReason}
-                onChange={(e) => setWarnReason(e.target.value)}
-                className="action-input"
-                rows={2}
-              />
-              <button onClick={() => executeAction('warn')} disabled={actionLoading || !warnReason.trim()} className="action-button warn">
-                {actionLoading ? 'Dodawanie...' : 'Dodaj warn'}
-              </button>
-            </div>
-
-            {/* Wyciszenie */}
-            <div className="action-section">
-              <div className="section-title"> Wycisz</div>
-              <select value={muteDuration} onChange={(e) => setMuteDuration(Number(e.target.value))} className="action-select">
-                <option value={1}>1 minuta</option>
-                <option value={5}>5 minut</option>
-                <option value={10}>10 minut</option>
-                <option value={30}>30 minut</option>
-                <option value={60}>1 godzina</option>
-                <option value={1440}>24 godziny</option>
-              </select>
-              <textarea
-                placeholder="Powód wyciszenia..."
-                value={muteReason}
-                onChange={(e) => setMuteReason(e.target.value)}
-                className="action-input"
-                rows={2}
-              />
-              <button onClick={() => executeAction('mute')} disabled={actionLoading || !muteReason.trim()} className="action-button mute">
-                {actionLoading ? 'Wyciszanie...' : 'Wycisz'}
-              </button>
-            </div>
-
-            {/* Ban */}
-            <div className="action-section">
-              <div className="section-title"> Zbanuj</div>
-              <textarea
-                placeholder="Powód bana..."
-                value={banReason}
-                onChange={(e) => setBanReason(e.target.value)}
-                className="action-input"
-                rows={2}
-              />
-              <button onClick={() => executeAction('ban')} disabled={actionLoading || !banReason.trim()} className="action-button ban">
-                {actionLoading ? 'Banowanie...' : 'Zbanuj'}
-              </button>
-            </div>
+            )}
 
             {actionMessage && (
               <div className={`action-message ${actionMessage.startsWith('✅') ? 'success' : 'error'}`}>
@@ -465,24 +479,38 @@ export default function UsersPage() {
         .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1.2rem; border-bottom: 1px solid #25252d; }
         .modal-header h3 { margin: 0; color: #fff; }
         .close-btn { background: none; border: none; color: #6b6b76; font-size: 1.5rem; cursor: pointer; }
-        .action-section { padding: 1.2rem; border-bottom: 1px solid #25252d; }
-        .section-title { font-weight: 600; color: #a5b4fc; margin-bottom: 1rem; font-size: 1rem; }
-        .subsection-title { font-weight: 600; color: #9c9ca7; margin: 1rem 0 0.5rem; font-size: 0.9rem; }
-        .no-warnings { color: #6b6b76; text-align: center; padding: 1rem; }
+        .tabs { display: flex; border-bottom: 1px solid #25252d; }
+        .tab { flex: 1; padding: 1rem; background: none; border: none; color: #6b6b76; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .tab:hover { color: #fff; background: rgba(88, 101, 242, 0.1); }
+        .tab.active { color: #5865f2; border-bottom: 2px solid #5865f2; }
+        .tab-content { padding: 1.2rem; }
+        .punishments-list { max-height: 300px; overflow-y: auto; }
+        .section-title { font-weight: 600; color: #a5b4fc; margin-bottom: 1rem; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .subsection-title { font-weight: 600; color: #9c9ca7; margin: 1rem 0 0.5rem; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; }
+        .icon { width: 1.2rem; height: 1.2rem; }
+        .no-warnings { color: #6b6b76; text-align: center; padding: 2rem; }
+        .active-punishment-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #1e1e26; border-radius: 0.5rem; margin-bottom: 0.75rem; }
+        .active-punishment-item.mute { border-left: 3px solid #3b82f6; }
+        .active-punishment-item.ban { border-left: 3px solid #ef4444; }
+        .punishment-info { flex: 1; }
+        .punishment-type { font-weight: 600; color: #fff; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem; }
+        .punishment-reason { color: #9c9ca7; font-size: 0.9rem; margin-bottom: 0.25rem; }
+        .punishment-meta { font-size: 0.8rem; color: #6b6b76; }
+        .action-button-small { padding: 0.5rem 1rem; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
+        .action-button-small.unmute { background: #3b82f6; color: #fff; }
+        .action-button-small.unban { background: #10b981; color: #fff; }
         .punishment-item { background: #1e1e26; border-radius: 0.5rem; padding: 0.75rem; margin-bottom: 0.5rem; }
         .punishment-reason { color: #fff; margin-bottom: 0.25rem; }
         .punishment-meta { font-size: 0.8rem; color: #6b6b76; display: flex; justify-content: space-between; align-items: center; }
-        .delete-btn { background: #ef4444; color: #fff; border: none; border-radius: 0.25rem; padding: 0.25rem 0.5rem; cursor: pointer; }
-        .config-row { display: flex; gap: 1rem; margin-bottom: 1rem; }
-        .config-row label { display: flex; align-items: center; gap: 0.5rem; color: #fff; }
-        .config-save-btn { width: 100%; padding: 0.75rem; background: #10b981; color: #fff; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; }
+        .delete-btn { background: #ef4444; color: #fff; border: none; border-radius: 0.25rem; padding: 0.25rem 0.5rem; cursor: pointer; display: flex; align-items: center; }
+        .action-section { margin-bottom: 1.5rem; }
         .action-input, .action-select { width: 100%; padding: 0.75rem; border: 1px solid #25252d; border-radius: 0.5rem; background: #1e1e26; color: #fff; margin-bottom: 0.75rem; font-family: inherit; }
         .action-button { width: 100%; padding: 0.75rem; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; margin-bottom: 0.5rem; }
         .action-button.warn { background: #f59e0b; color: #000; }
         .action-button.mute { background: #3b82f6; color: #fff; }
         .action-button.ban { background: #ef4444; color: #fff; }
         .action-button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .action-message { padding: 1rem; text-align: center; font-weight: 600; }
+        .action-message { padding: 1rem; text-align: center; font-weight: 600; margin: 1rem; border-radius: 0.5rem; }
         .action-message.success { background: #10b981; color: #fff; }
         .action-message.error { background: #ef4444; color: #fff; }
       `}</style>

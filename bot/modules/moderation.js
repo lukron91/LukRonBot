@@ -96,6 +96,44 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
     }
   });
 
+  // ===== AKTYWNE KARY (MUSI BYĆ PRZED /:userId!) =====
+  app.get('/api/guilds/:guildId/punishments/:userId/active', async (req, res) => {
+    try {
+      const { guildId, userId } = req.params;
+
+      const activeMute = await Mute.findOne({
+        guildId,
+        userId,
+        expiresAt: { $gt: new Date() }
+      }).sort({ date: -1 });
+
+      const activeBan = await Ban.findOne({
+        guildId,
+        userId
+      }).sort({ date: -1 });
+
+      res.json({
+        mute: activeMute ? {
+          id: activeMute._id.toString(),
+          reason: activeMute.reason,
+          duration: activeMute.duration,
+          date: activeMute.date,
+          expiresAt: activeMute.expiresAt
+        } : null,
+        ban: activeBan ? {
+          id: activeBan._id.toString(),
+          reason: activeBan.reason,
+          type: activeBan.type || 'discord',
+          roleId: activeBan.roleId,
+          date: activeBan.date
+        } : null
+      });
+    } catch (error) {
+      console.error('[Active Punishments] Błąd:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ===== HISTORIA KAR DLA UŻYTKOWNIKA =====
   app.get('/api/guilds/:guildId/punishments/:userId', async (req, res) => {
     try {
@@ -221,6 +259,66 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
       }
 
       res.json({ success: true, ban });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===== ODCISZANIE (unmute) =====
+  app.post('/api/guilds/:guildId/moderation/unmute', async (req, res) => {
+    try {
+      const { guildId } = req.params;
+      const { userId } = req.body;
+
+      const mute = await Mute.findOneAndDelete({ guildId, userId });
+
+      const guild = client.guilds.cache.get(guildId);
+      if (guild) {
+        const member = await guild.members.fetch(userId).catch(() => null);
+        if (member) {
+          try {
+            await member.timeout(null);
+          } catch (e) {
+            console.warn('[Unmute] Timeout error:', e.message);
+          }
+        }
+      }
+
+      res.json({ success: true, message: 'Użytkownik odciszony' });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ===== ODBANOWYWANIE (unban) =====
+  app.post('/api/guilds/:guildId/moderation/unban', async (req, res) => {
+    try {
+      const { guildId } = req.params;
+      const { userId } = req.body;
+
+      const ban = await Ban.findOneAndDelete({ guildId, userId });
+
+      const guild = client.guilds.cache.get(guildId);
+      if (guild && ban) {
+        if (ban.type === 'role' && ban.roleId) {
+          const member = await guild.members.fetch(userId).catch(() => null);
+          if (member) {
+            try {
+              await member.roles.remove(ban.roleId);
+            } catch (e) {
+              console.warn('[Unban] Role remove error:', e.message);
+            }
+          }
+        } else {
+          try {
+            await guild.members.unban(userId);
+          } catch (e) {
+            console.warn('[Unban] Discord unban error:', e.message);
+          }
+        }
+      }
+
+      res.json({ success: true, message: 'Użytkownik odbanowany' });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
