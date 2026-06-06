@@ -2,10 +2,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { 
-  FiArrowLeft, FiGrid, FiSettings, FiMessageSquare, FiShield, 
-  FiUserPlus, FiFileText, FiActivity, FiLogOut, FiServer, 
-  FiDatabase, FiCheckCircle, FiXCircle 
+import {
+  FiArrowLeft, FiGrid, FiSettings, FiMessageSquare, FiShield,
+  FiUserPlus, FiFileText, FiActivity, FiLogOut, FiServer,
+  FiDatabase, FiCheckCircle, FiXCircle, FiSun, FiChevronDown
 } from 'react-icons/fi';
 
 export default function DashboardLayout({ children }) {
@@ -14,37 +14,56 @@ export default function DashboardLayout({ children }) {
   const [selectedGuildId, setSelectedGuildId] = useState(null);
   const [mongoStatus, setMongoStatus] = useState(null);
   const [botOnGuild, setBotOnGuild] = useState(null);
-  const [isOwner, setIsOwner] = useState(false);
   const [clientActive, setClientActive] = useState(false);
   const [serverActive, setServerActive] = useState(false);
+  const [serverDropdownOpen, setServerDropdownOpen] = useState(false);
+  const [accentColor, setAccentColor] = useState("#3b82f6");
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Sprawdzanie statusów (co 15 sekund)
+  const isBotSettingsPage = pathname === "/dashboard/bot-settings";
+
+  // Ładowanie motywu + nasłuchiwanie zmian
+  useEffect(() => {
+    const applyTheme = (color) => {
+      setAccentColor(color);
+      if (typeof document !== 'undefined') {
+        document.documentElement.style.setProperty('--accent-color', color);
+      }
+    };
+
+    // Załaduj przy starcie
+    const saved = localStorage.getItem("theme-accent");
+    applyTheme(saved || "#3b82f6");
+
+    // Nasłuchuj custom eventu z theme page
+    const handleThemeChange = (e) => {
+      if (e.detail && e.detail.color) {
+        applyTheme(e.detail.color);
+      }
+    };
+    window.addEventListener('theme-change', handleThemeChange);
+
+    return () => window.removeEventListener('theme-change', handleThemeChange);
+  }, []);
+
+  // Statusy
   useEffect(() => {
     const checkStatuses = async () => {
-      // Client aktywny (bot Discord)
       try {
         const healthRes = await fetch("http://localhost:3001/bot/health");
         const data = await healthRes.json();
         setClientActive(data.running === true);
-      } catch {
-        setClientActive(false);
-      }
-      // Server aktywny (API bota)
+      } catch { setClientActive(false); }
+
       try {
         const statusRes = await fetch("http://localhost:3001/api/status");
         setServerActive(statusRes.ok);
-      } catch {
-        setServerActive(false);
-      }
-      // Połączenie z bazą
-      try {
-        const statusRes = await fetch("http://localhost:3001/api/status");
         const data = await statusRes.json();
         setMongoStatus(data.mongo === true);
       } catch {
+        setServerActive(false);
         setMongoStatus(false);
       }
     };
@@ -53,7 +72,7 @@ export default function DashboardLayout({ children }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Pobranie sesji i serwerów
+  // Sesja i serwery
   useEffect(() => {
     const sessionRaw = localStorage.getItem("session");
     if (!sessionRaw) {
@@ -64,8 +83,9 @@ export default function DashboardLayout({ children }) {
       const session = JSON.parse(sessionRaw);
       setUser(session);
       setGuilds(session.guilds || []);
-      const ownerId = process.env.NEXT_PUBLIC_OWNER_ID;
-      setIsOwner(session.userId === ownerId);
+      
+      if (isBotSettingsPage) return;
+      
       const guildId = searchParams.get("guild");
       if (guildId && session.guilds?.some(g => g.id === guildId)) {
         setSelectedGuildId(guildId);
@@ -78,21 +98,15 @@ export default function DashboardLayout({ children }) {
       console.error(err);
       router.push("/");
     }
-  }, [router, pathname, searchParams]);
+  }, [router, pathname, searchParams, isBotSettingsPage]);
 
-  // Sprawdzenie czy bot jest na wybranym serwerze
   useEffect(() => {
-    if (!selectedGuildId) {
-      setBotOnGuild(null);
-      return;
-    }
+    if (!selectedGuildId) { setBotOnGuild(null); return; }
     const checkBot = async () => {
       try {
         const res = await fetch(`http://localhost:3001/api/guilds/${selectedGuildId}/stats`);
         setBotOnGuild(res.ok);
-      } catch {
-        setBotOnGuild(false);
-      }
+      } catch { setBotOnGuild(false); }
     };
     checkBot();
   }, [selectedGuildId]);
@@ -106,10 +120,11 @@ export default function DashboardLayout({ children }) {
 
   const selectGuild = (guildId) => {
     setSelectedGuildId(guildId);
+    setServerDropdownOpen(false);
     router.push(`${pathname}?guild=${guildId}`);
   };
 
-  const getLink = (path) => (selectedGuildId ? `${path}?guild=${selectedGuildId}` : path);
+  const getLink = (path) => selectedGuildId ? `${path}?guild=${selectedGuildId}` : path;
   const isActive = (path) => pathname === path;
 
   if (!user) return null;
@@ -120,116 +135,192 @@ export default function DashboardLayout({ children }) {
     <div className="dashboard-layout">
       <aside className="sidebar">
         <div className="sidebar-header">
-          <h1>LukRon Bot</h1>
-          <p>Panel sterowania</p>
+          <div className="logo">
+            <div className="logo-icon" style={{ background: accentColor }}>L</div>
+            <div className="logo-text">
+              <h1 style={{ color: accentColor }}>LukRon Bot</h1>
+              <span>Panel sterowania</span>
+            </div>
+          </div>
         </div>
-        <div className="sidebar-guild-select">
-          <label>Serwer</label>
-          <select value={selectedGuildId || ""} onChange={(e) => selectGuild(e.target.value)}>
-            {guilds.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-          </select>
-        </div>
+
+        {guilds.length > 0 && (
+          <div className="server-selector">
+            <div className="server-label">SERWER</div>
+            <div className="dropdown-wrapper">
+              <button
+                className="server-dropdown-btn"
+                onClick={() => setServerDropdownOpen(!serverDropdownOpen)}
+                style={{ borderColor: serverDropdownOpen ? accentColor : '' }}
+              >
+                <span>{selectedGuild ? selectedGuild.name : 'Wybierz serwer'}</span>
+                <FiChevronDown className={serverDropdownOpen ? 'rotated' : ''} />
+              </button>
+              {serverDropdownOpen && (
+                <div className="server-dropdown-list">
+                  {guilds.map((guild) => (
+                    <button
+                      key={guild.id}
+                      className={`dropdown-item ${selectedGuildId === guild.id ? 'active' : ''}`}
+                      onClick={() => selectGuild(guild.id)}
+                      style={{ background: selectedGuildId === guild.id ? accentColor : '' }}
+                    >
+                      {guild.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <nav className="sidebar-nav">
-          <Link href="/servers" className="nav-link" style={{ marginBottom: "0.5rem", borderBottom: "1px solid #2a2a30" }}>
-            <FiArrowLeft /> Wszystkie serwery
-          </Link>
-          <div className="nav-category">Ogólne</div>
-          <Link href={getLink("/dashboard")} className={`nav-link ${isActive("/dashboard") ? "active" : ""}`}>
-            <FiGrid /> Przegląd
-          </Link>
-          <Link href={getLink("/dashboard/config")} className={`nav-link ${isActive("/dashboard/config") ? "active" : ""}`}>
-            <FiSettings /> Konfiguracja
-          </Link>
-          <div className="nav-category">Moderacja</div>
-          <Link href={getLink("/dashboard/moderation/users")} className={`nav-link ${isActive("/dashboard/moderation/users") ? "active" : ""}`}>
-            <FiUserPlus /> Lista użytkowników
-          </Link>
-          <Link href={getLink("/dashboard/moderation/settings")} className={`nav-link ${isActive("/dashboard/moderation/settings") ? "active" : ""}`}>
-            <FiShield /> Ustawienia moderacji
-          </Link>
-          <div className="nav-category">Tickety</div>
-          <Link href={getLink("/dashboard/tickets")} className={`nav-link ${isActive("/dashboard/tickets") ? "active" : ""}`}>
-            <FiMessageSquare /> Tickety
-          </Link>
-          <div className="nav-category">Auto-mod</div>
-          <Link href={getLink("/dashboard/automod")} className={`nav-link ${isActive("/dashboard/automod") ? "active" : ""}`}>
-            <FiShield /> Automod
-          </Link>
-          <div className="nav-category">Powitania</div>
-          <Link href={getLink("/dashboard/welcome")} className={`nav-link ${isActive("/dashboard/welcome") ? "active" : ""}`}>
-            <FiUserPlus /> Powitania
-          </Link>
-          <div className="nav-category">Logi</div>
-          <Link href={getLink("/dashboard/logs")} className={`nav-link ${isActive("/dashboard/logs") ? "active" : ""}`}>
-            <FiFileText /> Logi
-          </Link>
-          {isOwner && (
+          <div className="nav-section">
+            <div className="nav-section-title">SERWER</div>
+            <Link href="/servers" className={`nav-link ${isActive("/servers") ? 'active' : ''}`} style={{ color: isActive("/servers") ? accentColor : '', borderLeftColor: isActive("/servers") ? accentColor : 'transparent' }}>
+              <FiGrid />
+              <span>Wszystkie serwery</span>
+            </Link>
+          </div>
+
+          {selectedGuildId && (
             <>
-              <div className="nav-category">Zarządzanie botem</div>
-              <Link href={getLink("/dashboard/bot-settings")} className={`nav-link ${isActive("/dashboard/bot-settings") ? "active" : ""}`}>
-                <FiActivity /> Health & Status
-              </Link>
+              <div className="nav-section">
+                <div className="nav-section-title">OGÓLNE</div>
+                <Link href={getLink("/dashboard")} className={`nav-link ${isActive("/dashboard") ? 'active' : ''}`} style={{ color: isActive("/dashboard") ? accentColor : '', borderLeftColor: isActive("/dashboard") ? accentColor : 'transparent' }}>
+                  <FiArrowLeft />
+                  <span>Przegląd</span>
+                </Link>
+                <Link href={getLink("/dashboard/config")} className={`nav-link ${pathname.includes("/dashboard/config") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/config") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/config") ? accentColor : 'transparent' }}>
+                  <FiSettings />
+                  <span>Konfiguracja</span>
+                </Link>
+                <Link href={getLink("/dashboard/theme")} className={`nav-link ${pathname.includes("/dashboard/theme") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/theme") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/theme") ? accentColor : 'transparent' }}>
+                  <FiSun />
+                  <span>Motyw</span>
+                </Link>
+              </div>
+
+              <div className="nav-section">
+                <div className="nav-section-title">MODERACJA</div>
+                <Link href={getLink("/dashboard/moderation/users")} className={`nav-link ${pathname.includes("/dashboard/moderation/users") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/moderation/users") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/moderation/users") ? accentColor : 'transparent' }}>
+                  <FiUserPlus />
+                  <span>Lista użytkowników</span>
+                </Link>
+                <Link href={getLink("/dashboard/moderation/settings")} className={`nav-link ${pathname.includes("/dashboard/moderation/settings") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/moderation/settings") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/moderation/settings") ? accentColor : 'transparent' }}>
+                  <FiShield />
+                  <span>Ustawienia moderacji</span>
+                </Link>
+              </div>
+
+              <div className="nav-section">
+                <div className="nav-section-title">TICKETY</div>
+                <Link href={getLink("/dashboard/tickets")} className={`nav-link ${pathname.includes("/dashboard/tickets") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/tickets") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/tickets") ? accentColor : 'transparent' }}>
+                  <FiMessageSquare />
+                  <span>Tickety</span>
+                </Link>
+              </div>
+
+              <div className="nav-section">
+                <div className="nav-section-title">AUTO-MOD</div>
+                <Link href={getLink("/dashboard/automod")} className={`nav-link ${pathname.includes("/dashboard/automod") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/automod") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/automod") ? accentColor : 'transparent' }}>
+                  <FiShield />
+                  <span>Automod</span>
+                </Link>
+              </div>
+
+              <div className="nav-section">
+                <div className="nav-section-title">POWITANIA</div>
+                <Link href={getLink("/dashboard/welcome")} className={`nav-link ${pathname.includes("/dashboard/welcome") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/welcome") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/welcome") ? accentColor : 'transparent' }}>
+                  <FiFileText />
+                  <span>Powitania</span>
+                </Link>
+              </div>
+
+              <div className="nav-section">
+                <div className="nav-section-title">LOGI</div>
+                <Link href={getLink("/dashboard/logs")} className={`nav-link ${pathname.includes("/dashboard/logs") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/logs") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/logs") ? accentColor : 'transparent' }}>
+                  <FiFileText />
+                  <span>Logi</span>
+                </Link>
+              </div>
             </>
           )}
-        </nav>
-        <div className="sidebar-footer">
-          {user?.avatar && <img src={`https://cdn.discordapp.com/avatars/${user.userId}/${user.avatar}.png`} alt="avatar" className="avatar" />}
-          <div className="user-info">
-            <div className="username">{user?.username}</div>
-            <div className="status">Zalogowany</div>
+
+          <div className="nav-section">
+            <div className="nav-section-title">ZARZĄDZANIE BOTEM</div>
+            <Link href="/dashboard/bot-settings" className={`nav-link ${pathname === "/dashboard/bot-settings" ? 'active' : ''}`} style={{ color: pathname === "/dashboard/bot-settings" ? accentColor : '', borderLeftColor: pathname === "/dashboard/bot-settings" ? accentColor : 'transparent' }}>
+              <FiActivity />
+              <span>Health & Status</span>
+            </Link>
           </div>
-          <button onClick={handleLogout} className="logout-btn"><FiLogOut /> Wyloguj</button>
+        </nav>
+
+        <div className="sidebar-footer">
+          <button onClick={handleLogout} className="logout-btn">
+            <FiLogOut />
+            <span>Wyloguj</span>
+          </button>
         </div>
       </aside>
+
       <main className="main-content">
-        <div className="dashboard-header">
-          <div className="guild-info">
-            {selectedGuild && (
-              <>
-                {selectedGuild.icon ? (
-                  <img src={`https://cdn.discordapp.com/icons/${selectedGuild.id}/${selectedGuild.icon}.png`} className="guild-icon" />
-                ) : (
-                  <div className="guild-icon">{selectedGuild.name.charAt(0).toUpperCase()}</div>
-                )}
-                <div>
-                  <div className="guild-name">{selectedGuild.name}</div>
-                  <div className="guild-id">ID: {selectedGuild.id}</div>
+        <header className="top-bar">
+          {selectedGuild && (
+            <div className="server-info">
+              {selectedGuild.icon ? (
+                <img
+                  src={`https://cdn.discordapp.com/icons/${selectedGuild.id}/${selectedGuild.icon}.png`}
+                  alt={selectedGuild.name}
+                  className="server-avatar"
+                />
+              ) : (
+                <div className="server-avatar" style={{ background: accentColor }}>
+                  {selectedGuild.name.charAt(0).toUpperCase()}
                 </div>
-              </>
-            )}
+              )}
+              <div className="server-details">
+                <h2>{selectedGuild.name}</h2>
+                <span>ID: {selectedGuild.id}</span>
+              </div>
+            </div>
+          )}
+
+          <div className="status-indicators">
+            <div className={`status-item ${clientActive ? 'online' : 'offline'}`}>
+              <FiServer />
+              <span>{clientActive ? 'Client aktywny' : 'Client nieaktywny'}</span>
+              {clientActive ? <FiCheckCircle /> : <FiXCircle />}
+            </div>
+            <div className={`status-item ${serverActive ? 'online' : 'offline'}`}>
+              <FiDatabase />
+              <span>{serverActive ? 'Server aktywny' : 'Server nieaktywny'}</span>
+              {serverActive ? <FiCheckCircle /> : <FiXCircle />}
+            </div>
+            <div className={`status-item ${mongoStatus ? 'online' : 'offline'}`}>
+              <FiDatabase />
+              <span>{mongoStatus ? 'Połączenie z bazą' : 'Brak połączenia z bazą'}</span>
+              {mongoStatus ? <FiCheckCircle /> : <FiXCircle />}
+            </div>
           </div>
-          <div className="status-group-vertical">
-            <div className={`status-item ${clientActive ? 'active' : 'inactive'}`}>
-              <FiServer className="status-icon" />
-              <span className="status-text">{clientActive ? 'Client aktywny' : 'Client nieaktywny'}</span>
-              {clientActive ? <FiCheckCircle className="status-check" /> : <FiXCircle className="status-check" />}
-            </div>
-            <div className={`status-item ${serverActive ? 'active' : 'inactive'}`}>
-              <FiActivity className="status-icon" />
-              <span className="status-text">{serverActive ? 'Server aktywny' : 'Server nieaktywny'}</span>
-              {serverActive ? <FiCheckCircle className="status-check" /> : <FiXCircle className="status-check" />}
-            </div>
-            <div className={`status-item ${mongoStatus ? 'active' : 'inactive'}`}>
-              <FiDatabase className="status-icon" />
-              <span className="status-text">{mongoStatus ? 'Połączenie z bazą aktywne' : 'Brak połączenia z bazą'}</span>
-              {mongoStatus ? <FiCheckCircle className="status-check" /> : <FiXCircle className="status-check" />}
-            </div>
-          </div>
-        </div>
+        </header>
+
         {selectedGuildId && botOnGuild === false ? (
-          <div className="bot-missing-card">
-            <div className="bot-missing-icon">🤖</div>
-            <h2>Bot nie jest dodany do tego serwera</h2>
-            <p>Aby korzystać z panelu, dodaj bota do serwera {selectedGuild?.name}.</p>
-            <a
-              href={`https://discord.com/oauth2/authorize?client_id=${clientId}&permissions=8&scope=bot%20applications.commands&guild_id=${selectedGuildId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="add-bot-btn"
-            >
-              ➕ Dodaj bota do serwera
-            </a>
-            <p className="bot-missing-hint">Po dodaniu bota odśwież stronę (F5).</p>
+          <div className="bot-warning">
+            <div className="warning-content">
+              <h1>🤖 Bot nie jest dodany do tego serwera</h1>
+              <p>Aby korzystać z panelu, dodaj bota do serwera {selectedGuild?.name}.</p>
+              <a
+                href={`https://discord.com/api/oauth2/authorize?client_id=${clientId}&permissions=8&scope=bot%20applications.commands`}
+                className="add-bot-btn"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ background: accentColor }}
+              >
+                Dodaj bota do serwera
+              </a>
+              <p className="refresh-hint">Po dodaniu bota odśwież stronę (F5).</p>
+            </div>
           </div>
         ) : (
           children
@@ -237,82 +328,308 @@ export default function DashboardLayout({ children }) {
       </main>
 
       <style jsx>{`
-        .dashboard-header {
+        .dashboard-layout {
           display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 2rem;
-          padding-bottom: 0.75rem;
-          border-bottom: 1px solid #1e1e24;
+          min-height: 100vh;
+          background: #0a0a0f;
+          color: #ffffff;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
-        .guild-info {
+
+        .sidebar {
+          width: 280px;
+          background: #111118;
+          border-right: 1px solid #1e1e26;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+
+        .sidebar-header {
           display: flex;
           align-items: center;
-          gap: 1rem;
+          gap: 0.75rem;
+          padding: 1rem;
+          border-bottom: 1px solid #1e1e26;
         }
-        .guild-icon {
-          width: 48px;
-          height: 48px;
-          background: linear-gradient(135deg, #5865f2, #4752c4);
-          border-radius: 14px;
+
+        .logo {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .logo-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
           display: flex;
           align-items: center;
           justify-content: center;
           font-weight: bold;
           font-size: 1.2rem;
+          flex-shrink: 0;
         }
-        .guild-name {
-          font-size: 1.5rem;
-          font-weight: 600;
+
+        .logo-text h1 {
+          font-size: 1rem;
+          margin: 0;
         }
-        .guild-id {
+
+        .logo-text span {
+          font-size: 0.7rem;
+          color: #6b6b76;
+        }
+
+        .server-selector {
+          padding: 1rem;
+          border-bottom: 1px solid #1e1e26;
+          position: relative;
+        }
+
+        .server-label {
+          font-size: 0.7rem;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          color: #6b6b76;
+          margin-bottom: 0.5rem;
+        }
+
+        .dropdown-wrapper {
+          position: relative;
+        }
+
+        .server-dropdown-btn {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0.6rem 0.75rem;
+          background: #0a0a0f;
+          border: 1px solid #1e1e26;
+          border-radius: 0.5rem;
+          color: #ffffff;
+          font-size: 0.85rem;
+          cursor: pointer;
+          transition: border-color 0.2s;
+        }
+
+        .server-dropdown-btn .rotated {
+          transform: rotate(180deg);
+        }
+
+        .server-dropdown-list {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          margin-top: 0.25rem;
+          background: #14141c;
+          border: 1px solid #1e1e26;
+          border-radius: 0.5rem;
+          z-index: 100;
+          max-height: 250px;
+          overflow-y: auto;
+        }
+
+        .dropdown-item {
+          width: 100%;
+          padding: 0.6rem 0.75rem;
+          background: none;
+          border: none;
+          color: #ffffff;
+          text-align: left;
+          cursor: pointer;
+          font-size: 0.85rem;
+          transition: background 0.2s;
+        }
+
+        .dropdown-item:hover {
+          background: #1e1e26;
+        }
+
+        .sidebar-nav {
+          flex: 1;
+          overflow-y: auto;
+          padding: 0.5rem 0;
+        }
+
+        .nav-section {
+          margin-bottom: 0.5rem;
+        }
+
+        .nav-section-title {
+          font-size: 0.7rem;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          color: #6b6b76;
+          padding: 0.5rem 1rem;
+        }
+
+        .nav-link {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.6rem 1rem;
+          text-decoration: none;
+          font-size: 0.85rem;
+          transition: all 0.2s;
+          border-left: 3px solid transparent;
+        }
+
+        .nav-link:hover {
+          background: rgba(59, 130, 246, 0.1);
+        }
+
+        .nav-link.active {
+          background: rgba(59, 130, 246, 0.15);
+        }
+
+        .sidebar-footer {
+          padding: 1rem;
+          border-top: 1px solid #1e1e26;
+        }
+
+        .logout-btn {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.6rem 0.75rem;
+          background: none;
+          border: 1px solid #1e1e26;
+          border-radius: 0.5rem;
+          color: #9c9ca7;
+          cursor: pointer;
+          font-size: 0.85rem;
+          transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+          background: #0a0a0f;
+          color: #ffffff;
+        }
+
+        .main-content {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+
+        .top-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 1rem 1.5rem;
+          border-bottom: 1px solid #1e1e26;
+          background: #0a0a0f;
+        }
+
+        .server-info {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        .server-avatar {
+          width: 48px;
+          height: 48px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          font-size: 1.2rem;
+          overflow: hidden;
+        }
+
+        .server-avatar img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .server-details h2 {
+          font-size: 1.1rem;
+          margin: 0;
+        }
+
+        .server-details span {
           font-size: 0.75rem;
           color: #6b6b76;
         }
-        .status-group-vertical {
+
+        .status-indicators {
           display: flex;
           flex-direction: column;
-          gap: 8px;
-          background: #1a1a22;
-          padding: 8px 12px;
-          border-radius: 12px;
-          border: 1px solid #2a2a30;
+          gap: 0.5rem;
         }
+
         .status-item {
           display: flex;
           align-items: center;
-          gap: 10px;
-          padding: 6px 10px;
-          border-radius: 8px;
-          transition: all 0.2s;
-        }
-        .status-item.active {
-          background: rgba(34, 197, 94, 0.15);
-          border: 1px solid rgba(34, 197, 94, 0.4);
-        }
-        .status-item.inactive {
-          background: rgba(239, 68, 68, 0.15);
-          border: 1px solid rgba(239, 68, 68, 0.4);
-        }
-        .status-icon {
-          width: 18px;
-          height: 18px;
-        }
-        .status-item.active .status-icon { color: #4ade80; }
-        .status-item.inactive .status-icon { color: #f87171; }
-        .status-text {
-          flex: 1;
+          gap: 0.5rem;
+          padding: 0.4rem 0.75rem;
+          border-radius: 0.5rem;
           font-size: 0.8rem;
-          font-weight: 500;
+          border: 1px solid;
         }
-        .status-item.active .status-text { color: #4ade80; }
-        .status-item.inactive .status-text { color: #f87171; }
-        .status-check {
-          width: 16px;
-          height: 16px;
+
+        .status-item.online {
+          background: rgba(16, 185, 129, 0.1);
+          border-color: #10b981;
+          color: #10b981;
         }
-        .status-item.active .status-check { color: #4ade80; }
-        .status-item.inactive .status-check { color: #f87171; }
+
+        .status-item.offline {
+          background: rgba(239, 68, 68, 0.1);
+          border-color: #ef4444;
+          color: #ef4444;
+        }
+
+        .bot-warning {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2rem;
+        }
+
+        .warning-content {
+          text-align: center;
+          max-width: 500px;
+        }
+
+        .warning-content h1 {
+          font-size: 1.5rem;
+          margin-bottom: 1rem;
+        }
+
+        .warning-content p {
+          color: #6b6b76;
+          margin-bottom: 1.5rem;
+        }
+
+        .add-bot-btn {
+          display: inline-block;
+          padding: 0.75rem 1.5rem;
+          color: #fff;
+          text-decoration: none;
+          border-radius: 0.5rem;
+          font-weight: 600;
+          transition: opacity 0.2s;
+        }
+
+        .add-bot-btn:hover {
+          opacity: 0.9;
+        }
+
+        .refresh-hint {
+          font-size: 0.85rem;
+          margin-top: 1rem;
+        }
       `}</style>
     </div>
   );

@@ -3,7 +3,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   FiUsers, FiHash, FiShield, FiUserPlus, FiUserMinus, FiActivity,
-  FiTrendingUp, FiMessageSquare, FiAward, FiCalendar
+  FiTrendingUp, FiMessageSquare, FiAward
 } from 'react-icons/fi';
 
 export default function DashboardHome() {
@@ -25,13 +25,11 @@ export default function DashboardHome() {
   useEffect(() => {
     if (!guildId) return;
 
-    // Podstawowe statystyki
     fetch(`http://localhost:3001/api/guilds/${guildId}/stats`)
       .then(res => res.json())
       .then(data => setStats(data))
       .catch(() => setStats({ members: "Błąd", channels: "Błąd", roles: "Błąd" }));
 
-    // Statystyki aktywności
     Promise.all([
       fetch(`http://localhost:3001/api/guilds/${guildId}/activity/joined-today`).then(r => r.json()),
       fetch(`http://localhost:3001/api/guilds/${guildId}/activity/left-today`).then(r => r.json()),
@@ -66,7 +64,6 @@ export default function DashboardHome() {
 
   return (
     <div>
-      {/* Karty podstawowe */}
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-icon"><FiUsers /></div>
@@ -112,7 +109,6 @@ export default function DashboardHome() {
         </div>
       </div>
 
-      {/* Trend aktywności */}
       {!trendLoading && activity.activityTrend.length > 0 && (
         <div className="trend-section">
           <div className="section-header">
@@ -123,10 +119,7 @@ export default function DashboardHome() {
               <div key={idx} className="trend-item">
                 <div className="trend-label">{day.label}</div>
                 <div className="trend-bar-container">
-                  <div 
-                    className="trend-bar" 
-                    style={{ width: `${maxTrend ? (day.count / maxTrend) * 100 : 0}%` }}
-                  />
+                  <div className="trend-bar" style={{ width: `${maxTrend ? (day.count / maxTrend) * 100 : 0}%` }} />
                 </div>
                 <div className="trend-count">{day.count}</div>
               </div>
@@ -135,7 +128,6 @@ export default function DashboardHome() {
         </div>
       )}
 
-      {/* Najbardziej aktywne kanały i top użytkownicy */}
       <div className="two-columns">
         <div className="card-list">
           <div className="section-header">
@@ -170,7 +162,7 @@ export default function DashboardHome() {
                     <div className="avatar-placeholder">{(user.username || 'U').charAt(0).toUpperCase()}</div>
                   )}
                 </div>
-                <span className="list-name">{user.username || 'Nieznany użytkownik'}</span>
+                <span className="list-name">{user.username || 'Nieznany'}</span>
                 <span className="list-value">{user.count} wiadomości</span>
               </div>
             ))
@@ -189,25 +181,26 @@ export default function DashboardHome() {
           background: #14141c;
           border-radius: 1rem;
           padding: 1rem;
-          border: 1px solid #25252d;
+          border: 1px solid #1e1e26;
           transition: all 0.2s;
           display: flex;
           align-items: center; 
           gap: 1rem;
         }
         .stat-card:hover {
-          border-color: #5865f2;
+          border-color: #3b82f6;
           transform: translateY(-2px);
         }
         .stat-icon {
           font-size: 2rem;
           width: 48px;
           height: 48px;
-          background: rgba(88,101,242,0.15);
+          background: rgba(59, 130, 246, 0.15);
           border-radius: 12px;
           display: flex;
           align-items: center;
           justify-content: center;
+          color: #3b82f6;
         }
         .stat-content {
           flex: 1;
@@ -216,19 +209,20 @@ export default function DashboardHome() {
           font-size: 0.7rem;
           text-transform: uppercase;
           letter-spacing: 1px;
-          color: #9c9ca7;
+          color: #6b6b76;
           margin-bottom: 0.25rem;
         }
         .stat-value {
           font-size: 1.5rem;
           font-weight: 700;
+          color: #ffffff;
         }
         .trend-section {
           background: #14141c;
           border-radius: 1rem;
           padding: 1.2rem;
           margin-bottom: 1.5rem;
-          border: 1px solid #25252d;
+          border: 1px solid #1e1e26;
         }
         .section-header {
           font-size: 1rem;
@@ -237,7 +231,7 @@ export default function DashboardHome() {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          color: #a5b4fc;
+          color: #3b82f6;
         }
         .trend-bars {
           display: flex;
@@ -252,18 +246,18 @@ export default function DashboardHome() {
         .trend-label {
           width: 45px;
           font-size: 0.7rem;
-          color: #8b8ba0;
+          color: #6b6b76;
         }
         .trend-bar-container {
           flex: 1;
           height: 8px;
-          background: #2a2a30;
+          background: #1e1e26;
           border-radius: 4px;
           overflow: hidden;
         }
         .trend-bar {
           height: 100%;
-          background: linear-gradient(90deg, #5865f2, #a5b4fc);
+          background: #3b82f6;
           border-radius: 4px;
           transition: width 0.3s;
         }
@@ -271,7 +265,7 @@ export default function DashboardHome() {
           width: 40px;
           font-size: 0.7rem;
           text-align: right;
-          color: #e1e1e6;
+          color: #ffffff;
         }
         .two-columns {
           display: grid;
@@ -282,7 +276,7 @@ export default function DashboardHome() {
           background: #14141c;
           border-radius: 1rem;
           padding: 1.2rem;
-          border: 1px solid #25252d;
+          border: 1px solid #1e1e26;
         }
         .list-item {
           display: flex;
@@ -297,7 +291,7 @@ export default function DashboardHome() {
         .list-rank {
           font-size: 0.8rem;
           font-weight: bold;
-          color: #5865f2;
+          color: #3b82f6;
           width: 30px;
         }
         .list-avatar {
@@ -315,7 +309,7 @@ export default function DashboardHome() {
         .avatar-placeholder {
           width: 100%;
           height: 100%;
-          background: linear-gradient(135deg, #5865f2, #4752c4);
+          background: #3b82f6;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -329,10 +323,11 @@ export default function DashboardHome() {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          color: #ffffff;
         }
         .list-value {
           font-size: 0.7rem;
-          color: #8b8ba0;
+          color: #6b6b76;
         }
         .empty-list {
           text-align: center;
