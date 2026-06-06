@@ -5,15 +5,54 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const { connectDB, getActiveEnv, col } = require('./db');
 
 const app = express();
 app.use(express.json());
 app.use(cors({ origin: ['http://localhost:3000', 'http://localhost:3002'] }));
 
-// ---------- AKTYWNE ŚRODOWISKO BAZY ----------
-let activeDatabase = 'main'; // 'main' lub 'test'
+// ---------- POŁĄCZENIE Z BAZĄ I INICJALIZACJA ----------
+let dbConnected = false;
 
-// ---------- STATUS BOTA (zapis do pliku) ----------
+// Funkcja tworząca wymagane dokumenty w globalconfigs po starcie
+async function initializeGlobalConfigs() {
+  try {
+    const GlobalConfigSchema = new mongoose.Schema({
+      key: { type: String, required: true, unique: true },
+      value: mongoose.Schema.Types.Mixed,
+      updatedAt: Date
+    }, { collection: 'globalconfigs' });
+
+    const GlobalConfig = mongoose.models.globalconfigs 
+      || mongoose.model('globalconfigs', GlobalConfigSchema);
+
+    const requiredDocs = [
+      { key: 'active_env', value: getActiveEnv() },
+      { key: 'bot_status', value: 'online' },
+      { key: 'custom_status', value: '' }
+    ];
+
+    for (const doc of requiredDocs) {
+      await GlobalConfig.findOneAndUpdate(
+        { key: doc.key },
+        { key: doc.key, value: doc.value, updatedAt: new Date() },
+        { upsert: true, new: true }
+      );
+    }
+    console.log('✅ GlobalConfigs zainicjalizowane');
+  } catch (err) {
+    console.error('❌ Błąd inicjalizacji GlobalConfigs:', err.message);
+  }
+}
+
+connectDB().then(async (connected) => { 
+  dbConnected = connected;
+  if (connected) {
+    await initializeGlobalConfigs();
+  }
+});
+
+// ---------- STATUS BOTA (zapis do pliku lokalnego) ----------
 const STATUS_FILE = path.join(__dirname, 'status.json');
 function saveBotStatus(status, customStatus) {
   const data = { status, customStatus: customStatus || '' };
@@ -28,24 +67,6 @@ function loadBotStatus() {
   } catch (err) { console.error('Błąd odczytu statusu:', err); }
   return { status: 'online', customStatus: '' };
 }
-
-// ---------- MONGODB ----------
-let dbConnected = false;
-async function initMongo() {
-  if (!process.env.MONGODB_URI) {
-    console.log('⚠️ Brak MONGODB_URI – używam pamięci tymczasowej');
-    return;
-  }
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    dbConnected = true;
-    console.log('✅ MongoDB connected');
-  } catch (err) {
-    console.error('❌ MongoDB error:', err);
-    dbConnected = false;
-  }
-}
-initMongo();
 
 // ---------- DISCORD BOT ----------
 const client = new Client({
@@ -69,7 +90,7 @@ client.once('ready', async () => {
 
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
-  // Pobierz konfigurację z modułu config.js
+  // Pobierz konfigurację z modułu config.js (jeśli załadowany)
   const getGuildConfig = app.locals.getGuildConfig;
   if (!getGuildConfig) return;
   
@@ -83,37 +104,6 @@ client.on('messageCreate', async (message) => {
 
 // ---------- API ENDPOINTY ----------
 app.get('/api/status', (req, res) => res.json({ mongo: dbConnected }));
-
-// ---------- ENDPOINTY BAZY DANYCH ----------
-app.get('/api/database/status', (req, res) => {
-  res.json({ 
-    activeDatabase, 
-    environments: ['main', 'test'],
-    description: {
-      main: 'Produkcyjne - oficjalny bot',
-      test: 'Testowe - eksperymenty i zmiany'
-    }
-  });
-});
-
-app.post('/api/database/switch', (req, res) => {
-  const { environment } = req.body;
-  if (!['main', 'test'].includes(environment)) {
-    return res.status(400).json({ error: 'Nieprawidłowe środowisko. Dozwolone: main, test' });
-  }
-  
-  const oldEnv = activeDatabase;
-  activeDatabase = environment;
-  
-  console.log(`[Database] Przełączono z ${oldEnv} na ${activeDatabase}`);
-  
-  res.json({ 
-    success: true, 
-    oldEnvironment: oldEnv, 
-    newEnvironment: activeDatabase,
-    message: `Przełączono na środowisko: ${activeDatabase}`
-  });
-});
 
 // Cache statystyk
 let statsCache = new Map();
@@ -132,95 +122,6 @@ app.get('/api/guilds/:guildId/stats', (req, res) => {
   statsCache.set(guildId, stats);
   res.json(stats);
 });
-
-app.get('/api/guilds/:guildId/roles', async (req, res) => {
-  const { guildId } = req.params;
-  try {
-    const guild = client.guilds.cache.get(guildId);
-    if (!guild) return res.status(404).json({ error: 'Bot nie jest na tym serwerze' });
-    const roles = guild.roles.cache.filter(r => r.id !== guild.id && r.name !== '@everyone').map(r => ({ id: r.id, name: r.name }));
-    res.json(roles);
-  } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-app.get('/api/guilds/:guildId/channels', async (req, res) => {
-  const { guildId } = req.params;
-  try {
-    const guild = client.guilds.cache.get(guildId);
-    if (!guild) return res.status(404).json({ error: 'Bot nie jest na tym serwerze' });
-    const channels = guild.channels.cache.filter(c => c.isTextBased()).map(c => ({ id: c.id, name: c.name, type: c.type }));
-    res.json(channels);
-  } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-// ---------- SYSTEM MODUŁÓW ----------
-const modulesPath = path.join(__dirname, 'modules');
-let loadedModules = new Map();
-
-function registerModule(moduleName, required = false, description = '') {
-  loadedModules.set(moduleName, { enabled: true, required, description });
-  console.log(`[modules] ${moduleName} zarejestrowany (${required ? 'wymagany' : 'opcjonalny'})`);
-}
-
-function unregisterModule(moduleName) {
-  loadedModules.delete(moduleName);
-  console.log(`[modules] ${moduleName} odrejestrowany (wymaga restartu, aby całkowicie usunąć trasę)`);
-}
-
-function loadAllModules() {
-  if (!fs.existsSync(modulesPath)) {
-    console.log('⚠️ Folder modules nie istnieje');
-    return;
-  }
-  const moduleFiles = fs.readdirSync(modulesPath).filter(file => file.endsWith('.js'));
-  for (const file of moduleFiles) {
-    const moduleName = file.replace(/.js$/, '');
-    try {
-      const moduleFn = require(path.join(modulesPath, file));
-      if (typeof moduleFn === 'function') {
-        moduleFn(app, client, registerModule, unregisterModule, moduleName);
-        console.log(`✅ Moduł załadowany: ${file}`);
-      } else {
-        console.log(`⚠️ Plik ${file} nie eksportuje funkcji`);
-      }
-    } catch (err) {
-      console.error(`❌ Błąd ładowania modułu ${file}:`, err.message);
-    }
-  }
-}
-
-function reloadModules() {
-  if (!fs.existsSync(modulesPath)) {
-    return { added: [], removed: [] };
-  }
-  const moduleFiles = fs.readdirSync(modulesPath).filter(file => file.endsWith('.js'));
-  const newModules = [];
-  for (const file of moduleFiles) {
-    const moduleName = file.replace(/.js$/, '');
-    if (!loadedModules.has(moduleName)) {
-      try {
-        delete require.cache[require.resolve(path.join(modulesPath, file))];
-        const moduleFn = require(path.join(modulesPath, file));
-        if (typeof moduleFn === 'function') {
-          moduleFn(app, client, registerModule, unregisterModule, moduleName);
-          newModules.push(moduleName);
-          console.log(`✅ Nowy moduł dodany: ${file}`);
-        }
-      } catch (err) {
-        console.error(`❌ Błąd ładowania nowego modułu ${file}:`, err.message);
-      }
-    }
-  }
-  const removedModules = Array.from(loadedModules.keys()).filter(name => !moduleFiles.includes(name + '.js'));
-  if (removedModules.length) {
-    console.log(`⚠️ Moduły usunięte z dysku (wymagają restartu bota): ${removedModules.join(', ')}`);
-  }
-  return { added: newModules, removed: removedModules };
-}
-
-// Udostępnij activeDatabase dla modułów
-app.locals.activeDatabase = () => activeDatabase;
-app.locals.dbConnected = () => dbConnected;
 
 // ---------- LOGGER ----------
 {
@@ -288,7 +189,76 @@ app.locals.dbConnected = () => dbConnected;
 
   logger.system('info', 'System logowania aktywny', 'logger');
 }
-// ---------- KONIEC LOGGER ----------
+
+// ---------- UDOSTĘPNIJ FUNKCJE BAZY DLA MODUŁÓW ----------
+app.locals.activeDatabase = getActiveEnv;
+app.locals.dbCollection = col;
+app.locals.isDbConnected = () => dbConnected;
+
+// ---------- SYSTEM MODUŁÓW ----------
+const modulesPath = path.join(__dirname, 'modules');
+let loadedModules = new Map();
+
+function registerModule(moduleName, required = false, description = '') {
+  loadedModules.set(moduleName, { enabled: true, required, description });
+  console.log(`[modules] ${moduleName} zarejestrowany (${required ? 'wymagany' : 'opcjonalny'})`);
+}
+
+function unregisterModule(moduleName) {
+  loadedModules.delete(moduleName);
+  console.log(`[modules] ${moduleName} odrejestrowany (wymaga restartu, aby całkowicie usunąć trasę)`);
+}
+
+function loadAllModules() {
+  if (!fs.existsSync(modulesPath)) {
+    console.log('️ Folder modules nie istnieje');
+    return;
+  }
+  const moduleFiles = fs.readdirSync(modulesPath).filter(file => file.endsWith('.js'));
+  for (const file of moduleFiles) {
+    const moduleName = file.replace(/.js$/, '');
+    try {
+      const moduleFn = require(path.join(modulesPath, file));
+      if (typeof moduleFn === 'function') {
+        moduleFn(app, client, registerModule, unregisterModule, moduleName);
+        console.log(`✅ Moduł załadowany: ${file}`);
+      } else {
+        console.log(`⚠️ Plik ${file} nie eksportuje funkcji`);
+      }
+    } catch (err) {
+      console.error(`❌ Błąd ładowania modułu ${file}:`, err.message);
+    }
+  }
+}
+
+function reloadModules() {
+  if (!fs.existsSync(modulesPath)) {
+    return { added: [], removed: [] };
+  }
+  const moduleFiles = fs.readdirSync(modulesPath).filter(file => file.endsWith('.js'));
+  const newModules = [];
+  for (const file of moduleFiles) {
+    const moduleName = file.replace(/.js$/, '');
+    if (!loadedModules.has(moduleName)) {
+      try {
+        delete require.cache[require.resolve(path.join(modulesPath, file))];
+        const moduleFn = require(path.join(modulesPath, file));
+        if (typeof moduleFn === 'function') {
+          moduleFn(app, client, registerModule, unregisterModule, moduleName);
+          newModules.push(moduleName);
+          console.log(`✅ Nowy moduł dodany: ${file}`);
+        }
+      } catch (err) {
+        console.error(`❌ Błąd ładowania nowego modułu ${file}:`, err.message);
+      }
+    }
+  }
+  const removedModules = Array.from(loadedModules.keys()).filter(name => !moduleFiles.includes(name + '.js'));
+  if (removedModules.length) {
+    console.log(`⚠️ Moduły usunięte z dysku (wymagają restartu bota): ${removedModules.join(', ')}`);
+  }
+  return { added: newModules, removed: removedModules };
+}
 
 loadAllModules();
 
@@ -317,4 +287,4 @@ client.login(process.env.DISCORD_BOT_TOKEN)
   .catch(err => console.error('❌ Token error:', err));
 
 const PORT = process.env.API_PORT || 3001;
-app.listen(PORT, () => console.log(`🌐 Bot API on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(` Bot API on http://localhost:${PORT}`));

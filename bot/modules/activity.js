@@ -2,7 +2,8 @@ const mongoose = require('mongoose');
 
 module.exports = (app, client, registerModule, unregisterModule, moduleName) => {
   registerModule('activity', false, 'Statystyki aktywności serwera');
-
+  
+  const logger = app.locals.logger;
   const getActiveEnv = () => app.locals.activeDatabase ? app.locals.activeDatabase() : 'main';
 
   // Schemat MongoDB dla statystyk
@@ -25,14 +26,14 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
       avatar: String,
       count: Number
     }]
-  });
+  }, { timestamps: true });
 
   const Activity = mongoose.models.Activity || mongoose.model('Activity', ActivitySchema);
 
-  // Event: nowa wiadomość
+  // Event: nowa wiadomość (logujemy TYLKO błędy)
   client.on('messageCreate', async (message) => {
     if (message.author.bot || !message.guild) return;
-
+    
     const env = getActiveEnv();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -78,12 +79,13 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
       }
 
       await activity.save();
+      // NIE logujemy każdego message - to zaśmieci logi
     } catch (err) {
-      console.error('[Activity] Błąd zapisu wiadomości:', err);
+      logger.activity('error', `Błąd zapisu wiadomości w kanale ${message.channel.id}: ${err.message}`, 'activity');
     }
   });
 
-  // Event: nowy członek
+  // Event: nowy członek (logujemy info)
   client.on('guildMemberAdd', async (member) => {
     const env = getActiveEnv();
     const today = new Date();
@@ -98,12 +100,14 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
 
       activity.membersJoined += 1;
       await activity.save();
+      
+      logger.activity('info', `Użytkownik ${member.user.tag} dołączył do serwera`, 'activity');
     } catch (err) {
-      console.error('[Activity] Błąd zapisu nowego członka:', err);
+      logger.activity('error', `Błąd zapisu nowego członka: ${err.message}`, 'activity');
     }
   });
 
-  // Event: członek opuszcza serwer
+  // Event: członek opuszcza serwer (logujemy info)
   client.on('guildMemberRemove', async (member) => {
     const env = getActiveEnv();
     const today = new Date();
@@ -118,12 +122,14 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
 
       activity.membersLeft += 1;
       await activity.save();
+      
+      logger.activity('info', `Użytkownik ${member.user.tag} opuścił serwer`, 'activity');
     } catch (err) {
-      console.error('[Activity] Błąd zapisu opuszczenia członka:', err);
+      logger.activity('error', `Błąd zapisu opuszczenia członka: ${err.message}`, 'activity');
     }
   });
 
-  // Endpointy API
+  // Endpointy API z logowaniem
   app.get('/api/guilds/:guildId/activity/joined-today', async (req, res) => {
     try {
       const { guildId } = req.params;
@@ -134,6 +140,7 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
       const activity = await Activity.findOne({ environment: env, guildId, date: today });
       res.json({ success: true, count: activity?.membersJoined || 0 });
     } catch (error) {
+      logger.activity('error', `[API] Błąd odczytu joined-today dla ${req.params.guildId}: ${error.message}`, 'activity');
       res.status(500).json({ success: false, error: error.message });
     }
   });
@@ -148,6 +155,7 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
       const activity = await Activity.findOne({ environment: env, guildId, date: today });
       res.json({ success: true, count: activity?.membersLeft || 0 });
     } catch (error) {
+      logger.activity('error', `[API] Błąd odczytu left-today dla ${req.params.guildId}: ${error.message}`, 'activity');
       res.status(500).json({ success: false, error: error.message });
     }
   });
@@ -174,6 +182,7 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
 
       res.json({ success: true, count: uniqueUsers.size });
     } catch (error) {
+      logger.activity('error', `[API] Błąd odczytu active-7days dla ${req.params.guildId}: ${error.message}`, 'activity');
       res.status(500).json({ success: false, error: error.message });
     }
   });
@@ -202,6 +211,7 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
 
       res.json({ success: true, trend });
     } catch (error) {
+      logger.activity('error', `[API] Błąd odczytu trend dla ${req.params.guildId}: ${error.message}`, 'activity');
       res.status(500).json({ success: false, error: error.message });
     }
   });
@@ -226,6 +236,7 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
 
       res.json({ success: true, channels: sortedChannels });
     } catch (error) {
+      logger.activity('error', `[API] Błąd odczytu top-channels dla ${req.params.guildId}: ${error.message}`, 'activity');
       res.status(500).json({ success: false, error: error.message });
     }
   });
@@ -251,9 +262,10 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
 
       res.json({ success: true, users: sortedUsers });
     } catch (error) {
+      logger.activity('error', `[API] Błąd odczytu top-users dla ${req.params.guildId}: ${error.message}`, 'activity');
       res.status(500).json({ success: false, error: error.message });
     }
   });
 
-  console.log('[Activity] Moduł załadowany - nasłuchuję eventów Discorda');
+  logger.system('info', 'Moduł activity załadowany', 'activity');
 };
