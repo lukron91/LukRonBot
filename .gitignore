@@ -37,3 +37,7 @@ logs/
 .cache/
 .temp/
 tmp/
+
+# Logi
+bot/logs/
+*.log
