@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTheme } from '@/lib/useTheme';
 import {
   FiArrowLeft, FiGrid, FiSettings, FiMessageSquare, FiShield,
   FiUserPlus, FiFileText, FiActivity, FiLogOut, FiServer,
@@ -14,39 +15,17 @@ export default function DashboardLayout({ children }) {
   const [selectedGuildId, setSelectedGuildId] = useState(null);
   const [mongoStatus, setMongoStatus] = useState(null);
   const [botOnGuild, setBotOnGuild] = useState(null);
+  const [isOwner, setIsOwner] = useState(false);
   const [clientActive, setClientActive] = useState(false);
   const [serverActive, setServerActive] = useState(false);
   const [serverDropdownOpen, setServerDropdownOpen] = useState(false);
-  const [accentColor, setAccentColor] = useState("#3b82f6");
+  const { accentColor } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const isBotSettingsPage = pathname === "/dashboard/bot-settings";
-
-  // Ładowanie motywu + nasłuchiwanie zmian
-  useEffect(() => {
-    const applyTheme = (color) => {
-      setAccentColor(color);
-      if (typeof document !== 'undefined') {
-        document.documentElement.style.setProperty('--accent-color', color);
-      }
-    };
-
-    // Załaduj przy starcie
-    const saved = localStorage.getItem("theme-accent");
-    applyTheme(saved || "#3b82f6");
-
-    // Nasłuchuj custom eventu z theme page
-    const handleThemeChange = (e) => {
-      if (e.detail && e.detail.color) {
-        applyTheme(e.detail.color);
-      }
-    };
-    window.addEventListener('theme-change', handleThemeChange);
-
-    return () => window.removeEventListener('theme-change', handleThemeChange);
-  }, []);
+  // Sprawdź czy jesteśmy na stronie która nie wymaga serwera
+  const noGuildRequired = pathname === "/dashboard/bot-settings" || pathname === "/servers";
 
   // Statusy
   useEffect(() => {
@@ -72,7 +51,7 @@ export default function DashboardLayout({ children }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Sesja i serwery
+  // Sesja i serwery - NIE redirectuj na stronach nie wymagających guild
   useEffect(() => {
     const sessionRaw = localStorage.getItem("session");
     if (!sessionRaw) {
@@ -83,9 +62,12 @@ export default function DashboardLayout({ children }) {
       const session = JSON.parse(sessionRaw);
       setUser(session);
       setGuilds(session.guilds || []);
-      
-      if (isBotSettingsPage) return;
-      
+      const ownerId = process.env.NEXT_PUBLIC_OWNER_ID;
+      setIsOwner(session.userId === ownerId);
+
+      // Jeśli strona nie wymaga serwera - nie redirectuj
+      if (noGuildRequired) return;
+
       const guildId = searchParams.get("guild");
       if (guildId && session.guilds?.some(g => g.id === guildId)) {
         setSelectedGuildId(guildId);
@@ -98,8 +80,9 @@ export default function DashboardLayout({ children }) {
       console.error(err);
       router.push("/");
     }
-  }, [router, pathname, searchParams, isBotSettingsPage]);
+  }, [router, pathname, searchParams, noGuildRequired]);
 
+  // Bot na serwerze
   useEffect(() => {
     if (!selectedGuildId) { setBotOnGuild(null); return; }
     const checkBot = async () => {
@@ -151,7 +134,6 @@ export default function DashboardLayout({ children }) {
               <button
                 className="server-dropdown-btn"
                 onClick={() => setServerDropdownOpen(!serverDropdownOpen)}
-                style={{ borderColor: serverDropdownOpen ? accentColor : '' }}
               >
                 <span>{selectedGuild ? selectedGuild.name : 'Wybierz serwer'}</span>
                 <FiChevronDown className={serverDropdownOpen ? 'rotated' : ''} />
@@ -247,6 +229,7 @@ export default function DashboardLayout({ children }) {
             </>
           )}
 
+          {/* ZARZĄDZANIE BOTEM - zawsze dostępne */}
           <div className="nav-section">
             <div className="nav-section-title">ZARZĄDZANIE BOTEM</div>
             <Link href="/dashboard/bot-settings" className={`nav-link ${pathname === "/dashboard/bot-settings" ? 'active' : ''}`} style={{ color: pathname === "/dashboard/bot-settings" ? accentColor : '', borderLeftColor: pathname === "/dashboard/bot-settings" ? accentColor : 'transparent' }}>
