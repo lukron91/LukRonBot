@@ -1,3 +1,4 @@
+#jeśli to widzisz to jesteś matołem
 import { NextResponse } from 'next/server';
 
 const BOT_API = process.env.BOT_API_URL || 'http://localhost:3001';
