@@ -5,51 +5,70 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
-const { connectDB, getActiveEnv, col } = require('./db');
+const { connectDB, col, getActiveEnv } = require('./db');
 
 const app = express();
 app.use(express.json());
 app.use(cors({ origin: ['http://localhost:3000', 'http://localhost:3002'] }));
 
+// ---------- ŚRODOWISKO BAZY ----------
+const activeDatabase = getActiveEnv();
+
 // ---------- POŁĄCZENIE Z BAZĄ I INICJALIZACJA ----------
 let dbConnected = false;
 
-// Funkcja tworząca wymagane dokumenty w globalconfigs po starcie
-async function initializeGlobalConfigs() {
-  try {
-    const GlobalConfigSchema = new mongoose.Schema({
-      key: { type: String, required: true, unique: true },
+async function initDbStructure() {
+  if (!dbConnected) return;
+
+  // globalconfigs — wspólna kolekcja dla obu środowisk
+  const GlobalConfigSchema = new mongoose.Schema({
+    key: { type: String, required: true, unique: true },
+    value: { type: mongoose.Schema.Types.Mixed },
+    updatedAt: { type: Date, default: Date.now }
+  });
+  const GlobalConfig = mongoose.models.globalconfigs
+    || mongoose.model('globalconfigs', GlobalConfigSchema, 'globalconfigs');
+
+  // Utwórz domyślne wpisy jeśli nie istnieją
+  await GlobalConfig.findOneAndUpdate(
+    { key: 'active_env' },
+    { key: 'active_env', value: activeDatabase, updatedAt: new Date() },
+    { upsert: true }
+  );
+  await GlobalConfig.findOneAndUpdate(
+    { key: 'bot_status' },
+    { key: 'bot_status', value: 'online', updatedAt: new Date() },
+    { upsert: true }
+  );
+  await GlobalConfig.findOneAndUpdate(
+    { key: 'custom_status' },
+    { key: 'custom_status', value: '', updatedAt: new Date() },
+    { upsert: true }
+  );
+
+  // Utwórz kolekcje środowisk przez zapis pustego dokumentu inicjalizacyjnego
+  for (const env of ['main', 'test']) {
+    const EnvConfigSchema = new mongoose.Schema({
+      key: String,
       value: mongoose.Schema.Types.Mixed,
       updatedAt: Date
-    }, { collection: 'globalconfigs' });
+    });
+    const EnvConfig = mongoose.models[`${env}_config`]
+      || mongoose.model(`${env}_config`, EnvConfigSchema, `${env}_config`);
 
-    const GlobalConfig = mongoose.models.globalconfigs 
-      || mongoose.model('globalconfigs', GlobalConfigSchema);
-
-    const requiredDocs = [
-      { key: 'active_env', value: getActiveEnv() },
-      { key: 'bot_status', value: 'online' },
-      { key: 'custom_status', value: '' }
-    ];
-
-    for (const doc of requiredDocs) {
-      await GlobalConfig.findOneAndUpdate(
-        { key: doc.key },
-        { key: doc.key, value: doc.value, updatedAt: new Date() },
-        { upsert: true, new: true }
-      );
-    }
-    console.log('✅ GlobalConfigs zainicjalizowane');
-  } catch (err) {
-    console.error('❌ Błąd inicjalizacji GlobalConfigs:', err.message);
+    await EnvConfig.findOneAndUpdate(
+      { key: '_init' },
+      { key: '_init', value: true, updatedAt: new Date() },
+      { upsert: true }
+    );
   }
+
+  console.log(`✅ Struktura bazy zainicjalizowana (środowisko aktywne: ${activeDatabase})`);
 }
 
-connectDB().then(async (connected) => { 
+connectDB().then(connected => {
   dbConnected = connected;
-  if (connected) {
-    await initializeGlobalConfigs();
-  }
+  if (connected) initDbStructure();
 });
 
 // ---------- STATUS BOTA (zapis do pliku lokalnego) ----------
@@ -90,7 +109,6 @@ client.once('ready', async () => {
 
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
-  // Pobierz konfigurację z modułu config.js (jeśli załadowany)
   const getGuildConfig = app.locals.getGuildConfig;
   if (!getGuildConfig) return;
   
@@ -121,6 +139,14 @@ app.get('/api/guilds/:guildId/stats', (req, res) => {
   };
   statsCache.set(guildId, stats);
   res.json(stats);
+});
+
+app.get('/api/database/status', (req, res) => {
+  res.json({ 
+    activeDatabase, 
+    environments: ['main', 'test'],
+    dbConnected
+  });
 });
 
 // ---------- LOGGER ----------
@@ -191,7 +217,7 @@ app.get('/api/guilds/:guildId/stats', (req, res) => {
 }
 
 // ---------- UDOSTĘPNIJ FUNKCJE BAZY DLA MODUŁÓW ----------
-app.locals.activeDatabase = getActiveEnv;
+app.locals.activeDatabase = () => activeDatabase;
 app.locals.dbCollection = col;
 app.locals.isDbConnected = () => dbConnected;
 
@@ -211,7 +237,7 @@ function unregisterModule(moduleName) {
 
 function loadAllModules() {
   if (!fs.existsSync(modulesPath)) {
-    console.log('️ Folder modules nie istnieje');
+    console.log('⚠️ Folder modules nie istnieje');
     return;
   }
   const moduleFiles = fs.readdirSync(modulesPath).filter(file => file.endsWith('.js'));
@@ -223,7 +249,7 @@ function loadAllModules() {
         moduleFn(app, client, registerModule, unregisterModule, moduleName);
         console.log(`✅ Moduł załadowany: ${file}`);
       } else {
-        console.log(`⚠️ Plik ${file} nie eksportuje funkcji`);
+        console.log(`️ Plik ${file} nie eksportuje funkcji`);
       }
     } catch (err) {
       console.error(`❌ Błąd ładowania modułu ${file}:`, err.message);
@@ -255,7 +281,7 @@ function reloadModules() {
   }
   const removedModules = Array.from(loadedModules.keys()).filter(name => !moduleFiles.includes(name + '.js'));
   if (removedModules.length) {
-    console.log(`⚠️ Moduły usunięte z dysku (wymagają restartu bota): ${removedModules.join(', ')}`);
+    console.log(`️ Moduły usunięte z dysku (wymagają restartu bota): ${removedModules.join(', ')}`);
   }
   return { added: newModules, removed: removedModules };
 }
@@ -287,4 +313,4 @@ client.login(process.env.DISCORD_BOT_TOKEN)
   .catch(err => console.error('❌ Token error:', err));
 
 const PORT = process.env.API_PORT || 3001;
-app.listen(PORT, () => console.log(` Bot API on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`🌐 Bot API on http://localhost:${PORT}`));
