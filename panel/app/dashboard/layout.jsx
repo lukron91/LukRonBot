@@ -24,9 +24,6 @@ export default function DashboardLayout({ children }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Sprawdź czy jesteśmy na stronie która nie wymaga serwera
-  const noGuildRequired = pathname === "/dashboard/bot-settings" || pathname === "/servers";
-
   // Statusy
   useEffect(() => {
     const checkStatuses = async () => {
@@ -51,7 +48,7 @@ export default function DashboardLayout({ children }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Sesja i serwery - NIE redirectuj na stronach nie wymagających guild
+  // Sesja i serwery
   useEffect(() => {
     const sessionRaw = localStorage.getItem("session");
     if (!sessionRaw) {
@@ -64,10 +61,6 @@ export default function DashboardLayout({ children }) {
       setGuilds(session.guilds || []);
       const ownerId = process.env.NEXT_PUBLIC_OWNER_ID;
       setIsOwner(session.userId === ownerId);
-
-      // Jeśli strona nie wymaga serwera - nie redirectuj
-      if (noGuildRequired) return;
-
       const guildId = searchParams.get("guild");
       if (guildId && session.guilds?.some(g => g.id === guildId)) {
         setSelectedGuildId(guildId);
@@ -80,7 +73,7 @@ export default function DashboardLayout({ children }) {
       console.error(err);
       router.push("/");
     }
-  }, [router, pathname, searchParams, noGuildRequired]);
+  }, [router, pathname, searchParams]);
 
   // Bot na serwerze
   useEffect(() => {
@@ -226,17 +219,16 @@ export default function DashboardLayout({ children }) {
                   <span>Logi</span>
                 </Link>
               </div>
+
+              <div className="nav-section">
+                <div className="nav-section-title">ZARZĄDZANIE BOTEM</div>
+                <Link href={getLink("/dashboard/bot-settings")} className={`nav-link ${pathname === "/dashboard/bot-settings" ? 'active' : ''}`} style={{ color: pathname === "/dashboard/bot-settings" ? accentColor : '', borderLeftColor: pathname === "/dashboard/bot-settings" ? accentColor : 'transparent' }}>
+                  <FiActivity />
+                  <span>Health & Status</span>
+                </Link>
+              </div>
             </>
           )}
-
-          {/* ZARZĄDZANIE BOTEM - zawsze dostępne */}
-          <div className="nav-section">
-            <div className="nav-section-title">ZARZĄDZANIE BOTEM</div>
-            <Link href="/dashboard/bot-settings" className={`nav-link ${pathname === "/dashboard/bot-settings" ? 'active' : ''}`} style={{ color: pathname === "/dashboard/bot-settings" ? accentColor : '', borderLeftColor: pathname === "/dashboard/bot-settings" ? accentColor : 'transparent' }}>
-              <FiActivity />
-              <span>Health & Status</span>
-            </Link>
-          </div>
         </nav>
 
         <div className="sidebar-footer">
