@@ -1241,3 +1241,48 @@
 [2026-06-05T18:08:59.941Z] [INFO] [console] 🤖 Bot zalogowany jako LukRonBot#9023
 [2026-06-05T18:08:59.943Z] [ERROR] [console] (node:36000) DeprecationWarning: The ready event has been renamed to clientReady to distinguish it from the gateway READY event and will only emit under that name in v15. Please use clientReady instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
+[2026-06-06T09:22:59.211Z] [INFO] [console] ✅ Moduł załadowany: logger.js
+[2026-06-06T09:22:59.214Z] [INFO] [console] [modules] moderation zarejestrowany (opcjonalny)
+[2026-06-06T09:22:59.217Z] [INFO] [console] ✅ Moduł załadowany: moderation.js
+[2026-06-06T09:22:59.219Z] [INFO] [console] ✅ Moduł załadowany: status.js
+[2026-06-06T09:22:59.217Z] [INFO] [console] [Moderation] Moduł załadowany, endpointy gotowe
+[2026-06-06T09:22:59.218Z] [INFO] [console] [modules] status zarejestrowany (opcjonalny)
+[2026-06-06T09:22:59.226Z] [INFO] [console] 🌐 Bot API on http://localhost:3001
+[2026-06-06T09:22:59.444Z] [ERROR] [console] ❌ Token error: DiscordjsError [TokenInvalid]: An invalid token was provided.
+[2026-06-06T09:22:59.575Z] [INFO] [console] ✅ MongoDB connected
+[2026-06-06T09:25:30.419Z] [INFO] [console] ✅ Moduł załadowany: logger.js
+[2026-06-06T09:25:30.421Z] [INFO] [console] [modules] moderation zarejestrowany (opcjonalny)
+[2026-06-06T09:25:30.424Z] [INFO] [console] [Moderation] Moduł załadowany, endpointy gotowe
+[2026-06-06T09:25:30.425Z] [INFO] [console] ✅ Moduł załadowany: moderation.js
+[2026-06-06T09:25:30.426Z] [INFO] [console] [modules] status zarejestrowany (opcjonalny)
+[2026-06-06T09:25:30.426Z] [INFO] [console] ✅ Moduł załadowany: status.js
+[2026-06-06T09:25:30.434Z] [INFO] [console] 🌐 Bot API on http://localhost:3001
+[2026-06-06T09:25:30.787Z] [INFO] [console] ✅ MongoDB connected
+[2026-06-06T09:25:31.389Z] [INFO] [console] ✅ Discord OK
+[2026-06-06T09:25:31.503Z] [INFO] [console] 🤖 Bot zalogowany jako LukRonBot#9023
+[2026-06-06T09:25:31.505Z] [ERROR] [console] (node:29468) DeprecationWarning: The ready event has been renamed to clientReady to distinguish it from the gateway READY event and will only emit under that name in v15. Please use clientReady instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[2026-06-06T09:26:03.946Z] [INFO] [console] ✅ Moduł załadowany: logger.js
+[2026-06-06T09:26:03.948Z] [INFO] [console] [modules] moderation zarejestrowany (opcjonalny)
+[2026-06-06T09:26:03.950Z] [INFO] [console] [Moderation] Moduł załadowany, endpointy gotowe
+[2026-06-06T09:26:03.950Z] [INFO] [console] ✅ Moduł załadowany: moderation.js
+[2026-06-06T09:26:03.952Z] [INFO] [console] [modules] status zarejestrowany (opcjonalny)
+[2026-06-06T09:26:03.952Z] [INFO] [console] ✅ Moduł załadowany: status.js
+[2026-06-06T09:26:03.958Z] [INFO] [console] 🌐 Bot API on http://localhost:3001
+[2026-06-06T09:26:04.296Z] [INFO] [console] ✅ MongoDB connected
+[2026-06-06T09:26:04.808Z] [INFO] [console] ✅ Discord OK
+[2026-06-06T09:26:04.812Z] [INFO] [console] 🤖 Bot zalogowany jako LukRonBot#9023
+[2026-06-06T09:26:04.814Z] [ERROR] [console] (node:36292) DeprecationWarning: The ready event has been renamed to clientReady to distinguish it from the gateway READY event and will only emit under that name in v15. Please use clientReady instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[2026-06-06T09:26:47.903Z] [INFO] [console] ✅ Moduł załadowany: logger.js
+[2026-06-06T09:26:47.905Z] [INFO] [console] [modules] moderation zarejestrowany (opcjonalny)
+[2026-06-06T09:26:47.907Z] [INFO] [console] ✅ Moduł załadowany: moderation.js
+[2026-06-06T09:26:47.907Z] [INFO] [console] [Moderation] Moduł załadowany, endpointy gotowe
+[2026-06-06T09:26:47.909Z] [INFO] [console] [modules] status zarejestrowany (opcjonalny)
+[2026-06-06T09:26:47.909Z] [INFO] [console] ✅ Moduł załadowany: status.js
+[2026-06-06T09:26:47.916Z] [INFO] [console] 🌐 Bot API on http://localhost:3001
+[2026-06-06T09:26:48.248Z] [INFO] [console] ✅ MongoDB connected
+[2026-06-06T09:26:48.537Z] [INFO] [console] ✅ Discord OK
+[2026-06-06T09:26:48.541Z] [INFO] [console] 🤖 Bot zalogowany jako LukRonBot#9023
+[2026-06-06T09:26:48.543Z] [ERROR] [console] (node:8352) DeprecationWarning: The ready event has been renamed to clientReady to distinguish it from the gateway READY event and will only emit under that name in v15. Please use clientReady instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)

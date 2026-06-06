@@ -1,7 +1,7 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FiSettings, FiShield, FiBell } from 'react-icons/fi';
+import { FiSettings, FiBell, FiHash } from 'react-icons/fi';
 
 export default function ConfigPage() {
   const searchParams = useSearchParams();
@@ -29,6 +29,7 @@ export default function ConfigPage() {
   }, [guildId]);
 
   const handleChange = (field, value) => setConfig(prev => ({ ...prev, [field]: value }));
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!mongoStatus) return setMessage("❌ Brak połączenia z bazą danych");
@@ -48,132 +49,246 @@ export default function ConfigPage() {
     }
   };
 
-  if (!guildId) return <div className="config-container" style={{ textAlign: "center", marginTop: "3rem", color: "#6b6b76" }}>Wybierz serwer z lewego menu.</div>;
-  if (loading) return <div className="config-container" style={{ textAlign: "center", marginTop: "3rem", color: "#6b6b76" }}>Ładowanie konfiguracji...</div>;
-  if (config?.error) return <div className="config-container" style={{ textAlign: "center", marginTop: "3rem", color: "#f87171" }}>Błąd ładowania konfiguracji</div>;
+  if (!guildId) return <div className="text-center" style={{ marginTop: "3rem", color: "#6b6b76" }}>Wybierz serwer z lewego menu.</div>;
+  if (loading) return <div className="text-center" style={{ marginTop: "3rem", color: "#6b6b76" }}>Ładowanie konfiguracji...</div>;
+  if (config?.error) return <div className="text-center" style={{ marginTop: "3rem", color: "#ef4444" }}>Błąd ładowania konfiguracji</div>;
 
   const disabled = !mongoStatus;
 
   return (
-    <div className="config-container">
-      <div className="config-header">
-        <h1>Konfiguracja bota</h1>
-        <p className="config-sub">Zarządzaj ustawieniami swojego serwera</p>
+    <div className="config-page">
+      <div className="page-header">
+        <h1><FiSettings /> Konfiguracja bota</h1>
+        <p>Zarządzaj ustawieniami swojego serwera</p>
       </div>
 
       {disabled && (
-        <div className="alert">
+        <div className="warning-box">
           ⚠️ Brak połączenia z bazą danych – zmiany nie zostaną zapisane.
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
-        <div className="settings-card">
-          <div className="card-title"><FiSettings /> Ustawienia ogólne</div>
-          <div className="form-group">
-            <label className="form-label">Prefiks</label>
-            <input type="text" className="form-input" value={config.prefix || ""} onChange={e => handleChange("prefix", e.target.value)} maxLength={3} disabled={disabled} />
-            <span className="form-hint">Znak poprzedzający komendy bota (maks. 3 znaki)</span>
+      <form onSubmit={handleSubmit} className="config-form">
+        {/* Ustawienia ogólne */}
+        <div className="config-section">
+          <h2>Ustawienia ogólne</h2>
+          
+          <div className="config-item">
+            <label>
+              Prefiks
+              <input
+                type="text"
+                value={config.prefix || "!"}
+                onChange={(e) => handleChange("prefix", e.target.value)}
+                maxLength={3}
+                disabled={disabled}
+                className="config-input"
+              />
+            </label>
+            <span className="config-description">Znak poprzedzający komendy bota (maks. 3 znaki)</span>
           </div>
-          <div className="form-group">
-            <label className="form-label">Język</label>
-            <select className="form-select" value={config.language || "pl"} onChange={e => handleChange("language", e.target.value)} disabled={disabled}>
-              <option value="pl">Polski</option>
-              <option value="en">English</option>
-              <option value="de">Deutsch</option>
-            </select>
+
+          <div className="config-item">
+            <label>
+              Język
+              <select
+                value={config.language || "pl"}
+                onChange={(e) => handleChange("language", e.target.value)}
+                disabled={disabled}
+                className="config-select"
+              >
+                <option value="pl">Polski</option>
+                <option value="en">English</option>
+                <option value="de">Deutsch</option>
+              </select>
+            </label>
+            <span className="config-description">Język interfejsu bota</span>
           </div>
-          <div className="form-group">
-            <label className="form-label">Strefa czasowa</label>
-            <select className="form-select" value={config.timezone || "Europe/Warsaw"} onChange={e => handleChange("timezone", e.target.value)} disabled={disabled}>
-              <option value="Europe/Warsaw">Warszawa (UTC+1/+2)</option>
-              <option value="Europe/London">Londyn (UTC+0/+1)</option>
-              <option value="America/New_York">Nowy Jork (UTC-5/-4)</option>
-            </select>
+
+          <div className="config-item">
+            <label>
+              Strefa czasowa
+              <select
+                value={config.timezone || "Europe/Warsaw"}
+                onChange={(e) => handleChange("timezone", e.target.value)}
+                disabled={disabled}
+                className="config-select"
+              >
+                <option value="Europe/Warsaw">Warszawa (UTC+1/+2)</option>
+                <option value="Europe/London">Londyn (UTC+0/+1)</option>
+                <option value="America/New_York">Nowy Jork (UTC-5/-4)</option>
+              </select>
+            </label>
+            <span className="config-description">Strefa czasowa dla logów i powiadomień</span>
           </div>
         </div>
 
-        <div className="settings-card">
-          <div className="card-title"><FiShield /> Moderacja i bezpieczeństwo</div>
-          <div className="settings-grid">
-            <div className="setting-item">
-              <div className="setting-info">
-                <div className="setting-label">Auto-moderacja</div>
-                <div className="setting-desc">Włącz/wyłącz automatyczne ostrzeżenia</div>
-              </div>
-              <label className="toggle-switch-modern">
-                <input type="checkbox" checked={config.autoModEnabled || false} onChange={e => handleChange("autoModEnabled", e.target.checked)} disabled={disabled} />
-                <span className="toggle-slider-modern"></span>
-              </label>
+        {/* Powiadomienia i logi */}
+        <div className="config-section">
+          <h2><FiBell /> Powiadomienia i logi</h2>
+          
+          <div className="config-item toggle">
+            <div className="toggle-header">
+              <span>Wiadomości powitalne</span>
+              <input
+                type="checkbox"
+                checked={config.welcomeEnabled || false}
+                onChange={(e) => handleChange("welcomeEnabled", e.target.checked)}
+                disabled={disabled}
+                className="toggle-input"
+              />
             </div>
-            <div className="setting-item">
-              <div className="setting-info">
-                <div className="setting-label">Blokuj linki</div>
-                <div className="setting-desc">Usuwanie wiadomości z linkami</div>
-              </div>
-              <label className="toggle-switch-modern">
-                <input type="checkbox" checked={config.blockLinks || false} onChange={e => handleChange("blockLinks", e.target.checked)} disabled={disabled} />
-                <span className="toggle-slider-modern"></span>
-              </label>
-            </div>
-            <div className="setting-item">
-              <div className="setting-info">
-                <div className="setting-label">Blokuj zaproszenia</div>
-                <div className="setting-desc">Zakaz wysyłania invite linków</div>
-              </div>
-              <label className="toggle-switch-modern">
-                <input type="checkbox" checked={config.blockInvites || false} onChange={e => handleChange("blockInvites", e.target.checked)} disabled={disabled} />
-                <span className="toggle-slider-modern"></span>
-              </label>
-            </div>
-            <div className="setting-item">
-              <div className="setting-info">
-                <div className="setting-label">Próg ostrzeżeń</div>
-                <div className="setting-desc">Liczba ostrzeżeń przed mute</div>
-              </div>
-              <div className="range-wrapper">
-                <input type="range" className="range-slider" min="1" max="10" value={config.warnThreshold || 3} onChange={e => handleChange("warnThreshold", parseInt(e.target.value))} disabled={disabled} />
-                <span className="range-value">{config.warnThreshold || 3}</span>
-              </div>
-            </div>
+            <span className="config-description">Wysyłaj powitanie na kanale tekstowym</span>
           </div>
-        </div>
 
-        <div className="settings-card">
-          <div className="card-title"><FiBell /> Powiadomienia i logi</div>
-          <div className="settings-grid">
-            <div className="setting-item">
-              <div className="setting-info">
-                <div className="setting-label">Wiadomości powitalne</div>
-                <div className="setting-desc">Wysyłaj powitanie na kanale</div>
-              </div>
-              <label className="toggle-switch-modern">
-                <input type="checkbox" checked={config.welcomeEnabled || false} onChange={e => handleChange("welcomeEnabled", e.target.checked)} disabled={disabled} />
-                <span className="toggle-slider-modern"></span>
-              </label>
+          <div className="config-item toggle">
+            <div className="toggle-header">
+              <span>Logi zdarzeń</span>
+              <input
+                type="checkbox"
+                checked={config.logEnabled || false}
+                onChange={(e) => handleChange("logEnabled", e.target.checked)}
+                disabled={disabled}
+                className="toggle-input"
+              />
             </div>
-            <div className="setting-item">
-              <div className="setting-info">
-                <div className="setting-label">Logi zdarzeń</div>
-                <div className="setting-desc">Zapisuj akcje członków</div>
-              </div>
-              <label className="toggle-switch-modern">
-                <input type="checkbox" checked={config.logEnabled || false} onChange={e => handleChange("logEnabled", e.target.checked)} disabled={disabled} />
-                <span className="toggle-slider-modern"></span>
-              </label>
-            </div>
+            <span className="config-description">Zapisuj akcje członków (dołączenia, opuszczenia)</span>
           </div>
         </div>
 
         {!disabled && (
-          <div style={{ marginTop: "2rem", textAlign: "right" }}>
-            <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? "Zapisywanie..." : "💾 Zapisz ustawienia"}
-            </button>
-          </div>
+          <button type="submit" className="save-button" disabled={saving}>
+            {saving ? "Zapisywanie..." : "💾 Zapisz ustawienia"}
+          </button>
         )}
-        {message && <p className="message" style={{ marginTop: "1rem", textAlign: "center" }}>{message}</p>}
+        
+        {message && <div className={`message ${message.startsWith('✅') ? 'success' : 'error'}`}>{message}</div>}
       </form>
+
+      <style jsx>{`
+        .config-page {
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 1rem;
+        }
+        .page-header h1 {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          font-size: 1.5rem;
+          margin-bottom: 0.5rem;
+          color: #fff;
+        }
+        .page-header p {
+          color: #6b6b76;
+          margin-bottom: 2rem;
+        }
+        .warning-box {
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid #ef4444;
+          border-radius: 0.5rem;
+          padding: 1rem;
+          margin-bottom: 1.5rem;
+          color: #ef4444;
+        }
+        .config-form {
+          display: flex;
+          flex-direction: column;
+          gap: 2rem;
+        }
+        .config-section {
+          background: #14141c;
+          border: 1px solid #25252d;
+          border-radius: 1rem;
+          padding: 1.5rem;
+        }
+        .config-section h2 {
+          font-size: 1.1rem;
+          margin-bottom: 1.5rem;
+          color: #a5b4fc;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        .config-item {
+          margin-bottom: 1.5rem;
+        }
+        .config-item label {
+          display: block;
+          font-weight: 600;
+          margin-bottom: 0.5rem;
+          color: #fff;
+        }
+        .config-input, .config-select {
+          width: 100%;
+          padding: 0.75rem;
+          border: 1px solid #25252d;
+          border-radius: 0.5rem;
+          background: #1e1e26;
+          color: #fff;
+          font-size: 0.9rem;
+        }
+        .config-description {
+          display: block;
+          font-size: 0.8rem;
+          color: #6b6b76;
+          margin-top: 0.25rem;
+        }
+        .toggle {
+          padding: 1rem;
+          background: #1e1e26;
+          border-radius: 0.5rem;
+        }
+        .toggle-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.5rem;
+        }
+        .toggle-header span {
+          font-weight: 600;
+          color: #fff;
+        }
+        .toggle-input {
+          width: 40px;
+          height: 20px;
+          accent-color: #5865f2;
+        }
+        .save-button {
+          padding: 1rem 2rem;
+          background: #5865f2;
+          color: #fff;
+          border: none;
+          border-radius: 0.5rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .save-button:hover:not(:disabled) {
+          background: #4752c4;
+          transform: translateY(-2px);
+        }
+        .save-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        .message {
+          padding: 1rem;
+          border-radius: 0.5rem;
+          text-align: center;
+          font-weight: 600;
+        }
+        .message.success {
+          background: rgba(16, 185, 129, 0.1);
+          border: 1px solid #10b981;
+          color: #10b981;
+        }
+        .message.error {
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid #ef4444;
+          color: #ef4444;
+        }
+      `}</style>
     </div>
   );
 }
