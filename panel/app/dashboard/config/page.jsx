@@ -17,7 +17,15 @@ export default function ConfigPage() {
   useEffect(() => {
     fetch("http://localhost:3001/api/status").then(res => res.json()).then(data => setMongoStatus(data.mongo)).catch(() => setMongoStatus(false));
     if (guildId) {
-      fetch(`http://localhost:3001/api/guilds/${guildId}/config`).then(res => res.json()).then(data => { setConfig(data); setLoading(false); }).catch(() => { setConfig({ error: true }); setLoading(false); });
+      // NOWY ENDPOINT: /api/guilds/:guildId/config/:module
+      fetch(`http://localhost:3001/api/guilds/${guildId}/config/config`)
+        .then(res => res.json())
+        .then(data => { 
+          // NOWA STRUKTURA: data.config zawiera ustawienia
+          setConfig(data.config || { error: true }); 
+          setLoading(false); 
+        })
+        .catch(() => { setConfig({ error: true }); setLoading(false); });
     } else setLoading(false);
   }, [guildId]);
 
@@ -28,7 +36,12 @@ export default function ConfigPage() {
     if (!mongoStatus) return setMessage("❌ Brak połączenia z bazą danych");
     setSaving(true);
     try {
-      const res = await fetch(`http://localhost:3001/api/guilds/${guildId}/config`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(config) });
+      // NOWY ENDPOINT: POST /api/guilds/:guildId/config/:module
+      const res = await fetch(`http://localhost:3001/api/guilds/${guildId}/config/config`, { 
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify(config) 
+      });
       if (!res.ok) throw new Error();
       setMessage("✅ Zapisano pomyślnie");
     } catch { setMessage("❌ Błąd zapisu"); } finally { setSaving(false); }
@@ -81,7 +94,7 @@ export default function ConfigPage() {
 
           <div className="config-item">
             <label>Limit komend (na minutę)</label>
-            <input type="number" value={config.commandLimit ?? 10} onChange={(e) => handleChange("commandLimit", parseInt(e.target.value) || 10)} min={1} max={100} disabled={disabled} className="config-input" />
+            <input type="number" value={config.commandLimit ?? 10} onChange={(e) => handleChange("commandLimit", parseInt(e.target.value) || 10)} min={1} max={100} step={1} disabled={disabled} className="config-input" />
             <span className="config-description">Ile komend na minutę może użyć jeden użytkownik (rate limiting)</span>
           </div>
 
@@ -95,7 +108,7 @@ export default function ConfigPage() {
 
           <div className="config-item">
             <label>Czas odpowiedzi (ms)</label>
-            <input type="number" value={config.responseDelay ?? 500} onChange={(e) => handleChange("responseDelay", parseInt(e.target.value) || 0)} min={0} max={5000} step={100} disabled={disabled} className="config-input" />
+            <input type="number" value={config.responseDelay ?? 500} onChange={(e) => handleChange("responseDelay", parseInt(e.target.value) || 0)} min={0} max={5000} step={10} disabled={disabled} className="config-input" />
             <span className="config-description">Opóźnienie przed odpowiedzią bota w milisekundach (symulacja pisania). 0 = brak opóźnienia</span>
           </div>
         </div>

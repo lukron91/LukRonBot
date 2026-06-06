@@ -3,18 +3,31 @@ import { useEffect } from "react";
 
 export default function Home() {
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const session = params.get('session');
-    if (session) {
-      localStorage.setItem('session', session);
-      window.location.href = '/servers';
-    } else if (localStorage.getItem('session')) {
-      window.location.href = '/servers';
-    }
+    const init = async () => {
+      // Już zalogowany – przejdź dalej
+      if (localStorage.getItem("session")) {
+        window.location.href = "/servers";
+        return;
+      }
+
+      // Spróbuj odczytać sesję z httpOnly cookie przez API
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const data = await res.json();
+          localStorage.setItem("session", JSON.stringify(data));
+          window.location.href = "/servers";
+        }
+      } catch {
+        // Brak sesji – zostań na stronie logowania
+      }
+    };
+
+    init();
   }, []);
 
   const handleLogin = () => {
-    window.location.href = '/api/auth/login';
+    window.location.href = "/api/auth/login";
   };
 
   return (

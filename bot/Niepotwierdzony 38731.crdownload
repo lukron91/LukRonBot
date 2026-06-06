@@ -10,9 +10,6 @@ const app = express();
 app.use(express.json());
 app.use(cors({ origin: ['http://localhost:3000', 'http://localhost:3002'] }));
 
-// ---------- AKTYWNE ŚRODOWISKO BAZY ----------
-let activeDatabase = 'main'; // 'main' lub 'test'
-
 // ---------- STATUS BOTA (zapis do pliku) ----------
 const STATUS_FILE = path.join(__dirname, 'status.json');
 function saveBotStatus(status, customStatus) {
@@ -31,6 +28,9 @@ function loadBotStatus() {
 
 // ---------- MONGODB ----------
 let dbConnected = false;
+let Guild = null;
+const memoryConfigs = new Map();
+
 async function initMongo() {
   if (!process.env.MONGODB_URI) {
     console.log('⚠️ Brak MONGODB_URI – używam pamięci tymczasowej');
@@ -40,12 +40,65 @@ async function initMongo() {
     await mongoose.connect(process.env.MONGODB_URI);
     dbConnected = true;
     console.log('✅ MongoDB connected');
+    const guildSchema = new mongoose.Schema({
+      guildId: { type: String, required: true, unique: true },
+      prefix: { type: String, default: '!' },
+      language: { type: String, default: 'pl' },
+      timezone: { type: String, default: 'Europe/Warsaw' },
+      autoModEnabled: { type: Boolean, default: false },
+      blockLinks: { type: Boolean, default: false },
+      blockInvites: { type: Boolean, default: false },
+      welcomeEnabled: { type: Boolean, default: false },
+      logEnabled: { type: Boolean, default: false },
+      warnThreshold: { type: Number, default: 3 },
+      banMethod: { type: String, default: 'discord' },
+      banRoleId: { type: String, default: null },
+      modLogChannel: { type: String, default: null },
+    });
+    Guild = mongoose.model('Guild', guildSchema);
   } catch (err) {
     console.error('❌ MongoDB error:', err);
     dbConnected = false;
   }
 }
 initMongo();
+
+async function getConfig(guildId) {
+  if (dbConnected && Guild) {
+    try {
+      let config = await Guild.findOne({ guildId });
+      if (!config) {
+        config = new Guild({ guildId });
+        await config.save();
+      }
+      return config.toObject();
+    } catch (err) { console.error('Błąd odczytu konfiguracji:', err); }
+  }
+  if (!memoryConfigs.has(guildId)) {
+    memoryConfigs.set(guildId, {
+      guildId, prefix: '!', language: 'pl', timezone: 'Europe/Warsaw',
+      autoModEnabled: false, blockLinks: false, blockInvites: false,
+      welcomeEnabled: false, logEnabled: false, warnThreshold: 3,
+      banMethod: 'discord', banRoleId: null, modLogChannel: null,
+    });
+  }
+  return memoryConfigs.get(guildId);
+}
+
+async function setConfig(guildId, update) {
+  if (dbConnected && Guild) {
+    try {
+      const config = await Guild.findOneAndUpdate(
+        { guildId }, { ...update, guildId }, { upsert: true, new: true }
+      );
+      return config.toObject();
+    } catch (err) { console.error('Błąd zapisu konfiguracji:', err); throw err; }
+  }
+  const current = memoryConfigs.get(guildId) || { guildId };
+  const updated = { ...current, ...update };
+  memoryConfigs.set(guildId, updated);
+  return updated;
+}
 
 // ---------- DISCORD BOT ----------
 const client = new Client({
@@ -69,11 +122,7 @@ client.once('ready', async () => {
 
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
-  // Pobierz konfigurację z modułu config.js
-  const getGuildConfig = app.locals.getGuildConfig;
-  if (!getGuildConfig) return;
-  
-  const config = await getGuildConfig(message.guild.id);
+  const config = await getConfig(message.guild.id);
   const prefix = config.prefix || '!';
   if (!message.content.startsWith(prefix)) return;
   const args = message.content.slice(prefix.length).trim().split(/ +/);
@@ -83,42 +132,14 @@ client.on('messageCreate', async (message) => {
 
 // ---------- API ENDPOINTY ----------
 app.get('/api/status', (req, res) => res.json({ mongo: dbConnected }));
-
-// ---------- ENDPOINTY BAZY DANYCH ----------
-app.get('/api/database/status', (req, res) => {
-  res.json({ 
-    activeDatabase, 
-    environments: ['main', 'test'],
-    description: {
-      main: 'Produkcyjne - oficjalny bot',
-      test: 'Testowe - eksperymenty i zmiany'
-    }
-  });
+app.get('/api/guilds/:guildId/config', async (req, res) => {
+  try { res.json(await getConfig(req.params.guildId)); } catch (err) { res.status(500).json({ error: err.message }); }
 });
-
-app.post('/api/database/switch', (req, res) => {
-  const { environment } = req.body;
-  if (!['main', 'test'].includes(environment)) {
-    return res.status(400).json({ error: 'Nieprawidłowe środowisko. Dozwolone: main, test' });
-  }
-  
-  const oldEnv = activeDatabase;
-  activeDatabase = environment;
-  
-  console.log(`[Database] Przełączono z ${oldEnv} na ${activeDatabase}`);
-  
-  res.json({ 
-    success: true, 
-    oldEnvironment: oldEnv, 
-    newEnvironment: activeDatabase,
-    message: `Przełączono na środowisko: ${activeDatabase}`
-  });
+app.post('/api/guilds/:guildId/config', async (req, res) => {
+  try { res.json(await setConfig(req.params.guildId, req.body)); } catch (err) { res.status(500).json({ error: err.message }); }
 });
-
-// Cache statystyk
 let statsCache = new Map();
 setInterval(() => statsCache.clear(), 30000);
-
 app.get('/api/guilds/:guildId/stats', (req, res) => {
   const { guildId } = req.params;
   if (statsCache.has(guildId)) return res.json(statsCache.get(guildId));
@@ -132,7 +153,6 @@ app.get('/api/guilds/:guildId/stats', (req, res) => {
   statsCache.set(guildId, stats);
   res.json(stats);
 });
-
 app.get('/api/guilds/:guildId/roles', async (req, res) => {
   const { guildId } = req.params;
   try {
@@ -142,7 +162,6 @@ app.get('/api/guilds/:guildId/roles', async (req, res) => {
     res.json(roles);
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
-
 app.get('/api/guilds/:guildId/channels', async (req, res) => {
   const { guildId } = req.params;
   try {
@@ -152,8 +171,16 @@ app.get('/api/guilds/:guildId/channels', async (req, res) => {
     res.json(channels);
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
+app.post('/api/guilds/:guildId/config/moderation', async (req, res) => {
+  const { guildId } = req.params;
+  const updates = req.body;
+  try {
+    const config = await setConfig(guildId, updates);
+    res.json(config);
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
 
-// ---------- SYSTEM MODUŁÓW ----------
+// ---------- SYSTEM MODUŁÓW (dodawanie w locie, usuwanie wymaga restartu) ----------
 const modulesPath = path.join(__dirname, 'modules');
 let loadedModules = new Map();
 
@@ -174,7 +201,7 @@ function loadAllModules() {
   }
   const moduleFiles = fs.readdirSync(modulesPath).filter(file => file.endsWith('.js'));
   for (const file of moduleFiles) {
-    const moduleName = file.replace(/.js$/, '');
+    const moduleName = file.replace(/\.js$/, '');
     try {
       const moduleFn = require(path.join(modulesPath, file));
       if (typeof moduleFn === 'function') {
@@ -196,7 +223,7 @@ function reloadModules() {
   const moduleFiles = fs.readdirSync(modulesPath).filter(file => file.endsWith('.js'));
   const newModules = [];
   for (const file of moduleFiles) {
-    const moduleName = file.replace(/.js$/, '');
+    const moduleName = file.replace(/\.js$/, '');
     if (!loadedModules.has(moduleName)) {
       try {
         delete require.cache[require.resolve(path.join(modulesPath, file))];
@@ -217,78 +244,6 @@ function reloadModules() {
   }
   return { added: newModules, removed: removedModules };
 }
-
-// Udostępnij activeDatabase dla modułów
-app.locals.activeDatabase = () => activeDatabase;
-app.locals.dbConnected = () => dbConnected;
-
-// ---------- LOGGER ----------
-{
-  const LOG_DIR = path.join(__dirname, 'logs');
-  const SYSTEM_LOG_FILE = path.join(LOG_DIR, 'system.log');
-  const ACTIVITY_LOG_FILE = path.join(LOG_DIR, 'activity.log');
-  const MAX_LOGS = 1000;
-
-  if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
-
-  function readLogsFromFile(filePath) {
-    try {
-      if (!fs.existsSync(filePath)) return [];
-      const lines = fs.readFileSync(filePath, 'utf8').trim().split('\n').filter(Boolean);
-      return lines.slice(-MAX_LOGS).map(line => {
-        const match = line.match(/^\[(.+?)\] \[(.+?)\] \[(.+?)\] \[(.+?)\] (.+)$/);
-        if (match) {
-          return { timestamp: match[1], type: match[2].toLowerCase(), category: match[3], source: match[4], message: match[5] };
-        }
-        return { timestamp: new Date().toISOString(), type: 'info', category: 'system', source: 'core', message: line };
-      }).reverse();
-    } catch (e) {
-      return [];
-    }
-  }
-
-  let systemLogs = readLogsFromFile(SYSTEM_LOG_FILE);
-  let activityLogs = readLogsFromFile(ACTIVITY_LOG_FILE);
-
-  function writeLog(type, message, category = 'system', source = 'core') {
-    const timestamp = new Date().toISOString();
-    const logEntry = { timestamp, type, category, source, message };
-
-    if (category === 'system') {
-      systemLogs.unshift(logEntry);
-      if (systemLogs.length > MAX_LOGS) systemLogs.pop();
-      fs.appendFile(SYSTEM_LOG_FILE, `[${timestamp}] [${type.toUpperCase()}] [${category}] [${source}] ${message}\n`, () => {});
-    } else {
-      activityLogs.unshift(logEntry);
-      if (activityLogs.length > MAX_LOGS) activityLogs.pop();
-      fs.appendFile(ACTIVITY_LOG_FILE, `[${timestamp}] [${type.toUpperCase()}] [${category}] [${source}] ${message}\n`, () => {});
-    }
-
-    let color = '';
-    if (type === 'error') color = '\x1b[31m';
-    else if (type === 'warn') color = '\x1b[33m';
-    else if (type === 'info') color = '\x1b[37m';
-    else color = '\x1b[90m';
-    process.stdout.write(`${color}[${timestamp}] [${type.toUpperCase()}] [${category}] [${source}] ${message}\x1b[0m\n`);
-  }
-
-  const logger = {
-    system: (type, message, source = 'core') => writeLog(type, message, 'system', source),
-    activity: (type, message, source = 'core') => writeLog(type, message, 'activity', source),
-    info: (msg, source = 'core') => writeLog('info', msg, 'activity', source),
-    warn: (msg, source = 'core') => writeLog('warn', msg, 'activity', source),
-    error: (msg, source = 'core') => writeLog('error', msg, 'activity', source),
-    debug: (msg, source = 'core') => writeLog('debug', msg, 'activity', source),
-  };
-
-  app.locals.logger = logger;
-
-  app.get('/api/logs/system', (req, res) => res.json(systemLogs));
-  app.get('/api/logs/activity', (req, res) => res.json(activityLogs));
-
-  logger.system('info', 'System logowania aktywny', 'logger');
-}
-// ---------- KONIEC LOGGER ----------
 
 loadAllModules();
 
