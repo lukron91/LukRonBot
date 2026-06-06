@@ -27,13 +27,13 @@ export default function DashboardLayout({ children }) {
   useEffect(() => {
     const checkStatuses = async () => {
       try {
-        const healthRes = await fetch("http://localhost:3001/bot/health");
+        const healthRes = await fetch("/api/proxy/bot/health");
         const data = await healthRes.json();
         setClientActive(data.running === true);
       } catch { setClientActive(false); }
 
       try {
-        const statusRes = await fetch("http://localhost:3001/api/status");
+        const statusRes = await fetch("/api/proxy/api/status");
         setServerActive(statusRes.ok);
         const data = await statusRes.json();
         setMongoStatus(data.mongo === true);
@@ -77,7 +77,7 @@ export default function DashboardLayout({ children }) {
     if (!selectedGuildId) { setBotOnGuild(null); return; }
     const checkBot = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/api/guilds/${selectedGuildId}/stats`);
+        const res = await fetch(`/api/proxy/api/guilds/${selectedGuildId}/stats`);
         setBotOnGuild(res.ok);
       } catch { setBotOnGuild(false); }
     };

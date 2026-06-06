@@ -23,9 +23,9 @@ export default function ModerationSettings() {
   useEffect(() => {
     if (!guildId) return;
     Promise.all([
-      fetch(`http://localhost:3001/api/guilds/${guildId}/config`).then(r => r.json()),
-      fetch(`http://localhost:3001/api/guilds/${guildId}/roles`).then(r => r.json()),
-      fetch(`http://localhost:3001/api/guilds/${guildId}/channels`).then(r => r.json())
+      fetch(`/api/proxy/api/guilds/${guildId}/config`).then(r => r.json()),
+      fetch(`/api/proxy/api/guilds/${guildId}/roles`).then(r => r.json()),
+      fetch(`/api/proxy/api/guilds/${guildId}/channels`).then(r => r.json())
     ]).then(([configData, rolesData, channelsData]) => {
       setConfig({
         // Auto-moderacja
@@ -101,7 +101,7 @@ export default function ModerationSettings() {
     setSaving(true);
     setMessage("");
     try {
-      const res = await fetch(`http://localhost:3001/api/guilds/${guildId}/config/moderation`, {
+      const res = await fetch(`/api/proxy/api/guilds/${guildId}/config/moderation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

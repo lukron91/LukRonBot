@@ -20,7 +20,7 @@ export default function BotSettingsPage() {
 
   const fetchData = async () => {
     try {
-      const healthRes = await fetch("http://localhost:3001/bot/health");
+      const healthRes = await fetch("/api/proxy/bot/health");
       let healthData;
       if (healthRes.ok) {
         const text = await healthRes.text();
@@ -30,13 +30,13 @@ export default function BotSettingsPage() {
       if (healthData.status && !healthData.error) setStatus(healthData.status);
       if (healthData.customStatus && !healthData.error) setCustomText(healthData.customStatus);
 
-      const modulesRes = await fetch("http://localhost:3001/api/modules");
+      const modulesRes = await fetch("/api/proxy/api/modules");
       if (modulesRes.ok) setModules((await modulesRes.json()).modules || []);
 
-      const systemRes = await fetch("http://localhost:3001/api/logs/system");
+      const systemRes = await fetch("/api/proxy/api/logs/system");
       if (systemRes.ok) setSystemLogs(await systemRes.json());
 
-      const activityRes = await fetch("http://localhost:3001/api/logs/activity");
+      const activityRes = await fetch("/api/proxy/api/logs/activity");
       if (activityRes.ok) setActivityLogs(await activityRes.json());
     } catch (err) {
       console.error(err);
@@ -48,7 +48,7 @@ export default function BotSettingsPage() {
     fetchData();
     const healthInterval = setInterval(async () => {
       try {
-        const res = await fetch("http://localhost:3001/bot/health");
+        const res = await fetch("/api/proxy/bot/health");
         if (res.ok) {
           const text = await res.text();
           try { const data = JSON.parse(text); setHealth(prev => ({ ...prev, ...data })); } catch(e) {}
@@ -58,8 +58,8 @@ export default function BotSettingsPage() {
     const logsInterval = setInterval(async () => {
       try {
         const [sys, act] = await Promise.all([
-          fetch("http://localhost:3001/api/logs/system").then(r => r.json()),
-          fetch("http://localhost:3001/api/logs/activity").then(r => r.json()),
+          fetch("/api/proxy/api/logs/system").then(r => r.json()),
+          fetch("/api/proxy/api/logs/activity").then(r => r.json()),
         ]);
         setSystemLogs(sys);
         setActivityLogs(act);
@@ -72,7 +72,7 @@ export default function BotSettingsPage() {
     setUpdating(true);
     setMessage("");
     try {
-      const res = await fetch("http://localhost:3001/bot/status", {
+      const res = await fetch("/api/proxy/bot/status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus, customText: newCustomText }),
@@ -82,7 +82,7 @@ export default function BotSettingsPage() {
         setStatus(newStatus);
         setCustomText(newCustomText);
         setMessage("✅ Status zaktualizowany");
-        const healthRes = await fetch("http://localhost:3001/bot/health");
+        const healthRes = await fetch("/api/proxy/bot/health");
         if (healthRes.ok) {
           const text = await healthRes.text();
           try { const healthData = JSON.parse(text); setHealth(healthData); } catch(e) {}
@@ -97,7 +97,7 @@ export default function BotSettingsPage() {
 
   const testDebugModule = async () => {
     try {
-      const res = await fetch("http://localhost:3001/debug/test");
+      const res = await fetch("/api/proxy/debug/test");
       if (res.ok) {
         const data = await res.json();
         alert(data.message || "✅ Test OK");
@@ -111,11 +111,11 @@ export default function BotSettingsPage() {
 
   const reloadModules = async () => {
     try {
-      const res = await fetch("http://localhost:3001/api/modules/reload", { method: "POST" });
+      const res = await fetch("/api/proxy/api/modules/reload", { method: "POST" });
       const data = await res.json();
       if (data.success) {
         alert(`✅ Dodano: ${data.added.join(', ') || 'brak'}\n⚠️ Usunięte (wymagają restartu): ${data.removed.join(', ') || 'brak'}`);
-        const modulesRes = await fetch("http://localhost:3001/api/modules");
+        const modulesRes = await fetch("/api/proxy/api/modules");
         const modulesData = await modulesRes.json();
         setModules(modulesData.modules || []);
       } else {
@@ -258,7 +258,7 @@ export default function BotSettingsPage() {
               ))
             }
           </div>
-          <button onClick={async () => { const res = await fetch("http://localhost:3001/api/logs/system"); setSystemLogs(await res.json()); }} className="refresh-btn" style={{ background: accentColor }}>Odśwież</button>
+          <button onClick={async () => { const res = await fetch("/api/proxy/api/logs/system"); setSystemLogs(await res.json()); }} className="refresh-btn" style={{ background: accentColor }}>Odśwież</button>
         </div>
       )}
 
@@ -277,7 +277,7 @@ export default function BotSettingsPage() {
               ))
             }
           </div>
-          <button onClick={async () => { const res = await fetch("http://localhost:3001/api/logs/activity"); setActivityLogs(await res.json()); }} className="refresh-btn" style={{ background: accentColor }}>Odśwież</button>
+          <button onClick={async () => { const res = await fetch("/api/proxy/api/logs/activity"); setActivityLogs(await res.json()); }} className="refresh-btn" style={{ background: accentColor }}>Odśwież</button>
         </div>
       )}
 

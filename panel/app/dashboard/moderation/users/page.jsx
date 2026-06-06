@@ -32,7 +32,7 @@ export default function UsersPage() {
     const controller = new AbortController();
     fetchAbortRef.current = controller;
     try {
-      const res = await fetch(`http://localhost:3001/api/guilds/${guildId}/members`, { signal: controller.signal });
+      const res = await fetch(`/api/proxy/api/guilds/${guildId}/members`, { signal: controller.signal });
       const data = await res.json();
       let usersArray = [];
       if (Array.isArray(data)) usersArray = data;
@@ -69,7 +69,7 @@ export default function UsersPage() {
 
   const fetchPunishments = async (userId) => {
     try {
-      const res = await fetch(`http://localhost:3001/api/guilds/${guildId}/punishments/${userId}`);
+      const res = await fetch(`/api/proxy/api/guilds/${guildId}/punishments/${userId}`);
       const data = await res.json();
       setPunishments({
         warnings: Array.isArray(data?.warnings) ? data.warnings : [],
@@ -84,7 +84,7 @@ export default function UsersPage() {
 
   const fetchActivePunishments = async (userId) => {
     try {
-      const res = await fetch(`http://localhost:3001/api/guilds/${guildId}/punishments/${userId}/active`);
+      const res = await fetch(`/api/proxy/api/guilds/${guildId}/punishments/${userId}/active`);
       const data = await res.json();
       setActivePunishments({
         mute: data.mute || null,
@@ -150,7 +150,7 @@ export default function UsersPage() {
       default: return;
     }
     try {
-      const res = await fetch(`http://localhost:3001/api/guilds/${guildId}/moderation/${action}`, {
+      const res = await fetch(`/api/proxy/api/guilds/${guildId}/moderation/${action}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -178,7 +178,7 @@ export default function UsersPage() {
   const deleteWarn = async (warnId) => {
     if (!confirm('Czy na pewno chcesz usunąć tego warnu?')) return;
     try {
-      const res = await fetch(`http://localhost:3001/api/guilds/${guildId}/punishments/warn/${warnId}`, {
+      const res = await fetch(`/api/proxy/api/guilds/${guildId}/punishments/warn/${warnId}`, {
         method: 'DELETE'
       });
       const data = await res.json();
@@ -196,7 +196,7 @@ export default function UsersPage() {
   const unmuteUser = async () => {
     if (!confirm('Czy na pewno chcesz odciszyć użytkownika?')) return;
     try {
-      const res = await fetch(`http://localhost:3001/api/guilds/${guildId}/moderation/unmute`, {
+      const res = await fetch(`/api/proxy/api/guilds/${guildId}/moderation/unmute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: selectedUser.id })
@@ -219,7 +219,7 @@ export default function UsersPage() {
   const unbanUser = async () => {
     if (!confirm('Czy na pewno chcesz odbanować użytkownika?')) return;
     try {
-      const res = await fetch(`http://localhost:3001/api/guilds/${guildId}/moderation/unban`, {
+      const res = await fetch(`/api/proxy/api/guilds/${guildId}/moderation/unban`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: selectedUser.id })

@@ -27,18 +27,18 @@ export default function DashboardHome() {
   useEffect(() => {
     if (!guildId) return;
 
-    fetch(`http://localhost:3001/api/guilds/${guildId}/stats`)
+    fetch(`/api/proxy/api/guilds/${guildId}/stats`)
       .then(res => res.json())
       .then(data => setStats(data))
       .catch(() => setStats({ members: "Błąd", channels: "Błąd", roles: "Błąd" }));
 
     Promise.all([
-      fetch(`http://localhost:3001/api/guilds/${guildId}/activity/joined-today`).then(r => r.json()),
-      fetch(`http://localhost:3001/api/guilds/${guildId}/activity/left-today`).then(r => r.json()),
-      fetch(`http://localhost:3001/api/guilds/${guildId}/activity/active-7days`).then(r => r.json()),
-      fetch(`http://localhost:3001/api/guilds/${guildId}/activity/trend`).then(r => r.json()),
-      fetch(`http://localhost:3001/api/guilds/${guildId}/activity/top-channels`).then(r => r.json()),
-      fetch(`http://localhost:3001/api/guilds/${guildId}/activity/top-users`).then(r => r.json())
+      fetch(`/api/proxy/api/guilds/${guildId}/activity/joined-today`).then(r => r.json()),
+      fetch(`/api/proxy/api/guilds/${guildId}/activity/left-today`).then(r => r.json()),
+      fetch(`/api/proxy/api/guilds/${guildId}/activity/active-7days`).then(r => r.json()),
+      fetch(`/api/proxy/api/guilds/${guildId}/activity/trend`).then(r => r.json()),
+      fetch(`/api/proxy/api/guilds/${guildId}/activity/top-channels`).then(r => r.json()),
+      fetch(`/api/proxy/api/guilds/${guildId}/activity/top-users`).then(r => r.json())
     ]).then(([joined, left, active, trend, channels, users]) => {
       setActivity({
         joinedToday: joined.count ?? 0,
