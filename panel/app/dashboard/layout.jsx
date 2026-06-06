@@ -24,7 +24,6 @@ export default function DashboardLayout({ children }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Statusy
   useEffect(() => {
     const checkStatuses = async () => {
       try {
@@ -48,7 +47,6 @@ export default function DashboardLayout({ children }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Sesja i serwery
   useEffect(() => {
     const sessionRaw = localStorage.getItem("session");
     if (!sessionRaw) {
@@ -75,7 +73,6 @@ export default function DashboardLayout({ children }) {
     }
   }, [router, pathname, searchParams]);
 
-  // Bot na serwerze
   useEffect(() => {
     if (!selectedGuildId) { setBotOnGuild(null); return; }
     const checkBot = async () => {
@@ -112,7 +109,7 @@ export default function DashboardLayout({ children }) {
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="logo">
-            <div className="logo-icon" style={{ background: accentColor }}>L</div>
+            <img src="/resources/logo.png" alt="LukRon Bot" className="logo-img" />
             <div className="logo-text">
               <h1 style={{ color: accentColor }}>LukRon Bot</h1>
               <span>Panel sterowania</span>
@@ -241,41 +238,45 @@ export default function DashboardLayout({ children }) {
 
       <main className="main-content">
         <header className="top-bar">
-          {selectedGuild && (
-            <div className="server-info">
-              {selectedGuild.icon ? (
-                <img
-                  src={`https://cdn.discordapp.com/icons/${selectedGuild.id}/${selectedGuild.icon}.png`}
-                  alt={selectedGuild.name}
-                  className="server-avatar"
-                />
-              ) : (
-                <div className="server-avatar" style={{ background: accentColor }}>
-                  {selectedGuild.name.charAt(0).toUpperCase()}
+          <img src="/resources/baner-dashboard.png" alt="" className="top-bar-bg" />
+          <div className="top-bar-overlay" />
+          <div className="top-bar-content">
+            {selectedGuild && (
+              <div className="server-info">
+                {selectedGuild.icon ? (
+                  <img
+                    src={`https://cdn.discordapp.com/icons/${selectedGuild.id}/${selectedGuild.icon}.png`}
+                    alt={selectedGuild.name}
+                    className="server-avatar"
+                  />
+                ) : (
+                  <div className="server-avatar" style={{ background: accentColor }}>
+                    {selectedGuild.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="server-details">
+                  <h2>{selectedGuild.name}</h2>
+                  <span>ID: {selectedGuild.id}</span>
                 </div>
-              )}
-              <div className="server-details">
-                <h2>{selectedGuild.name}</h2>
-                <span>ID: {selectedGuild.id}</span>
               </div>
-            </div>
-          )}
+            )}
 
-          <div className="status-indicators">
-            <div className={`status-item ${clientActive ? 'online' : 'offline'}`}>
-              <FiServer />
-              <span>{clientActive ? 'Client aktywny' : 'Client nieaktywny'}</span>
-              {clientActive ? <FiCheckCircle /> : <FiXCircle />}
-            </div>
-            <div className={`status-item ${serverActive ? 'online' : 'offline'}`}>
-              <FiDatabase />
-              <span>{serverActive ? 'Server aktywny' : 'Server nieaktywny'}</span>
-              {serverActive ? <FiCheckCircle /> : <FiXCircle />}
-            </div>
-            <div className={`status-item ${mongoStatus ? 'online' : 'offline'}`}>
-              <FiDatabase />
-              <span>{mongoStatus ? 'Połączenie z bazą' : 'Brak połączenia z bazą'}</span>
-              {mongoStatus ? <FiCheckCircle /> : <FiXCircle />}
+            <div className="status-indicators">
+              <div className={`status-item ${clientActive ? 'online' : 'offline'}`}>
+                <FiServer />
+                <span>{clientActive ? 'Client aktywny' : 'Client nieaktywny'}</span>
+                {clientActive ? <FiCheckCircle /> : <FiXCircle />}
+              </div>
+              <div className={`status-item ${serverActive ? 'online' : 'offline'}`}>
+                <FiDatabase />
+                <span>{serverActive ? 'Server aktywny' : 'Server nieaktywny'}</span>
+                {serverActive ? <FiCheckCircle /> : <FiXCircle />}
+              </div>
+              <div className={`status-item ${mongoStatus ? 'online' : 'offline'}`}>
+                <FiDatabase />
+                <span>{mongoStatus ? 'Połączenie z bazą' : 'Brak połączenia z bazą'}</span>
+                {mongoStatus ? <FiCheckCircle /> : <FiXCircle />}
+              </div>
             </div>
           </div>
         </header>
@@ -335,15 +336,11 @@ export default function DashboardLayout({ children }) {
           gap: 0.75rem;
         }
 
-        .logo-icon {
+        .logo-img {
           width: 40px;
           height: 40px;
           border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: bold;
-          font-size: 1.2rem;
+          object-fit: contain;
           flex-shrink: 0;
         }
 
@@ -494,12 +491,45 @@ export default function DashboardLayout({ children }) {
         }
 
         .top-bar {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 1rem 1.5rem;
+          position: relative;
+          height: 250px;
+          overflow: hidden;
+          flex-shrink: 0;
           border-bottom: 1px solid #1e1e26;
-          background: #0a0a0f;
+        }
+
+        .top-bar-bg {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: auto;
+          min-height: 100%;
+          object-fit: cover;
+          object-position: top;
+        }
+
+        .top-bar-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(
+            to bottom,
+            rgba(10, 10, 15, 0.3) 0%,
+            rgba(10, 10, 15, 0.7) 100%
+          );
+        }
+
+        .top-bar-content {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          padding: 50px 1.5rem 1rem 1.5rem;
+          height: 100%;
         }
 
         .server-info {
@@ -509,15 +539,16 @@ export default function DashboardLayout({ children }) {
         }
 
         .server-avatar {
-          width: 48px;
-          height: 48px;
-          border-radius: 12px;
+          width: 56px;
+          height: 56px;
+          border-radius: 14px;
           display: flex;
           align-items: center;
           justify-content: center;
           font-weight: bold;
-          font-size: 1.2rem;
+          font-size: 1.4rem;
           overflow: hidden;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         }
 
         .server-avatar img {
@@ -527,19 +558,21 @@ export default function DashboardLayout({ children }) {
         }
 
         .server-details h2 {
-          font-size: 1.1rem;
+          font-size: 1.3rem;
           margin: 0;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
         }
 
         .server-details span {
-          font-size: 0.75rem;
-          color: #6b6b76;
+          font-size: 0.8rem;
+          color: rgba(255, 255, 255, 0.7);
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
         }
 
         .status-indicators {
           display: flex;
           flex-direction: column;
-          gap: 0.5rem;
+          gap: 0.4rem;
         }
 
         .status-item {
@@ -550,16 +583,18 @@ export default function DashboardLayout({ children }) {
           border-radius: 0.5rem;
           font-size: 0.8rem;
           border: 1px solid;
+          background: rgba(10, 10, 15, 0.8);
+          backdrop-filter: blur(4px);
         }
 
         .status-item.online {
-          background: rgba(16, 185, 129, 0.1);
+          background: rgba(16, 185, 129, 0.15);
           border-color: #10b981;
           color: #10b981;
         }
 
         .status-item.offline {
-          background: rgba(239, 68, 68, 0.1);
+          background: rgba(239, 68, 68, 0.15);
           border-color: #ef4444;
           color: #ef4444;
         }

@@ -65,7 +65,7 @@ export default function DashboardHome() {
     : 0;
 
   return (
-    <div>
+    <div className="dashboard-home">
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-icon" style={{ background: `${accentColor}20`, color: accentColor }}><FiUsers /></div>
@@ -173,16 +173,23 @@ export default function DashboardHome() {
       </div>
 
       <style jsx>{`
+        .dashboard-home {
+          margin: 100px 200px 2rem 200px;
+          padding: 1.5rem;
+          border: 1px solid ${accentColor};
+          border-radius: 1rem;
+          background: #0a0a0f;
+        }
         .stats-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          grid-template-columns: repeat(3, 1fr);
           gap: 1rem;
           margin-bottom: 2rem;
         }
         .stat-card {
           background: #14141c;
           border-radius: 1rem;
-          padding: 1rem;
+          padding: 1.5rem;
           border: 1px solid #25252d;
           transition: all 0.2s;
           display: flex;
@@ -201,12 +208,13 @@ export default function DashboardHome() {
           display: flex;
           align-items: center;
           justify-content: center;
+          flex-shrink: 0;
         }
         .stat-content {
           flex: 1;
         }
         .stat-title {
-          font-size: 0.7rem;
+          font-size: 0.75rem;
           text-transform: uppercase;
           letter-spacing: 1px;
           color: #9c9ca7;
@@ -330,6 +338,9 @@ export default function DashboardHome() {
           font-size: 0.8rem;
         }
         @media (max-width: 768px) {
+          .stats-grid {
+            grid-template-columns: 1fr;
+          }
           .two-columns {
             grid-template-columns: 1fr;
           }

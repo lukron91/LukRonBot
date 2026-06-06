@@ -173,8 +173,10 @@ export default function BotSettingsPage() {
               {healthItems.map((item, idx) => (
                 <div key={idx} className="health-card" style={{ borderTopColor: accentColor }}>
                   <div className="health-icon" style={{ color: accentColor }}>{item.icon}</div>
-                  <div className="health-title">{item.title}</div>
-                  <div className="health-value">{item.value}</div>
+                  <div className="health-content">
+                    <div className="health-title">{item.title}</div>
+                    <div className="health-value">{item.value}</div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -225,7 +227,7 @@ export default function BotSettingsPage() {
             <button onClick={reloadModules} className="action-btn" style={{ background: accentColor }}><FiRefreshCw /> Przeładuj moduły</button>
           </div>
           {modules.length === 0 ? <div className="empty">Brak modułów.</div> : (
-            <div className="modules-list">
+            <div className="modules-grid">
               {modules.map(mod => (
                 <div key={mod.name} className="module-card" onClick={() => openModuleModal(mod)} style={{ borderLeftColor: accentColor }}>
                   <div className="module-icon">📦</div>
@@ -296,55 +298,295 @@ export default function BotSettingsPage() {
       )}
 
       <style jsx>{`
-        .bot-settings-page { max-width: 1000px; margin: 0 auto; padding: 1rem; }
-        .page-header h1 { display: flex; align-items: center; gap: 0.75rem; font-size: 1.5rem; margin-bottom: 0.5rem; }
-        .page-header p { color: #6b6b76; margin-bottom: 1.5rem; }
-        .loading, .error, .empty { text-align: center; padding: 3rem; color: #6b6b76; }
-        .error { color: #ef4444; }
-        .tabs { display: flex; gap: 0.5rem; margin-bottom: 2rem; border-bottom: 1px solid #1e1e26; }
-        .tab { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; background: none; border: none; border-bottom: 2px solid transparent; color: #9c9ca7; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
-        .tab:hover { color: #fff; }
-        .tab.active { }
-        .section { background: #14141c; border: 1px solid #1e1e26; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
-        .section h2 { font-size: 1.1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
-        .health-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }
-        .health-card { background: #1e1e26; border-radius: 0.5rem; padding: 1rem; border-top: 3px solid; text-align: center; }
-        .health-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
-        .health-title { font-size: 0.8rem; color: #6b6b76; margin-bottom: 0.25rem; }
-        .health-value { font-size: 1.2rem; font-weight: 700; color: #fff; }
-        .status-form { display: flex; flex-direction: column; gap: 1rem; }
-        .status-form label { font-weight: 600; color: #fff; }
-        .status-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-        .status-input { padding: 0.75rem; background: #1e1e26; border: 1px solid #25252d; border-radius: 0.5rem; color: #fff; font-size: 0.9rem; }
-        .save-btn { padding: 0.75rem 1.5rem; color: #fff; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
-        .save-btn:hover:not(:disabled) { opacity: 0.9; }
-        .message { padding: 0.75rem; border-radius: 0.5rem; text-align: center; font-weight: 600; }
-        .message.success { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; color: #10b981; }
-        .message.error { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; }
-        .module-actions { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
-        .action-btn { padding: 0.5rem 1rem; color: #fff; border: none; border-radius: 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
-        .modules-list { display: flex; flex-direction: column; gap: 0.5rem; }
-        .module-card { display: flex; align-items: center; gap: 1rem; padding: 1rem; background: #1e1e26; border-radius: 0.5rem; border-left: 3px solid; cursor: pointer; transition: background 0.2s; }
-        .module-card:hover { background: #25252d; }
-        .module-icon { font-size: 1.5rem; }
-        .module-info { flex: 1; }
-        .module-name { font-weight: 600; color: #fff; }
-        .module-status { font-size: 0.8rem; color: #6b6b76; }
-        .module-error { font-size: 0.8rem; color: #ef4444; margin-top: 0.25rem; }
-        .module-hint { font-size: 0.75rem; color: #6b6b76; }
-        .logs-container { background: #0a0a0f; border: 1px solid #1e1e26; border-radius: 0.5rem; padding: 1rem; max-height: 400px; overflow-y: auto; margin-bottom: 1rem; font-family: monospace; font-size: 0.8rem; }
-        .log-entry { padding: 0.25rem 0; border-bottom: 1px solid #1e1e26; }
-        .log-time { color: #6b6b76; margin-right: 0.5rem; }
-        .log-source { color: #a5b4fc; margin-right: 0.5rem; }
-        .log-message { color: #fff; }
-        .refresh-btn { padding: 0.5rem 1rem; color: #fff; border: none; border-radius: 0.5rem; cursor: pointer; }
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-content { background: #14141c; border: 1px solid #1e1e26; border-radius: 0.75rem; max-width: 500px; width: 90%; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 2px solid; }
-        .modal-header h3 { margin: 0; }
-        .close-btn { background: none; border: none; color: #6b6b76; font-size: 1.5rem; cursor: pointer; }
-        .modal-body { padding: 1rem; color: #fff; }
-        .error-text { color: #ef4444; }
+        .bot-settings-page {
+          margin: 100px 200px 2rem 200px;
+          padding: 1.5rem;
+          border: 1px solid ${accentColor};
+          border-radius: 1rem;
+          background: #0a0a0f;
+        }
+        .page-header h1 {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          font-size: 1.5rem;
+          margin-bottom: 0.5rem;
+        }
+        .page-header p {
+          color: #6b6b76;
+          margin-bottom: 1.5rem;
+        }
+        .loading, .error, .empty {
+          text-align: center;
+          padding: 3rem;
+          color: #6b6b76;
+        }
+        .error {
+          color: #ef4444;
+        }
+        .tabs {
+          display: flex;
+          gap: 0.5rem;
+          margin-bottom: 2rem;
+          border-bottom: 1px solid #1e1e26;
+        }
+        .tab {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.75rem 1rem;
+          background: none;
+          border: none;
+          border-bottom: 2px solid transparent;
+          color: #9c9ca7;
+          cursor: pointer;
+          font-size: 0.9rem;
+          transition: all 0.2s;
+        }
+        .tab:hover {
+          color: #fff;
+        }
+        .section {
+          background: #14141c;
+          border: 1px solid #1e1e26;
+          border-radius: 0.75rem;
+          padding: 1.5rem;
+          margin-bottom: 1.5rem;
+        }
+        .section h2 {
+          font-size: 1.1rem;
+          margin-bottom: 1rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        .health-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1rem;
+        }
+        .health-card {
+          background: #1e1e26;
+          border-radius: 0.5rem;
+          padding: 1.5rem;
+          border-top: 3px solid;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+        .health-icon {
+          font-size: 2rem;
+          flex-shrink: 0;
+        }
+        .health-content {
+          flex: 1;
+        }
+        .health-title {
+          font-size: 0.9rem;
+          color: #6b6b76;
+          margin-bottom: 0.25rem;
+        }
+        .health-value {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #fff;
+        }
+        .status-form {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+        .status-form label {
+          font-weight: 600;
+          color: #fff;
+        }
+        .status-buttons {
+          display: flex;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+        .status-input {
+          padding: 0.75rem;
+          background: #1e1e26;
+          border: 1px solid #25252d;
+          border-radius: 0.5rem;
+          color: #fff;
+          font-size: 0.9rem;
+        }
+        .save-btn {
+          padding: 0.75rem 1.5rem;
+          color: #fff;
+          border: none;
+          border-radius: 0.5rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: opacity 0.2s;
+          align-self: flex-start;
+        }
+        .save-btn:hover:not(:disabled) {
+          opacity: 0.9;
+        }
+        .message {
+          padding: 0.75rem;
+          border-radius: 0.5rem;
+          text-align: center;
+          font-weight: 600;
+        }
+        .message.success {
+          background: rgba(16, 185, 129, 0.1);
+          border: 1px solid #10b981;
+          color: #10b981;
+        }
+        .message.error {
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid #ef4444;
+          color: #ef4444;
+        }
+        .module-actions {
+          display: flex;
+          gap: 0.5rem;
+          margin-bottom: 1rem;
+          flex-wrap: wrap;
+        }
+        .action-btn {
+          padding: 0.5rem 1rem;
+          color: #fff;
+          border: none;
+          border-radius: 0.5rem;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        .modules-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 0.75rem;
+        }
+        .module-card {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          padding: 1rem;
+          background: #1e1e26;
+          border-radius: 0.5rem;
+          border-left: 3px solid;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        .module-card:hover {
+          background: #25252d;
+        }
+        .module-icon {
+          font-size: 1.5rem;
+        }
+        .module-info {
+          flex: 1;
+        }
+        .module-name {
+          font-weight: 600;
+          color: #fff;
+        }
+        .module-status {
+          font-size: 0.8rem;
+          color: #6b6b76;
+        }
+        .module-error {
+          font-size: 0.8rem;
+          color: #ef4444;
+          margin-top: 0.25rem;
+        }
+        .module-hint {
+          font-size: 0.75rem;
+          color: #6b6b76;
+          text-align: right;
+        }
+        .logs-container {
+          background: #0a0a0f;
+          border: 1px solid #1e1e26;
+          border-radius: 0.5rem;
+          padding: 1rem;
+          max-height: 400px;
+          overflow-y: auto;
+          overflow-x: auto;
+          margin-bottom: 1rem;
+          font-family: monospace;
+          font-size: 0.85rem;
+          white-space: nowrap;
+        }
+        .log-entry {
+          padding: 0.25rem 0;
+          border-bottom: 1px solid #1e1e26;
+        }
+        .log-time {
+          color: #6b6b76;
+          margin-right: 0.5rem;
+        }
+        .log-source {
+          color: #a5b4fc;
+          margin-right: 0.5rem;
+        }
+        .log-message {
+          color: #fff;
+        }
+        .refresh-btn {
+          padding: 0.5rem 1rem;
+          color: #fff;
+          border: none;
+          border-radius: 0.5rem;
+          cursor: pointer;
+        }
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0,0,0,0.8);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+        .modal-content {
+          background: #14141c;
+          border: 1px solid #1e1e26;
+          border-radius: 0.75rem;
+          max-width: 700px;
+          width: 90%;
+        }
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 1rem;
+          border-bottom: 2px solid;
+        }
+        .modal-header h3 {
+          margin: 0;
+        }
+        .close-btn {
+          background: none;
+          border: none;
+          color: #6b6b76;
+          font-size: 1.5rem;
+          cursor: pointer;
+        }
+        .modal-body {
+          padding: 1rem;
+          color: #fff;
+        }
+        .error-text {
+          color: #ef4444;
+        }
+        @media (max-width: 1200px) {
+          .health-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          .modules-grid {
+            grid-template-columns: 1fr;
+          }
+        }
       `}</style>
     </div>
   );
