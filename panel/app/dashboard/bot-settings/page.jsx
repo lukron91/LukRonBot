@@ -21,7 +21,7 @@ export default function BotSettingsPage() {
 
   const fetchData = async () => {
     try {
-      const healthRes = await fetch("/api/proxy/bot/health");
+      const healthRes = await fetch("/api/proxy/api/bot/health");
       let healthData;
       if (healthRes.ok) {
         const text = await healthRes.text();
@@ -52,7 +52,7 @@ export default function BotSettingsPage() {
     fetchData();
     const healthInterval = setInterval(async () => {
       try {
-        const res = await fetch("/api/proxy/bot/health");
+        const res = await fetch("/api/proxy/api/bot/health");
         if (res.ok) {
           const text = await res.text();
           try { const data = JSON.parse(text); setHealth(prev => ({ ...prev, ...data })); } catch(e) {}
@@ -88,7 +88,7 @@ export default function BotSettingsPage() {
         setStatus(newStatus);
         setCustomText(newCustomText);
         setMessage("✅ Status zaktualizowany");
-        const healthRes = await fetch("/api/proxy/bot/health");
+        const healthRes = await fetch("/api/proxy/api/bot/health");
         if (healthRes.ok) {
           const text = await healthRes.text();
           try { const healthData = JSON.parse(text); setHealth(healthData); } catch(e) {}
