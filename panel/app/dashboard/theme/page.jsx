@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useTheme } from '@/lib/useTheme';
-import { FiSun, FiMoon, FiCheck, FiPalette } from 'react-icons/fi';
+import { FiSun, FiMoon, FiCheck, FiSettings } from 'react-icons/fi';
 
 export default function ThemeSettings() {
   const { theme, updateTheme } = useTheme();
@@ -29,7 +29,7 @@ export default function ThemeSettings() {
   return (
     <div className="theme-settings">
       <div className="page-header">
-        <h1><FiPalette /> Ustawienia motywu</h1>
+        <h1><FiSettings /> Ustawienia motywu</h1>
         <p>Dostosuj wygląd panelu do swoich preferencji</p>
       </div>
 
