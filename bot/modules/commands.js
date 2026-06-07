@@ -58,9 +58,9 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
 
   // --- ENDPOINTY API DLA PANELU ---
 
-  // 1. Lista załadowanych komend
+  // 1. Lista komend w pamięci bota (z folderu commands/)
   app.get('/api/commands', (req, res) => {
-    logger.system('debug', 'Otrzymano zapytanie o listę komend', 'commands');
+    logger.system('debug', 'Otrzymano zapytanie o listę komend w pamięci', 'commands');
     const commandsList = [];
     if (!client.commands) {
       logger.system('warn', 'Kolekcja client.commands nie istnieje!', 'commands');
@@ -76,19 +76,52 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
     res.json({ commands: commandsList });
   });
 
-  // 2. Rejestracja komend
+  // 2. Lista komend zarejestrowanych GLOBALNIE w Discordzie
+  app.get('/api/commands/registered-global', async (req, res) => {
+    try {
+      const globalCmds = await client.application.commands.fetch();
+      const list = globalCmds.map(cmd => ({ name: cmd.name, description: cmd.description }));
+      res.json({ commands: list });
+    } catch (err) {
+      logger.system('error', `Błąd pobierania komend globalnych: ${err.message}`, 'commands');
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 3. Lista komend zarejestrowanych na KONKRETNYM SERWERZE w Discordzie
+  app.get('/api/commands/registered-guild/:guildId', async (req, res) => {
+    const { guildId } = req.params;
+    try {
+      const guild = await client.guilds.fetch(guildId);
+      const guildCmds = await guild.commands.fetch();
+      const list = guildCmds.map(cmd => ({ name: cmd.name, description: cmd.description }));
+      res.json({ commands: list });
+    } catch (err) {
+      logger.system('error', `Błąd pobierania komend serwera ${guildId}: ${err.message}`, 'commands');
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 4. Rejestracja komend
   app.post('/api/commands/register', async (req, res) => {
-    const { type, guildId, commandName } = req.body; // type: 'global' | 'guild', commandName: optional (single command)
+    const { type, guildId, commandNames } = req.body; // type: 'global' | 'guild', commandNames: array of strings
 
     try {
       let commandsToRegister = [];
 
-      if (commandName) {
-        const cmd = client.commands.get(commandName);
-        if (!cmd) return res.status(404).json({ error: 'Komenda nie znaleziona w pamięci bota' });
-        commandsToRegister.push(cmd.data.toJSON());
+      if (commandNames && Array.isArray(commandNames) && commandNames.length > 0) {
+        // Rejestrujemy tylko wybrane komendy
+        for (const name of commandNames) {
+          const cmd = client.commands.get(name);
+          if (cmd) commandsToRegister.push(cmd.data.toJSON());
+        }
       } else {
+        // Rejestrujemy wszystkie z pamięci
         client.commands.forEach(cmd => commandsToRegister.push(cmd.data.toJSON()));
+      }
+
+      if (commandsToRegister.length === 0) {
+        return res.status(400).json({ error: 'Brak komend do zarejestrowania' });
       }
 
       if (type === 'global') {
@@ -109,24 +142,28 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
     }
   });
 
-  // 3. Usuwanie komend
+  // 5. Usuwanie komend
   app.post('/api/commands/unregister', async (req, res) => {
-    const { type, guildId, commandName } = req.body;
+    const { type, guildId, commandNames } = req.body; // commandNames: array of strings
 
     try {
       if (type === 'global') {
-        if (commandName) {
-          await client.application.commands.delete(commandName);
-          logger.system('info', `Usunięto komendę globalną: ${commandName}`, 'commands');
+        if (commandNames && Array.isArray(commandNames) && commandNames.length > 0) {
+          for (const name of commandNames) {
+            await client.application.commands.delete(name);
+          }
+          logger.system('info', `Usunięto wybrane komendy globalne: ${commandNames.join(', ')}`, 'commands');
         } else {
           await client.application.commands.set([]);
           logger.system('info', `Wyczyszczono wszystkie komendy globalne.`, 'commands');
         }
       } else if (type === 'guild' && guildId) {
         const guild = await client.guilds.fetch(guildId);
-        if (commandName) {
-          await guild.commands.delete(commandName);
-          logger.system('info', `Usunięto komendę ${commandName} z serwera ${guildId}.`, 'commands');
+        if (commandNames && Array.isArray(commandNames) && commandNames.length > 0) {
+          for (const name of commandNames) {
+            await guild.commands.delete(name);
+          }
+          logger.system('info', `Usunięto wybrane komendy z serwera ${guildId}: ${commandNames.join(', ')}`, 'commands');
         } else {
           await guild.commands.set([]);
           logger.system('info', `Wyczyszczono wszystkie komendy na serwerze ${guildId}.`, 'commands');

@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useTheme } from '@/lib/useTheme';
 import { useSearchParams } from 'next/navigation';
-import { FiWifi, FiClock, FiCpu, FiHardDrive, FiServer, FiActivity, FiPower, FiPackage, FiList, FiInfo, FiDatabase, FiRefreshCw, FiTerminal, FiPlus, FiTrash2 } from 'react-icons/fi';
+import { FiWifi, FiClock, FiCpu, FiHardDrive, FiServer, FiActivity, FiPower, FiPackage, FiList, FiInfo, FiDatabase, FiRefreshCw, FiTerminal, FiPlus, FiTrash2, FiCheckSquare, FiSquare } from 'react-icons/fi';
 
 export default function BotSettingsPage() {
   const { accentColor } = useTheme();
@@ -23,8 +23,11 @@ export default function BotSettingsPage() {
   const [showModal, setShowModal] = useState(false);
 
   // Command Management States
-  const [commandsList, setCommandsList] = useState([]);
-  const [cmdRegType, setCmdRegType] = useState("global"); // 'global' | 'guild'
+  const [cmdSubTab, setCmdSubTab] = useState("registration"); // 'registration' | 'local' | 'global'
+  const [memoryCommands, setMemoryCommands] = useState([]);
+  const [registeredLocalCommands, setRegisteredLocalCommands] = useState([]);
+  const [registeredGlobalCommands, setRegisteredGlobalCommands] = useState([]);
+  const [selectedCmds, setSelectedCmds] = useState(new Set());
   const [cmdUpdating, setCmdUpdating] = useState(false);
   const [cmdMessage, setCmdMessage] = useState("");
 
@@ -52,12 +55,8 @@ export default function BotSettingsPage() {
       const dbRes = await fetch("/api/proxy/api/logs/db");
       if (dbRes.ok) setDbLogs(await dbRes.json());
 
-      // Fetch Commands
-      const cmdRes = await fetch("/api/proxy/api/commands");
-      if (cmdRes.ok) {
-        const cmdData = await cmdRes.json();
-        setCommandsList(cmdData.commands || []);
-      }
+      // Initial Command Load
+      await refreshAllCommands();
     } catch (err) {
       console.error(err);
       setHealth({ error: err.message });
@@ -149,24 +148,50 @@ export default function BotSettingsPage() {
   };
 
   // --- Command Management Functions ---
-  const manageCommands = async (action, commandName = null) => {
+  const refreshAllCommands = async () => {
+    try {
+      const [memRes, localRes, globalRes] = await Promise.all([
+        fetch("/api/proxy/api/commands").then(r => r.json()),
+        guildId ? fetch(`/api/proxy/api/commands/registered-guild/${guildId}`).then(r => r.json()) : Promise.resolve({ commands: [] }),
+        fetch("/api/proxy/api/commands/registered-global").then(r => r.json()),
+      ]);
+      setMemoryCommands(memRes.commands || []);
+      setRegisteredLocalCommands(localRes.commands || []);
+      setRegisteredGlobalCommands(globalRes.commands || []);
+    } catch (err) {
+      console.error("Error refreshing commands:", err);
+    }
+  };
+
+  const toggleCommandSelection = (name) => {
+    const newSelected = new Set(selectedCmds);
+    if (newSelected.has(name)) newSelected.delete(name);
+    else newSelected.add(name);
+    setSelectedCmds(newSelected);
+  };
+
+  const manageCommands = async (action, commandNames = null) => {
     setCmdUpdating(true);
     setCmdMessage("");
     const endpoint = action === 'register' ? '/api/commands/register' : '/api/commands/unregister';
     
+    // If no specific names provided, and we are in registration tab, use selected checkboxes
+    const finalNames = commandNames || (action === 'register' ? Array.from(selectedCmds) : null);
+
     try {
       const res = await fetch(`/api/proxy${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          type: cmdRegType, 
+          type: cmdSubTab === 'global' ? 'global' : 'guild', 
           guildId: guildId, 
-          commandName 
+          commandNames: finalNames 
         }),
       });
       const data = await res.json();
       if (res.ok) {
-        setCmdMessage(`✅ ${action === 'register' ? 'Zarejestrowano' : 'Usunięto'} ${commandName ? commandName : 'wszystkie komendy'}`);
+        setCmdMessage(`✅ ${action === 'register' ? 'Zarejestrowano' : 'Usunięto'} ${finalNames ? finalNames.join(', ') : 'wszystkie komendy'}`);
+        await refreshAllCommands();
       } else {
         setCmdMessage(`❌ Błąd: ${data.error}`);
       }
@@ -174,14 +199,6 @@ export default function BotSettingsPage() {
       setCmdMessage(`❌ Błąd: ${err.message}`);
     } finally {
       setCmdUpdating(false);
-    }
-  };
-
-  const refreshCommands = async () => {
-    const cmdRes = await fetch("/api/proxy/api/commands");
-    if (cmdRes.ok) {
-      const cmdData = await cmdRes.json();
-      setCommandsList(cmdData.commands || []);
     }
   };
 
@@ -313,68 +330,148 @@ export default function BotSettingsPage() {
         <div className="section">
           <h2 style={{ color: accentColor }}>Zarządzanie Komendami Slash</h2>
           
-          <div className="command-setup" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <div className="setup-group">
-              <label style={{ display: 'block', fontSize: '0.8rem', color: '#6b6b76', marginBottom: '0.5rem' }}>Zakres rejestracji</label>
-              <div className="setup-toggle" style={{ display: 'flex', gap: '0.5rem' }}>
-                <button 
-                  onClick={() => setCmdRegType('global')}
-                  className={`toggle-btn ${cmdRegType === 'global' ? 'active' : ''}`}
-                  style={{ background: cmdRegType === 'global' ? accentColor : '#1e1e26', border: 'none', color: 'white', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}
-                >Globalne</button>
-                <button 
-                  onClick={() => setCmdRegType('guild')}
-                  className={`toggle-btn ${cmdRegType === 'guild' ? 'active' : ''}`}
-                  style={{ background: cmdRegType === 'guild' ? accentColor : '#1e1e26', border: 'none', color: 'white', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}
-                >Serwerowe</button>
+          <div className="sub-tabs" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid #1e1e26' }}>
+            <button 
+              className={`sub-tab ${cmdSubTab === 'registration' ? 'active' : ''}`} 
+              onClick={() => setCmdSubTab('registration')}
+              style={cmdSubTab === 'registration' ? { borderBottomColor: accentColor, color: accentColor } : {}}
+            >
+              <FiPlus /> Rejestracja
+            </button>
+            <button 
+              className={`sub-tab ${cmdSubTab === 'local' ? 'active' : ''}`} 
+              onClick={() => setCmdSubTab('local')}
+              style={cmdSubTab === 'local' ? { borderBottomColor: accentColor, color: accentColor } : {}}
+            >
+              <FiServer /> Zarejestrowane Lokalnie
+            </button>
+            <button 
+              className={`sub-tab ${cmdSubTab === 'global' ? 'active' : ''}`} 
+              onClick={() => setCmdSubTab('global')}
+              style={cmdSubTab === 'global' ? { borderBottomColor: accentColor, color: accentColor } : {}}
+            >
+              <FiGlobe /> Zarejestrowane Globalnie
+            </button>
+          </div>
+
+          {cmdSubTab === 'registration' && (
+            <>
+              <div className="command-setup" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                <button onClick={refreshAllCommands} className="action-btn" style={{ background: accentColor }}><FiRefreshCw /> Odśwież listę z pamięci</button>
               </div>
-            </div>
-            
-            <button onClick={refreshCommands} className="action-btn" style={{ background: accentColor }}><FiRefreshCw /> Odśwież listę</button>
-          </div>
 
-          <div className="command-bulk-actions" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-            <button onClick={() => manageCommands('register')} className="action-btn" style={{ background: accentColor, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><FiPlus /> Zarejestruj wszystkie</button>
-            <button onClick={() => manageCommands('unregister')} className="action-btn" style={{ background: '#ef4444', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><FiTrash2 /> Usuń wszystkie</button>
-          </div>
+              <div className="command-bulk-actions" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                <button 
+                  onClick={() => { setCmdRegType('global'); manageCommands('register'); }} 
+                  className="action-btn" 
+                  style={{ background: accentColor, display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                  <FiPlus /> Zarejestruj wybrane Globalnie
+                </button>
+                <button 
+                  onClick={() => { setCmdRegType('guild'); manageCommands('register'); }} 
+                  className="action-btn" 
+                  style={{ background: accentColor, display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                  <FiPlus /> Zarejestruj wybrane Lokalnie
+                </button>
+                <button 
+                  onClick={() => manageCommands('register', null)} 
+                  className="action-btn" 
+                  style={{ background: '#6b6b76', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                  Zarejestruj Wszystkie (Lokalnie)
+                </button>
+              </div>
 
-          {cmdMessage && <div className={`message ${cmdMessage.startsWith('✅') ? 'success' : 'error'}`} style={{ marginBottom: '1rem' }}>{cmdMessage}</div>}
+              {cmdMessage && <div className={`message ${cmdMessage.startsWith('✅') ? 'success' : 'error'}`} style={{ marginBottom: '1rem' }}>{cmdMessage}</div>}
 
-          <div className="commands-table-wrapper" style={{ overflowX: 'auto' }}>
-            <table className="commands-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: 'white' }}>
-              <thead>
-                <tr style={{ borderBottom: `2px solid ${accentColor}`, color: '#6b6b76', fontSize: '0.8rem' }}>
-                  <th style={{ padding: '1rem' }}>Nazwa</th>
-                  <th style={{ padding: '1rem' }}>Opis</th>
-                  <th style={{ padding: '1rem', textAlign: 'right' }}>Akcje</th>
-                </tr>
-              </thead>
-              <tbody>
-                {commandsList.length === 0 ? (
-                  <tr><td colSpan="3" className="empty" style={{ padding: '2rem' }}>Brak załadowanych komend w pamięci bota.</td></tr>
-                ) : (
-                  commandsList.map((cmd, idx) => (
-                    <tr key={idx} style={{ borderBottom: '1px solid #1e1e26' }}>
-                      <td style={{ padding: '1rem', fontWeight: '600' }}>/{cmd.name}</td>
-                      <td style={{ padding: '1rem', color: '#9c9ca7', fontSize: '0.9rem' }}>{cmd.description}</td>
-                      <td style={{ padding: '1rem', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                        <button 
-                          onClick={() => manageCommands('register', cmd.name)} 
-                          className="cmd-action-btn"
-                          style={{ background: accentColor, color: 'white', border: 'none', padding: '0.3rem 0.6rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
-                        >Zarejestruj</button>
-                        <button 
-                          onClick={() => manageCommands('unregister', cmd.name)} 
-                          className="cmd-action-btn"
-                          style={{ background: '#ef4444', color: 'white', border: 'none', padding: '0.3rem 0.6rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
-                        >Usuń</button>
-                      </td>
+              <div className="commands-table-wrapper" style={{ overflowX: 'auto' }}>
+                <table className="commands-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: 'white' }}>
+                  <thead>
+                    <tr style={{ borderBottom: `2px solid ${accentColor}`, color: '#6b6b76', fontSize: '0.8rem' }}>
+                      <th style={{ padding: '1rem', width: '40px' }}>Wybierz</th>
+                      <th style={{ padding: '1rem' }}>Nazwa</th>
+                      <th style={{ padding: '1rem' }}>Opis</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody>
+                    {memoryCommands.length === 0 ? (
+                      <tr><td colSpan="3" className="empty" style={{ padding: '2rem' }}>Brak załadowanych komend w pamięci bota.</td></tr>
+                    ) : (
+                      memoryCommands.map((cmd, idx) => (
+                        <tr key={idx} style={{ borderBottom: '1px solid #1e1e26' }}>
+                          <td style={{ padding: '1rem', textAlign: 'center' }}>
+                            <div onClick={() => toggleCommandSelection(cmd.name)} style={{ cursor: 'pointer', color: accentColor, fontSize: '1.2rem' }}>
+                              {selectedCmds.has(cmd.name) ? <FiCheckSquare /> : <FiSquare />}
+                            </div>
+                          </td>
+                          <td style={{ padding: '1rem', fontWeight: '600' }}>/{cmd.name}</td>
+                          <td style={{ padding: '1rem', color: '#9c9ca7', fontSize: '0.9rem' }}>{cmd.description}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          {cmdSubTab === 'local' && (
+            <div className="registered-list">
+               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                 <h3 style={{ color: '#fff', fontSize: '1rem' }}>Komendy aktywne na tym serwerze</h3>
+                 <button onClick={refreshAllCommands} className="action-btn" style={{ background: accentColor, fontSize: '0.8rem' }}><FiRefreshCw /> Odśwież</button>
+               </div>
+               {registeredLocalCommands.length === 0 ? <div className="empty">Brak zarejestrowanych komend lokalnie.</div> : (
+                 <div className="commands-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
+                   {registeredLocalCommands.map((cmd, idx) => (
+                     <div key={idx} className="module-card" style={{ borderLeftColor: '#ef4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                       <div className="module-info">
+                         <div className="module-name">/{cmd.name}</div>
+                         <div className="module-status" style={{ fontSize: '0.75rem' }}>{cmd.description}</div>
+                       </div>
+                       <button 
+                         onClick={() => manageCommands('unregister', [cmd.name])}
+                         className="action-btn" 
+                         style={{ background: '#ef4444', padding: '0.3rem 0.6rem', fontSize: '0.7rem' }}
+                       >
+                         <FiTrash2 /> Usuń
+                       </button>
+                     </div>
+                   ))}
+                 </div>
+               )}
+            </div>
+          )}
+
+          {cmdSubTab === 'global' && (
+            <div className="registered-list">
+               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                 <h3 style={{ color: '#fff', fontSize: '1rem' }}>Komendy aktywne globalnie</h3>
+                 <button onClick={refreshAllCommands} className="action-btn" style={{ background: accentColor, fontSize: '0.8rem' }}><FiRefreshCw /> Odśwież</button>
+               </div>
+               {registeredGlobalCommands.length === 0 ? <div className="empty">Brak zarejestrowanych komend globalnie.</div> : (
+                 <div className="commands-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
+                   {registeredGlobalCommands.map((cmd, idx) => (
+                     <div key={idx} className="module-card" style={{ borderLeftColor: '#ef4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                       <div className="module-info">
+                         <div className="module-name">/{cmd.name}</div>
+                         <div className="module-status" style={{ fontSize: '0.75rem' }}>{cmd.description}</div>
+                       </div>
+                       <button 
+                         onClick={() => manageCommands('unregister', [cmd.name])}
+                         className="action-btn" 
+                         style={{ background: '#ef4444', padding: '0.3rem 0.6rem', fontSize: '0.7rem' }}
+                       >
+                         <FiTrash2 /> Usuń
+                       </button>
+                     </div>
+                   ))}
+                 </div>
+               )}
+            </div>
+          )}
         </div>
       )}
 
@@ -738,6 +835,22 @@ export default function BotSettingsPage() {
           .modules-grid {
             grid-template-columns: 1fr;
           }
+        }
+        .sub-tab {
+          padding: 0.5rem 1rem;
+          background: none;
+          border: none;
+          border-bottom: 2px solid transparent;
+          color: #9c9ca7;
+          cursor: pointer;
+          font-size: 0.85rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          transition: all 0.2s;
+        }
+        .sub-tab.active {
+          color: #fff;
         }
       `}</style>
     </div>
