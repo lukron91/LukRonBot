@@ -15,6 +15,7 @@
   --border-radius: 12px;
   --surface-opacity: 0.9;
   --bg-intensity: 100%;
+  --bg-style: gradient;
 }
 
 body {
@@ -22,6 +23,39 @@ body {
   color: var(--text-color);
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
+  min-height: 100vh;
+}
+
+/* DYNAMIC BACKGROUNDS */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  transition: all 0.5s ease;
+}
+
+body[data-bg-style="solid"]::before {
+  background: var(--bg-color);
+}
+
+body[data-bg-style="gradient"]::before {
+  background: radial-gradient(circle at top right, var(--accent-color), transparent 40%),
+              radial-gradient(circle at bottom left, var(--accent-color), transparent 40%),
+              var(--bg-color);
+  opacity: 0.6;
+}
+
+body[data-bg-style="aurora"]::before {
+  background: 
+    radial-gradient(at 0% 0%, rgba(var(--accent-rgb), 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(var(--accent-rgb), 0.15) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+    var(--bg-color);
 }
 
 /* GLOBAL LAYOUT STANDARDS */
@@ -57,8 +91,12 @@ body {
   border-radius: var(--border-radius);
   padding: 1.5rem;
   margin-bottom: 1.5rem;
-  backdrop-filter: blur(10px);
-  transition: border-color 0.2s;
+  backdrop-filter: blur(12px);
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.section-card:hover {
+  border-color: var(--accent-color);
 }
 
 .section-card h2 {
@@ -72,7 +110,7 @@ body {
 .dashboard-layout {
   display: flex;
   min-height: 100vh;
-  background-color: var(--bg-color);
+  background-color: transparent;
 }
 
 /* SIDEBAR */
@@ -86,7 +124,7 @@ body {
   top: 0;
   height: 100vh;
   border-radius: 0 var(--border-radius) var(--border-radius) 0;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
 }
 .sidebar-header {
   padding: 1.5rem;
@@ -147,7 +185,7 @@ body {
   color: white;
 }
 .nav-link.active {
-  background: rgba(99, 102, 241, 0.15);
+  background: rgba(var(--accent-color), 0.15);
   color: var(--accent-color);
   border-left: 3px solid var(--accent-color);
 }
@@ -209,7 +247,7 @@ body {
   flex: 1;
   padding: 2rem;
   overflow-y: auto;
-  background-color: var(--bg-color);
+  background-color: transparent;
 }
 .dashboard-header {
   display: flex;
@@ -274,7 +312,7 @@ body {
   display: flex;
   align-items: center;
   gap: 1rem;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
 }
 .stat-card:hover {
   border-color: var(--accent-color);
@@ -284,7 +322,7 @@ body {
   font-size: 2rem;
   width: 48px;
   height: 48px;
-  background: rgba(88, 101, 242, 0.15);
+  background: rgba(var(--accent-color), 0.15);
   border-radius: var(--border-radius);
   display: flex;
   align-items: center;
@@ -332,7 +370,7 @@ body {
   padding: 1.5rem;
   margin-bottom: 1.8rem;
   border: 1px solid var(--border-color);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
 }
 .card-title {
   font-size: 1.2rem;
@@ -462,7 +500,7 @@ input:checked + .toggle-slider-modern:before {
   flex: 1;
   height: 4px;
   -webkit-appearance: none;
-  background: var(--border-color);
+  background: var(--border-//border-color);
   border-radius: 2px;
 }
 .range-slider::-webkit-slider-thumb {
@@ -498,7 +536,7 @@ input:checked + .toggle-slider-modern:before {
   gap: 1rem;
   border: 1px solid var(--border-color);
   transition: all 0.2s;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
 }
 .health-card:hover {
   border-color: var(--accent-color);
@@ -506,7 +544,7 @@ input:checked + .toggle-slider-modern:before {
 .health-icon {
   font-size: 1.6rem;
   color: var(--accent-color);
-  background: rgba(88, 101, 242, 0.15);
+  background: rgba(var(--accent-color), 0.15);
   width: 44px;
   height: 44px;
   display: flex;
@@ -541,7 +579,7 @@ input:checked + .toggle-slider-modern:before {
   max-width: 500px;
   margin: 3rem auto;
   border: 1px solid var(--border-color);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
 }
 .bot-missing-icon {
   font-size: 4rem;
@@ -624,7 +662,7 @@ input:checked + .toggle-slider-modern:before {
   margin-bottom: 2rem;
 }
 .login-btn {
-  background: linear-gradient(135deg, var(--accent-color), #4752c4);
+  background: linear-//linear-gradient(135deg, var(--accent-color), #4752c4);
   border: none;
   border-radius: var(--border-radius);
   padding: 0.8rem;

@@ -8,20 +8,21 @@ const DEFAULT_THEME = {
   accentColor: '#3b82f6',
   borderRadius: '12px',
   surfaceOpacity: '0.9',
-  bgIntensity: '100%'
+  bgIntensity: '100%',
+  bgStyle: 'gradient' // 'solid' | 'gradient' | 'aurora'
 };
 
 const PALETTES = {
   dark: {
     backgroundColor: '#0a0a0f',
-    surfaceRGB: '20, 20, 28', // #14141c
+    surfaceRGB: '20, 20, 28',
     borderColor: '#1e1e26',
     textColor: '#ffffff',
     textMuted: '#6b6b76'
   },
   light: {
     backgroundColor: '#f3f4f6',
-    surfaceRGB: '255, 255, 255', // #ffffff
+    surfaceRGB: '255, 255, 255',
     borderColor: '#e5e7eb',
     textColor: '#111827',
     textMuted: '#6b7280'
@@ -58,6 +59,7 @@ export function ThemeProvider({ children }) {
     root.style.setProperty('--border-radius', theme?.borderRadius || DEFAULT_THEME.borderRadius);
     root.style.setProperty('--surface-opacity', theme?.surfaceOpacity || DEFAULT_THEME.surfaceOpacity);
     root.style.setProperty('--bg-intensity', theme?.bgIntensity || DEFAULT_THEME.bgIntensity);
+    root.style.setProperty('--bg-style', theme?.bgStyle || DEFAULT_THEME.bgStyle);
 
     localStorage.setItem('theme_settings', JSON.stringify(theme));
   }, [theme]);
