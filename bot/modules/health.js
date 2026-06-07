@@ -1,37 +1,52 @@
-const { ActivityType } = require('discord.js');
+const os = require('os');
 
 module.exports = (app, client, registerModule, unregisterModule, moduleName) => {
-  registerModule(moduleName, false, 'Moduł zdrowia bota – endpoint /bot/health');
+  registerModule(moduleName, false, 'Status i statystyki bota');
+
+  const logger = app.locals.logger;
+  const startTime = Date.now();
+
+  function getCpuUsage() {
+    const cpus = os.cpus();
+    let totalIdle = 0, totalTick = 0;
+    for (const cpu of cpus) {
+      for (const type in cpu.times) totalTick += cpu.times[type];
+      totalIdle += cpu.times.idle;
+    }
+    return ((totalTick - totalIdle) / totalTick) * 100;
+  }
 
   app.get('/bot/health', (req, res) => {
+    const uptime = Math.floor((Date.now() - startTime) / 1000);
+    const ping = Math.round(client.ws.ping);
+    const guildCount = client.guilds.cache.size;
+    const cpuUsage = getCpuUsage();
+    const memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024;
+
+    let customStatus = '';
     try {
-      const guildCount = client.guilds.cache.size;
-      const ping = client.ws.ping;
-      const uptime = process.uptime();
-      const cpuUsage = process.cpuUsage().user / 1000000;
-      const memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024;
-      const activities = client.user?.presence?.activities || [];
-      const customActivity = activities.find(a => a.type === ActivityType.Custom);
-      const customStatus = customActivity ? customActivity.state || customActivity.name : null;
-      res.json({
-        running: true,
-        ping,
-        uptime,
-        guilds: guildCount,
-        cpu: cpuUsage.toFixed(2),
-        ram: memoryUsage.toFixed(2),
-        status: client.user?.presence?.status || 'online',
-        customStatus: customStatus || ''
-      });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
+      const fs = require('fs');
+      const path = require('path');
+      const statusFile = path.join(__dirname, '..', 'status.json');
+      if (fs.existsSync(statusFile)) {
+        const data = JSON.parse(fs.readFileSync(statusFile, 'utf8'));
+        customStatus = data.customStatus || '';
+      }
+    } catch (err) {}
+
+    res.json({
+      running: true,
+      ping,
+      uptime,
+      guilds: guildCount,
+      cpu: cpuUsage.toFixed(2),
+      ram: memoryUsage.toFixed(2),
+      status: client.user?.presence?.status || 'online',
+      customStatus: customStatus || '',
+      environment: app.locals.activeDatabase(),
+      dbConnected: app.locals.isDbConnected(),
+    });
   });
 
-  // Opcjonalnie: zwróć obiekt z funkcją unload (jeśli trzeba posprzątać)
-  return {
-    unload: () => {
-      console.log(`[health] Moduł ${moduleName} rozładowany`);
-    }
-  };
+  logger.system('info', 'Moduł health załadowany', 'health');
 };

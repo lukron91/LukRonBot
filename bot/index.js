@@ -14,13 +14,10 @@ app.use(cors({ origin: ['http://localhost:3000', 'http://localhost:3002'] }));
 // ---------- ŚRODOWISKO BAZY ----------
 const activeDatabase = getActiveEnv();
 
-// ---------- POŁĄCZENIE Z BAZĄ I INICJALIZACJA ----------
-let dbConnected = false;
-
+// ---------- INICJALIZACJA STRUKTURY BAZY ----------
 async function initDbStructure() {
   if (!dbConnected) return;
 
-  // globalconfigs — wspólna kolekcja dla obu środowisk
   const GlobalConfigSchema = new mongoose.Schema({
     key: { type: String, required: true, unique: true },
     value: { type: mongoose.Schema.Types.Mixed },
@@ -29,7 +26,6 @@ async function initDbStructure() {
   const GlobalConfig = mongoose.models.globalconfigs
     || mongoose.model('globalconfigs', GlobalConfigSchema, 'globalconfigs');
 
-  // Utwórz domyślne wpisy jeśli nie istnieją
   await GlobalConfig.findOneAndUpdate(
     { key: 'active_env' },
     { key: 'active_env', value: activeDatabase, updatedAt: new Date() },
@@ -46,7 +42,6 @@ async function initDbStructure() {
     { upsert: true }
   );
 
-  // Utwórz kolekcje środowisk przez zapis pustego dokumentu inicjalizacyjnego
   for (const env of ['main', 'test']) {
     const EnvConfigSchema = new mongoose.Schema({
       key: String,
@@ -66,12 +61,14 @@ async function initDbStructure() {
   console.log(`✅ Struktura bazy zainicjalizowana (środowisko aktywne: ${activeDatabase})`);
 }
 
+// ---------- POŁĄCZENIE Z BAZĄ ----------
+let dbConnected = false;
 connectDB().then(connected => {
   dbConnected = connected;
   if (connected) initDbStructure();
 });
 
-// ---------- STATUS BOTA (zapis do pliku lokalnego) ----------
+// ---------- STATUS BOTA ----------
 const STATUS_FILE = path.join(__dirname, 'status.json');
 function saveBotStatus(status, customStatus) {
   const data = { status, customStatus: customStatus || '' };
@@ -111,7 +108,7 @@ client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
   const getGuildConfig = app.locals.getGuildConfig;
   if (!getGuildConfig) return;
-  
+
   const config = await getGuildConfig(message.guild.id);
   const prefix = config.prefix || '!';
   if (!message.content.startsWith(prefix)) return;
@@ -123,7 +120,14 @@ client.on('messageCreate', async (message) => {
 // ---------- API ENDPOINTY ----------
 app.get('/api/status', (req, res) => res.json({ mongo: dbConnected }));
 
-// Cache statystyk
+app.get('/api/database/status', (req, res) => {
+  res.json({
+    activeDatabase,
+    environments: ['main', 'test'],
+    dbConnected
+  });
+});
+
 let statsCache = new Map();
 setInterval(() => statsCache.clear(), 30000);
 
@@ -141,19 +145,12 @@ app.get('/api/guilds/:guildId/stats', (req, res) => {
   res.json(stats);
 });
 
-app.get('/api/database/status', (req, res) => {
-  res.json({ 
-    activeDatabase, 
-    environments: ['main', 'test'],
-    dbConnected
-  });
-});
-
 // ---------- LOGGER ----------
 {
   const LOG_DIR = path.join(__dirname, 'logs');
   const SYSTEM_LOG_FILE = path.join(LOG_DIR, 'system.log');
   const ACTIVITY_LOG_FILE = path.join(LOG_DIR, 'activity.log');
+  const DB_LOG_FILE = path.join(LOG_DIR, 'db.log');
   const MAX_LOGS = 1000;
 
   if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
@@ -163,11 +160,11 @@ app.get('/api/database/status', (req, res) => {
       if (!fs.existsSync(filePath)) return [];
       const lines = fs.readFileSync(filePath, 'utf8').trim().split('\n').filter(Boolean);
       return lines.slice(-MAX_LOGS).map(line => {
-        const match = line.match(/^\[(.+?)\] \[(.+?)\] \[(.+?)\] \[(.+?)\] (.+)$/);
+        const match = line.match(/^\[(.+?)\] \[(.+?)\] \[(.+?)\] (.+)$/);
         if (match) {
-          return { timestamp: match[1], type: match[2].toLowerCase(), category: match[3], source: match[4], message: match[5] };
+          return { timestamp: match[1], type: match[2].toLowerCase(), source: match[3], message: match[4] };
         }
-        return { timestamp: new Date().toISOString(), type: 'info', category: 'system', source: 'core', message: line };
+        return { timestamp: new Date().toISOString(), type: 'info', source: 'core', message: line };
       }).reverse();
     } catch (e) {
       return [];
@@ -176,19 +173,28 @@ app.get('/api/database/status', (req, res) => {
 
   let systemLogs = readLogsFromFile(SYSTEM_LOG_FILE);
   let activityLogs = readLogsFromFile(ACTIVITY_LOG_FILE);
+  let dbLogs = readLogsFromFile(DB_LOG_FILE);
 
-  function writeLog(type, message, category = 'system', source = 'core') {
+  function writeLog(type, message, category, source = 'core') {
     const timestamp = new Date().toISOString();
-    const logEntry = { timestamp, type, category, source, message };
+    const logEntry = { timestamp, type, source, message };
 
+    let logFile, logsArray;
     if (category === 'system') {
-      systemLogs.unshift(logEntry);
-      if (systemLogs.length > MAX_LOGS) systemLogs.pop();
-      fs.appendFile(SYSTEM_LOG_FILE, `[${timestamp}] [${type.toUpperCase()}] [${category}] [${source}] ${message}\n`, () => {});
-    } else {
-      activityLogs.unshift(logEntry);
-      if (activityLogs.length > MAX_LOGS) activityLogs.pop();
-      fs.appendFile(ACTIVITY_LOG_FILE, `[${timestamp}] [${type.toUpperCase()}] [${category}] [${source}] ${message}\n`, () => {});
+      logFile = SYSTEM_LOG_FILE;
+      logsArray = systemLogs;
+    } else if (category === 'activity') {
+      logFile = ACTIVITY_LOG_FILE;
+      logsArray = activityLogs;
+    } else if (category === 'db') {
+      logFile = DB_LOG_FILE;
+      logsArray = dbLogs;
+    }
+
+    if (logsArray) {
+      logsArray.unshift(logEntry);
+      if (logsArray.length > MAX_LOGS) logsArray.pop();
+      fs.appendFile(logFile, `[${timestamp}] [${type.toUpperCase()}] [${source}] ${message}\n`, () => {});
     }
 
     let color = '';
@@ -202,6 +208,7 @@ app.get('/api/database/status', (req, res) => {
   const logger = {
     system: (type, message, source = 'core') => writeLog(type, message, 'system', source),
     activity: (type, message, source = 'core') => writeLog(type, message, 'activity', source),
+    db: (type, message, source = 'db') => writeLog(type, message, 'db', source),
     info: (msg, source = 'core') => writeLog('info', msg, 'activity', source),
     warn: (msg, source = 'core') => writeLog('warn', msg, 'activity', source),
     error: (msg, source = 'core') => writeLog('error', msg, 'activity', source),
@@ -212,12 +219,13 @@ app.get('/api/database/status', (req, res) => {
 
   app.get('/api/logs/system', (req, res) => res.json(systemLogs));
   app.get('/api/logs/activity', (req, res) => res.json(activityLogs));
+  app.get('/api/logs/db', (req, res) => res.json(dbLogs));
 
   logger.system('info', 'System logowania aktywny', 'logger');
 }
 
 // ---------- UDOSTĘPNIJ FUNKCJE BAZY DLA MODUŁÓW ----------
-app.locals.activeDatabase = () => activeDatabase;
+app.locals.activeDatabase = getActiveEnv;
 app.locals.dbCollection = col;
 app.locals.isDbConnected = () => dbConnected;
 
@@ -232,7 +240,7 @@ function registerModule(moduleName, required = false, description = '') {
 
 function unregisterModule(moduleName) {
   loadedModules.delete(moduleName);
-  console.log(`[modules] ${moduleName} odrejestrowany (wymaga restartu, aby całkowicie usunąć trasę)`);
+  console.log(`[modules] ${moduleName} odrejestrowany`);
 }
 
 function loadAllModules() {
@@ -249,7 +257,7 @@ function loadAllModules() {
         moduleFn(app, client, registerModule, unregisterModule, moduleName);
         console.log(`✅ Moduł załadowany: ${file}`);
       } else {
-        console.log(`️ Plik ${file} nie eksportuje funkcji`);
+        console.log(`⚠️ Plik ${file} nie eksportuje funkcji`);
       }
     } catch (err) {
       console.error(`❌ Błąd ładowania modułu ${file}:`, err.message);
@@ -258,9 +266,7 @@ function loadAllModules() {
 }
 
 function reloadModules() {
-  if (!fs.existsSync(modulesPath)) {
-    return { added: [], removed: [] };
-  }
+  if (!fs.existsSync(modulesPath)) return { added: [], removed: [] };
   const moduleFiles = fs.readdirSync(modulesPath).filter(file => file.endsWith('.js'));
   const newModules = [];
   for (const file of moduleFiles) {
@@ -272,7 +278,6 @@ function reloadModules() {
         if (typeof moduleFn === 'function') {
           moduleFn(app, client, registerModule, unregisterModule, moduleName);
           newModules.push(moduleName);
-          console.log(`✅ Nowy moduł dodany: ${file}`);
         }
       } catch (err) {
         console.error(`❌ Błąd ładowania nowego modułu ${file}:`, err.message);
@@ -280,22 +285,12 @@ function reloadModules() {
     }
   }
   const removedModules = Array.from(loadedModules.keys()).filter(name => !moduleFiles.includes(name + '.js'));
-  if (removedModules.length) {
-    console.log(`️ Moduły usunięte z dysku (wymagają restartu bota): ${removedModules.join(', ')}`);
-  }
   return { added: newModules, removed: removedModules };
 }
 
-loadAllModules();
-
 app.post('/api/modules/reload', (req, res) => {
   const { added, removed } = reloadModules();
-  res.json({
-    success: true,
-    added,
-    removed,
-    message: `Dodano ${added.length} nowych modułów. Usunięte moduły (${removed.length}) wymagają restartu bota.`
-  });
+  res.json({ success: true, added, removed });
 });
 
 app.get('/api/modules', (req, res) => {

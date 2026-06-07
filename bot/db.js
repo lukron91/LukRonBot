@@ -22,8 +22,6 @@ async function connectDB() {
   }
 }
 
-// Zwraca nazwę kolekcji z prefiksem środowiska
-// col('serverconfigs') → 'main_serverconfigs' lub 'test_serverconfigs'
 function col(name) {
   return `${BOT_ENV}_${name}`;
 }
