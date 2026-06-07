@@ -16,7 +16,8 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
     return ((totalTick - totalIdle) / totalTick) * 100;
   }
 
-  app.get('/bot/health', (req, res) => {
+  // ZMIENIONO: /bot/health -> /api/bot/health aby zgadzać się z proxy i panelem
+  app.get('/api/bot/health', (req, res) => {
     const uptime = Math.floor((Date.now() - startTime) / 1000);
     const ping = Math.round(client.ws.ping);
     const guildCount = client.guilds.cache.size;
