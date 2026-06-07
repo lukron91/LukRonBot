@@ -27,7 +27,7 @@ export default function DashboardLayout({ children }) {
   useEffect(() => {
     const checkStatuses = async () => {
       try {
-        const healthRes = await fetch("/api/proxy/bot/health");
+        const healthRes = await fetch("/api/proxy/api/bot/health");
         const data = await healthRes.json();
         setClientActive(data.running === true);
       } catch { setClientActive(false); }
