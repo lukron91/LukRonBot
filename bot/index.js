@@ -12,9 +12,10 @@ app.use(express.json());
 app.use(cors({ origin: ['http://localhost:3000', 'http://localhost:3002'] }));
 
 const activeDatabase = getActiveEnv();
+let dbConnected = false;
 
+// ---------- INICJALIZACJA STRUKTURY BAZY ----------
 async function initDbStructure() {
-  if (!dbConnected) return;
   try {
     const GlobalConfigSchema = new mongoose.Schema({
       key: { type: String, required: true, unique: true },
@@ -39,12 +40,7 @@ async function initDbStructure() {
   }
 }
 
-let dbConnected = false;
-connectDB().then(connected => {
-  dbConnected = connected;
-  if (connected) initDbStructure();
-});
-
+// ---------- STATUS BOTA ----------
 const STATUS_FILE = path.join(__dirname, 'status.json');
 function saveBotStatus(status, customStatus) {
   const data = { status, customStatus: customStatus || '' };
@@ -87,7 +83,7 @@ client.on('messageCreate', async (message) => {
 });
 
 // ---------- API ENDPOINTY ----------
-app.get('/api/bot/health', (req, res) => res.json({ running: true })); // DODANE: Naprawa nieskończonego ładowania
+app.get('/api/bot/health', (req, res) => res.json({ running: true }));
 app.get('/api/status', (req, res) => res.json({ mongo: dbConnected }));
 app.get('/api/database/status', (req, res) => {
   res.json({ activeDatabase, environments: ['main', 'test'], dbConnected });
@@ -105,7 +101,7 @@ app.get('/api/guilds/:guildId/stats', (req, res) => {
   res.json(stats);
 });
 
-// LOGGER & MODULES (zachowanie logiki Claude'a)
+// LOGGER (Logika Claude'a)
 {
   const LOG_DIR = path.join(__dirname, 'logs');
   const SYSTEM_LOG_FILE = path.join(LOG_DIR, 'system.log');
@@ -161,6 +157,7 @@ app.locals.activeDatabase = getActiveEnv;
 app.locals.dbCollection = col;
 app.locals.isDbConnected = () => dbConnected;
 
+// SYSTEM MODUŁÓW
 const modulesPath = path.join(__dirname, 'modules');
 let loadedModules = new Map();
 function registerModule(moduleName, required = false, description = '') {
@@ -179,9 +176,9 @@ function loadAllModules() {
     } catch (err) { console.error(`❌ Błąd modułu ${file}:`, err.message); }
   }
 }
-function reloadModules() {
-  if (!fs.existsSync(modulesPath)) return { added: [], removed: [] };
-  const moduleFiles = fs.readdirSync(modulesPath).filter(file => file.endsWith('.js'));
+
+app.post('/api/modules/reload', (req, res) => {
+  const moduleFiles = fs.existsSync(modulesPath) ? fs.readdirSync(modulesPath).filter(file => file.endsWith('.js')) : [];
   const newModules = [];
   for (const file of moduleFiles) {
     const moduleName = file.replace(/.js$/, '');
@@ -197,11 +194,7 @@ function reloadModules() {
     }
   }
   const removedModules = Array.from(loadedModules.keys()).filter(name => !moduleFiles.includes(name + '.js'));
-  return { added: newModules, removed: removedModules };
-}
-app.post('/api/modules/reload', (req, res) => {
-  const { added, removed } = reloadModules();
-  res.json({ success: true, added, removed });
+  res.json({ success: true, added: newModules, removed: removedModules });
 });
 app.get('/api/modules', (req, res) => {
   const modulesList = Array.from(loadedModules.entries()).map(([name, data]) => ({
@@ -210,9 +203,36 @@ app.get('/api/modules', (req, res) => {
   res.json({ modules: modulesList });
 });
 
-client.login(process.env.DISCORD_BOT_TOKEN)
-  .then(() => console.log('✅ Discord OK'))
-  .catch(err => console.error('❌ Token error:', err));
+// ---------- SEKWENCJA STARTOWA (Kluczowa poprawka) ----------
+async function startBot() {
+  console.log('🚀 Rozpoczynanie sekwencji startowej...');
+  
+  // 1. Połącz z bazą
+  dbConnected = await connectDB();
+  
+  if (dbConnected) {
+    // 2. Inicjalizuj struktury bazy
+    await initDbStructure();
+    
+    // 3. Załaduj moduły (teraz baza jest gotowa!)
+    loadAllModules();
+    console.log('✅ Wszystkie moduły załadowane pomyślnie.');
+  } else {
+    console.error('⚠️ Bot startuje bez połączenia z bazą danych. Niektóre funkcje nie będą działać.');
+    loadAllModules(); // Ładujemy moduły mimo wszystko, ale one muszą obsłużyć brak bazy
+  }
 
-const PORT = process.env.API_PORT || 3001;
-app.listen(PORT, () => console.log(`🌐 Bot API on http://localhost:${PORT}`));
+  // 4. Zaloguj bota na Discordzie
+  try {
+    await client.login(process.env.DISCORD_BOT_TOKEN);
+    console.log('✅ Discord OK');
+  } catch (err) {
+    console.error('❌ Token error:', err);
+  }
+
+  // 5. Uruchom API Express
+  const PORT = process.env.API_PORT || 3001;
+  app.listen(PORT, () => console.log(`🌐 Bot API on http://localhost:${PORT}`));
+}
+
+startBot();
