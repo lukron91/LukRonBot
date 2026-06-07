@@ -135,7 +135,7 @@ body {
   align-items: center;
   gap: 0.75rem;
   padding: 0.6rem 1rem;
-  border-radius: var(--border-//border-radius);
+  border-radius: var(--border-radius);
   color: var(--text-color);
   font-size: 0.9rem;
   transition: all 0.2s;
@@ -626,7 +626,7 @@ input:checked + .toggle-slider-modern:before {
 .login-btn {
   background: linear-gradient(135deg, var(--accent-color), #4752c4);
   border: none;
-  border-radius: var(--border-//border-radius);
+  border-radius: var(--border-radius);
   padding: 0.8rem;
   width: 100%;
   color: white;
