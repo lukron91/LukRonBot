@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useTheme } from '@/lib/useTheme';
-import { FiWifi, FiClock, FiCpu, FiHardDrive, FiServer, FiActivity, FiPower, FiPackage, FiList, FiInfo, FiRefreshCw } from 'react-icons/fi';
+import { FiWifi, FiClock, FiCpu, FiHardDrive, FiServer, FiActivity, FiPower, FiPackage, FiList, FiInfo, FiDatabase, FiRefreshCw } from 'react-icons/fi';
 
 export default function BotSettingsPage() {
   const { accentColor } = useTheme();
