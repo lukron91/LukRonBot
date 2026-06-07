@@ -14,6 +14,7 @@ export default function BotSettingsPage() {
   const [modules, setModules] = useState([]);
   const [systemLogs, setSystemLogs] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
+  const [dbLogs, setDbLogs] = useState([]);
   const [activeTab, setActiveTab] = useState("stats");
   const [selectedModule, setSelectedModule] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -38,6 +39,9 @@ export default function BotSettingsPage() {
 
       const activityRes = await fetch("/api/proxy/api/logs/activity");
       if (activityRes.ok) setActivityLogs(await activityRes.json());
+
+      const dbRes = await fetch("/api/proxy/api/logs/db");
+      if (dbRes.ok) setDbLogs(await dbRes.json());
     } catch (err) {
       console.error(err);
       setHealth({ error: err.message });
@@ -57,12 +61,14 @@ export default function BotSettingsPage() {
     }, 15000);
     const logsInterval = setInterval(async () => {
       try {
-        const [sys, act] = await Promise.all([
+        const [sys, act, db] = await Promise.all([
           fetch("/api/proxy/api/logs/system").then(r => r.json()),
           fetch("/api/proxy/api/logs/activity").then(r => r.json()),
+          fetch("/api/proxy/api/logs/db").then(r => r.json()),
         ]);
         setSystemLogs(sys);
         setActivityLogs(act);
+        setDbLogs(db);
       } catch(e) {}
     }, 10000);
     return () => { clearInterval(healthInterval); clearInterval(logsInterval); };
@@ -162,6 +168,9 @@ export default function BotSettingsPage() {
         </button>
         <button className={`tab ${activeTab === 'activity' ? 'active' : ''}`} onClick={() => setActiveTab('activity')} style={activeTab === 'activity' ? { borderBottomColor: accentColor, color: accentColor } : {}}>
           <FiList /> Logi aktywności
+        </button>
+        <button className={`tab ${activeTab === 'db' ? 'active' : ''}`} onClick={() => setActiveTab('db')} style={activeTab === 'db' ? { borderBottomColor: accentColor, color: accentColor } : {}}>
+          <FiDatabase /> Logi bazy
         </button>
       </div>
 
@@ -281,7 +290,27 @@ export default function BotSettingsPage() {
         </div>
       )}
 
-      {showModal && selectedModule && (
+      
+      {activeTab === 'db' && (
+        <div className="section">
+          <h2 style={{ color: accentColor }}>Logi bazy danych (Kolekcje, Zapytania, Błędy)</h2>
+          <div className="logs-container">
+            {dbLogs.length === 0 ? <div className="empty">Brak logów bazy danych.</div> :
+              dbLogs.slice(0,200).map((log,idx) => (
+                <div key={idx} className="log-entry">
+                  <span className="log-time">[{new Date(log.timestamp).toLocaleString()}]</span>
+                  <span className="log-source">[{log.source?.toUpperCase() || 'DB'}]</span>
+                  <span className="log-message">{log.message}</span>
+                </div>
+              ))
+            }
+          </div>
+          <button onClick={async () => { const res = await fetch("/api/proxy/api/logs/db"); setDbLogs(await res.json()); }} className="refresh-btn" style={{ background: accentColor }}>Odśwież</button>
+        </div>
+      )}
+    
+
+{showModal && selectedModule && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header" style={{ borderBottomColor: accentColor }}>
