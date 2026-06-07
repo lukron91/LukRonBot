@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useTheme } from '@/lib/useTheme';
 import { useSearchParams } from 'next/navigation';
-import { FiWifi, FiClock, FiCpu, FiHardDrive, FiServer, FiActivity, FiPower, FiPackage, FiList, FiInfo, FiDatabase, FiRefreshCw, FiTerminal, FiPlus, FiTrash2, FiCheckSquare, FiSquare } from 'react-icons/fi';
+import { FiWifi, FiClock, FiCpu, FiHardDrive, FiServer, FiActivity, FiPower, FiPackage, FiList, FiInfo, FiDatabase, FiRefreshCw, FiTerminal, FiPlus, FiTrash2, FiCheckSquare, FiSquare, FiGlobe } from 'react-icons/fi';
 
 export default function BotSettingsPage() {
   const { accentColor } = useTheme();
