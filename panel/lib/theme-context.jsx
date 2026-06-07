@@ -6,6 +6,9 @@ const ThemeContext = createContext();
 const DEFAULT_THEME = {
   mode: 'dark',
   accentColor: '#3b82f6',
+  borderRadius: '12px',
+  surfaceOpacity: '0.9',
+  bgIntensity: '100%'
 };
 
 const PALETTES = {
@@ -33,11 +36,8 @@ export function ThemeProvider({ children }) {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object' && parsed.accentColor) {
-          setTheme(parsed);
-        } else {
-          setTheme(DEFAULT_THEME);
-        }
+        // Merge saved settings with defaults to ensure no missing properties
+        setTheme({ ...DEFAULT_THEME, ...parsed });
       } catch (e) {
         console.error('Błąd ładowania motywu, reset do domyślnych:', e);
         setTheme(DEFAULT_THEME);
@@ -56,6 +56,9 @@ export function ThemeProvider({ children }) {
     root.style.setProperty('--text-color', currentPalette.textColor);
     root.style.setProperty('--text-muted', currentPalette.textMuted);
     root.style.setProperty('--accent-color', theme?.accentColor || DEFAULT_THEME.accentColor);
+    root.style.setProperty('--border-radius', theme?.borderRadius || DEFAULT_THEME.borderRadius);
+    root.style.setProperty('--surface-opacity', theme?.surfaceOpacity || DEFAULT_THEME.surfaceOpacity);
+    root.style.setProperty('--bg-intensity', theme?.bgIntensity || DEFAULT_THEME.bgIntensity);
 
     localStorage.setItem('theme_settings', JSON.stringify(theme));
   }, [theme]);

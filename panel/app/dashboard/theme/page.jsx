@@ -1,12 +1,17 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useTheme } from '@/lib/useTheme';
-import { FiSun, FiMoon, FiCheck, FiSettings } from 'react-icons/fi';
+import { FiSun, FiMoon, FiCheck, FiSettings, FiSliders } from 'react-icons/fi';
 
 export default function ThemeSettings() {
-  const { theme = {}, updateTheme } = useTheme();
+  const { theme, updateTheme } = useTheme();
+  
+  // Safe destructuring with defaults
   const accentColor = theme?.accentColor || '#3b82f6';
   const mode = theme?.mode || 'dark';
+  const borderRadius = theme?.borderRadius || '12px';
+  const surfaceOpacity = theme?.surfaceOpacity || '0.9';
+  const bgIntensity = theme?.bgIntensity || '100%';
 
   const applyColor = (color) => {
     updateTheme({ accentColor: color });
@@ -25,6 +30,13 @@ export default function ThemeSettings() {
     { name: 'Zielony', color: '#10b981' },
     { name: 'Turkus', color: '#06b6d4' },
     { name: 'Żółty', color: '#eab308' }
+  ];
+
+  const radiusPresets = [
+    { name: 'Kanciaste', value: '0px' },
+    { name: 'Standard', value: '12px' },
+    { name: 'Obłe', value: '24px' },
+    { name: 'Kapsuła', value: '50px' },
   ];
 
   return (
@@ -82,15 +94,57 @@ export default function ThemeSettings() {
       </div>
 
       <div className="theme-section">
+        <h2 style={{ color: accentColor }}>Personalizacja Formy</h2>
+        <p className="section-description">Dostosuj zaokrąglenia i przejrzystość elementów.</p>
+
+        <div className="custom-setting">
+          <label>Zaokrąglenia rogów</label>
+          <div className="radius-presets">
+            {radiusPresets.map(preset => (
+              <button 
+                key={preset.value}
+                className={`radius-btn ${borderRadius === preset.value ? 'active' : ''}`}
+                onClick={() => updateTheme({ borderRadius: preset.value })}
+              >
+                {preset.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="custom-setting">
+          <label>Przezroczystość paneli: {Math.round(surfaceOpacity * 100)}%</label>
+          <input 
+            type="range" 
+            min="0.1" max="1" step="0.05" 
+            value={surfaceOpacity} 
+            onChange={(e) => updateTheme({ surfaceOpacity: e.target.value })}
+            className="theme-slider"
+          />
+        </div>
+
+        <div className="custom-setting">
+          <label>Intensywność tła: {bgIntensity}</label>
+          <input 
+            type="range" 
+            min="50" max="150" step="1" 
+            value={parseInt(bgIntensity)} 
+            onChange={(e) => updateTheme({ bgIntensity: `${e.target.value}%` })}
+            className="theme-slider"
+          />
+        </div>
+      </div>
+
+      <div className="theme-section">
         <h2 style={{ color: accentColor }}>Podgląd</h2>
-        <div className="preview-card" style={{ borderColor: accentColor }}>
+        <div className="preview-card" style={{ borderColor: accentColor, borderRadius: borderRadius }}>
           <div className="preview-header" style={{ color: accentColor }}>
             Przykładowy nagłówek
           </div>
-          <p className="preview-text">To jest przykładowy tekst w nowym motywie. Zmiana trybu i koloru akcentu jest widoczna natychmiastowo w całym panelu.</p>
+          <p className="preview-text">To jest przykładowy tekst w nowym motywie. Zmiana trybu, koloru akcentu i zaokrągleń jest widoczna natychmiastowo w całym panelu.</p>
           <button 
             className="preview-button"
-            style={{ backgroundColor: accentColor }}
+            style={{ backgroundColor: accentColor, borderRadius: borderRadius }}
           >
             Przycisk akcentu
           </button>
@@ -193,10 +247,44 @@ export default function ThemeSettings() {
           border-radius: 0.5rem;
           cursor: pointer;
         }
+        .custom-setting {
+          margin-bottom: 1.5rem;
+        }
+        .custom-setting label {
+          display: block;
+          color: var(--text-color);
+          font-size: 0.9rem;
+          margin-bottom: 0.75rem;
+          font-weight: 600;
+        }
+        .radius-presets {
+          display: flex;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+        .radius-btn {
+          padding: 0.5rem 1rem;
+          background: var(--backgroundColor);
+          border: 1px solid var(--border-color);
+          border-radius: 0.5rem;
+          color: var(--text-color);
+          cursor: pointer;
+          font-size: 0.8rem;
+          transition: all 0.2s;
+        }
+        .radius-btn.active {
+          background: var(--accent-color);
+          color: white;
+          border-color: var(--accent-color);
+        }
+        .theme-slider {
+          width: 100%;
+          cursor: pointer;
+          accent-color: var(--accent-color);
+        }
         .preview-card {
           background: var(--surface-color);
           border: 2px solid;
-          border-radius: 0.75rem;
           padding: 1.5rem;
         }
         .preview-header {
@@ -211,7 +299,6 @@ export default function ThemeSettings() {
           color: #fff;
           border: none;
           padding: 0.75rem 1.5rem;
-          border-radius: 0.5rem;
           font-weight: 600;
           cursor: pointer;
           transition: opacity 0.2s;
