@@ -105,7 +105,7 @@ export default function ServersPage() {
           background: #1e1e26;
           border: none;
           padding: 0.5rem 1rem;
-          border-radius: 8px;
+          border-radius: var(--border-radius);
           color: #e1e1e6;
           cursor: pointer;
           display: flex;
@@ -119,7 +119,7 @@ export default function ServersPage() {
         }
         .server-card {
           background: #14141c;
-          border-radius: 1rem;
+          border-radius: var(--border-radius);
           padding: 1.2rem;
           border: 1px solid #25252d;
           transition: all 0.2s;
@@ -170,7 +170,7 @@ export default function ServersPage() {
           justify-content: center;
           gap: 0.5rem;
           padding: 0.5rem 0.75rem;
-          border-radius: 8px;
+          border-radius: var(--border-radius);
           font-size: 0.8rem;
           font-weight: 600;
           cursor: pointer;

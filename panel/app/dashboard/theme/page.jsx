@@ -172,7 +172,7 @@ export default function ThemeSettings() {
         .theme-section {
           background: var(--surface-color);
           border: 1px solid var(--border-color);
-          border-radius: 1rem;
+          border-radius: var(--border-radius);
           padding: 1.5rem;
           margin-bottom: 1.5rem;
         }
@@ -196,7 +196,7 @@ export default function ThemeSettings() {
           padding: 0.75rem 1.5rem;
           background: var(--backgroundColor);
           border: 2px solid var(--border-color);
-          border-radius: 0.75rem;
+          border-radius: var(--border-radius);
           color: var(--text-color);
           cursor: pointer;
           transition: all 0.2s;
@@ -244,7 +244,7 @@ export default function ThemeSettings() {
           width: 60px;
           height: 40px;
           border: none;
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
           cursor: pointer;
         }
         .custom-setting {
@@ -266,7 +266,7 @@ export default function ThemeSettings() {
           padding: 0.5rem 1rem;
           background: var(--backgroundColor);
           border: 1px solid var(--border-color);
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
           color: var(--text-color);
           cursor: pointer;
           font-size: 0.8rem;

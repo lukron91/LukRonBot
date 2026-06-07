@@ -380,7 +380,7 @@ export default function DashboardLayout({ children }) {
           padding: 0.6rem 0.75rem;
           background: #0a0a0f;
           border: 1px solid #1e1e26;
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
           color: #ffffff;
           font-size: 0.85rem;
           cursor: pointer;
@@ -399,7 +399,7 @@ export default function DashboardLayout({ children }) {
           margin-top: 0.25rem;
           background: #14141c;
           border: 1px solid #1e1e26;
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
           z-index: 100;
           max-height: 250px;
           overflow-y: auto;
@@ -471,7 +471,7 @@ export default function DashboardLayout({ children }) {
           padding: 0.6rem 0.75rem;
           background: none;
           border: 1px solid #1e1e26;
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
           color: #9c9ca7;
           cursor: pointer;
           font-size: 0.85rem;
@@ -541,7 +541,7 @@ export default function DashboardLayout({ children }) {
         .server-avatar {
           width: 56px;
           height: 56px;
-          border-radius: 14px;
+          border-radius: var(--border-radius);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -580,7 +580,7 @@ export default function DashboardLayout({ children }) {
           align-items: center;
           gap: 0.5rem;
           padding: 0.4rem 0.75rem;
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
           font-size: 0.8rem;
           border: 1px solid;
           background: rgba(10, 10, 15, 0.8);
@@ -627,7 +627,7 @@ export default function DashboardLayout({ children }) {
           padding: 0.75rem 1.5rem;
           color: #fff;
           text-decoration: none;
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
           font-weight: 600;
           transition: opacity 0.2s;
         }

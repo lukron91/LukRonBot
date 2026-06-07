@@ -115,34 +115,34 @@ export default function ConfigPage() {
           margin: 100px 200px 2rem 200px;
           padding: 1.5rem;
           border: 1px solid ${accentColor};
-          border-radius: 1rem;
+          border-radius: var(--border-radius);
           background: #0a0a0f;
         }
         .page-header h1 { display: flex; align-items: center; gap: 0.75rem; font-size: 1.5rem; margin-bottom: 0.5rem; }
         .page-header p { color: #6b6b76; margin-bottom: 1.5rem; }
-        .warning-box { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem; color: #ef4444; }
+        .warning-box { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: var(--border-radius); padding: 1rem; margin-bottom: 1.5rem; color: #ef4444; }
         .config-form { display: flex; flex-direction: column; gap: 1.5rem; }
         .section {
           background: #14141c;
           border: 1px solid #1e1e26;
-          border-radius: 0.75rem;
+          border-radius: var(--border-radius);
           padding: 1.5rem;
         }
         .section h2 { font-size: 1.1rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
         .config-item { margin-bottom: 1.5rem; }
         .config-item:last-child { margin-bottom: 0; }
         .config-item label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: #fff; }
-        .config-input, .config-select { width: 100%; padding: 0.75rem; border: 1px solid #1e1e26; border-radius: 0.5rem; background: #1e1e26; color: #fff; font-size: 0.9rem; }
+        .config-input, .config-select { width: 100%; padding: 0.75rem; border: 1px solid #1e1e26; border-radius: var(--border-radius); background: #1e1e26; color: #fff; font-size: 0.9rem; }
         .config-input:focus, .config-select:focus { outline: none; border-color: ${accentColor}; }
         .config-description { display: block; font-size: 0.8rem; color: #6b6b76; margin-top: 0.25rem; }
-        .toggle { padding: 1rem; background: #1e1e26; border-radius: 0.5rem; }
+        .toggle { padding: 1rem; background: #1e1e26; border-radius: var(--border-radius); }
         .toggle-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
         .toggle-header span { font-weight: 600; color: #fff; }
         .toggle-input { width: 40px; height: 20px; }
-        .save-button { width: 100%; padding: 1rem 2rem; color: #fff; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: opacity 0.2s; }
+        .save-button { width: 100%; padding: 1rem 2rem; color: #fff; border: none; border-radius: var(--border-radius); font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: opacity 0.2s; }
         .save-button:hover:not(:disabled) { opacity: 0.9; }
         .save-button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .message { padding: 1rem; border-radius: 0.5rem; text-align: center; font-weight: 600; }
+        .message { padding: 1rem; border-radius: var(--border-radius); text-align: center; font-weight: 600; }
         .message.success { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; color: #10b981; }
         .message.error { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; }
       `}</style>

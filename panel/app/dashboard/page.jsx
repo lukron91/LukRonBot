@@ -177,7 +177,7 @@ export default function DashboardHome() {
           margin: 100px 200px 2rem 200px;
           padding: 1.5rem;
           border: 1px solid ${accentColor};
-          border-radius: 1rem;
+          border-radius: var(--border-radius);
           background: #0a0a0f;
         }
         .stats-grid {
@@ -188,7 +188,7 @@ export default function DashboardHome() {
         }
         .stat-card {
           background: #14141c;
-          border-radius: 1rem;
+          border-radius: var(--border-radius);
           padding: 1.5rem;
           border: 1px solid #25252d;
           transition: all 0.2s;
@@ -204,7 +204,7 @@ export default function DashboardHome() {
           font-size: 2rem;
           width: 48px;
           height: 48px;
-          border-radius: 12px;
+          border-radius: var(--border-radius);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -226,7 +226,7 @@ export default function DashboardHome() {
         }
         .trend-section {
           background: #14141c;
-          border-radius: 1rem;
+          border-radius: var(--border-radius);
           padding: 1.2rem;
           margin-bottom: 1.5rem;
           border: 1px solid #25252d;
@@ -258,12 +258,12 @@ export default function DashboardHome() {
           flex: 1;
           height: 8px;
           background: #2a2a30;
-          border-radius: 4px;
+          border-radius: var(--border-radius);
           overflow: hidden;
         }
         .trend-bar {
           height: 100%;
-          border-radius: 4px;
+          border-radius: var(--border-radius);
           transition: width 0.3s;
         }
         .trend-count {
@@ -279,7 +279,7 @@ export default function DashboardHome() {
         }
         .card-list {
           background: #14141c;
-          border-radius: 1rem;
+          border-radius: var(--border-radius);
           padding: 1.2rem;
           border: 1px solid #25252d;
         }

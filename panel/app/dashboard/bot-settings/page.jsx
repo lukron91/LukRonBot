@@ -572,7 +572,7 @@ export default function BotSettingsPage() {
           margin: 100px 200px 2rem 200px;
           padding: 1.5rem;
           border: 1px solid ${accentColor};
-          border-radius: 1rem;
+          border-radius: var(--border-radius);
           background: #0a0a0f;
           position: relative;
         }
@@ -620,7 +620,7 @@ export default function BotSettingsPage() {
         .section {
           background: #14141c;
           border: 1px solid #1e1e26;
-          border-radius: 0.75rem;
+          border-radius: var(--border-radius);
           padding: 1.5rem;
           margin-bottom: 1.5rem;
         }
@@ -638,7 +638,7 @@ export default function BotSettingsPage() {
         }
         .health-card {
           background: #1e1e26;
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
           padding: 1.5rem;
           border-top: 3px solid;
           display: flex;
@@ -680,7 +680,7 @@ export default function BotSettingsPage() {
           padding: 0.75rem;
           background: #1e1e26;
           border: 1px solid #25252d;
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
           color: #fff;
           font-size: 0.9rem;
         }
@@ -688,7 +688,7 @@ export default function BotSettingsPage() {
           padding: 0.75rem 1.5rem;
           color: #fff;
           border: none;
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
           font-weight: 600;
           cursor: pointer;
           transition: opacity 0.2s;
@@ -707,7 +707,7 @@ export default function BotSettingsPage() {
           padding: 0.5rem 1rem;
           color: #fff;
           border: none;
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
           cursor: pointer;
           display: flex;
           align-items: center;
@@ -724,7 +724,7 @@ export default function BotSettingsPage() {
           gap: 1rem;
           padding: 1rem;
           background: #1e1e26;
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
           border-left: 3px solid;
           cursor: pointer;
           transition: background 0.2s;
@@ -759,7 +759,7 @@ export default function BotSettingsPage() {
         .logs-container {
           background: #0a0a0f;
           border: 1px solid #1e1e26;
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
           padding: 1rem;
           max-height: 400px;
           overflow-y: auto;
@@ -788,7 +788,7 @@ export default function BotSettingsPage() {
           padding: 0.5rem 1rem;
           color: #fff;
           border: none;
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
           cursor: pointer;
         }
         .modal-overlay {
@@ -806,7 +806,7 @@ export default function BotSettingsPage() {
         .modal-content {
           background: #14141c;
           border: 1px solid #1e1e26;
-          border-radius: 0.75rem;
+          border-radius: var(--border-radius);
           max-width: 700px;
           width: 90%;
         }
@@ -868,7 +868,7 @@ export default function BotSettingsPage() {
           align-items: center;
           gap: 1rem;
           padding: 1rem 1.5rem;
-          border-radius: 0.75rem;
+          border-radius: var(--border-radius);
           color: white;
           font-weight: 600;
           box-shadow: 0 10px 25px rgba(0,0,0,0.5);
@@ -895,7 +895,7 @@ export default function BotSettingsPage() {
           border: none;
           color: white;
           padding: 0.3rem;
-          border-radius: 4px;
+          border-radius: var(--border-radius);
           cursor: pointer;
           display: flex;
           align-items: center;

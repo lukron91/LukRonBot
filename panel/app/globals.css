@@ -12,7 +12,7 @@
   --text-color: #ffffff;
   --text-muted: #6b6b76;
   --accent-color: #3b82f6;
-  --border-radius: 12px;
+  --border-radius: var(--border-radius);
   --surface-opacity: 0.9;
   --bg-intensity: 100%;
 }
@@ -22,6 +22,50 @@ body {
   color: var(--text-color);
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* GLOBAL LAYOUT STANDARDS */
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  width: 100%;
+}
+
+.page-header-group {
+  margin-bottom: 2rem;
+}
+
+.page-header-group h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+}
+
+.page-header-group p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.section-card {
+  background: rgba(var(--surface-rgb), var(--surface-opacity));
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  backdrop-filter: blur(10px);
+  transition: border-color 0.2s;
+}
+
+.section-card h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--text-color);
 }
 
 /* LAYOUT DASHBOARD */
@@ -91,7 +135,7 @@ body {
   align-items: center;
   gap: 0.75rem;
   padding: 0.6rem 1rem;
-  border-radius: var(--border-radius);
+  border-radius: var(--border-//border-radius);
   color: var(--text-color);
   font-size: 0.9rem;
   transition: all 0.2s;
@@ -354,7 +398,7 @@ body {
 .btn-primary {
   background: linear-gradient(135deg, var(--accent-color), #4752c4);
   border: none;
-  border-radius: var(--border-radius);
+  border-//border-radius: var(--border-radius);
   padding: 0.7rem 1.5rem;
   color: white;
   font-weight: 600;
@@ -496,7 +540,7 @@ input:checked + .toggle-slider-modern:before {
   text-align: center;
   max-width: 500px;
   margin: 3rem auto;
-  border: 1px solid var(--border-//border-color);
+  border: 1px solid var(--border-color);
   backdrop-filter: blur(10px);
 }
 .bot-missing-icon {
@@ -582,7 +626,7 @@ input:checked + .toggle-slider-modern:before {
 .login-btn {
   background: linear-gradient(135deg, var(--accent-color), #4752c4);
   border: none;
-  border-radius: var(--border-radius);
+  border-radius: var(--border-//border-radius);
   padding: 0.8rem;
   width: 100%;
   color: white;

@@ -440,7 +440,7 @@ export default function ModerationSettings() {
         .config-section {
           background: #14141c;
           border: 1px solid #25252d;
-          border-radius: 1rem;
+          border-radius: var(--border-radius);
           margin-bottom: 1.5rem;
           overflow: hidden;
         }
@@ -487,7 +487,7 @@ export default function ModerationSettings() {
           width: 100%;
           padding: 0.75rem;
           border: 1px solid #25252d;
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
           background: #1e1e26;
           color: #fff;
           font-size: 0.9rem;
@@ -501,7 +501,7 @@ export default function ModerationSettings() {
         .toggle {
           padding: 1rem;
           background: #1e1e26;
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
         }
         .toggle-header {
           display: flex;
@@ -554,7 +554,7 @@ export default function ModerationSettings() {
           gap: 0.5rem;
           padding: 0.5rem;
           background: #1e1e26;
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
           cursor: pointer;
           transition: all 0.2s;
         }
@@ -570,7 +570,7 @@ export default function ModerationSettings() {
           margin-bottom: 1.5rem;
           padding: 1rem;
           background: #1e1e26;
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
         }
         .command-permissions h3 {
           font-size: 0.95rem;
@@ -588,7 +588,7 @@ export default function ModerationSettings() {
           gap: 0.5rem;
           padding: 0.5rem 1rem;
           background: #1e1e26;
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
           cursor: pointer;
         }
         .save-button {
@@ -597,7 +597,7 @@ export default function ModerationSettings() {
           background: #5865f2;
           color: #fff;
           border: none;
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
           font-weight: 600;
           cursor: pointer;
           transition: all 0.2s;
@@ -613,7 +613,7 @@ export default function ModerationSettings() {
         }
         .message {
           padding: 1rem;
-          border-radius: 0.5rem;
+          border-radius: var(--border-radius);
           text-align: center;
           font-weight: 600;
         }
