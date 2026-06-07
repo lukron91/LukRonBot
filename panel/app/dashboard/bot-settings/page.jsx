@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useTheme } from '@/lib/useTheme';
-import { FiWifi, FiClock, FiCpu, FiHardDrive, FiServer, FiActivity, FiPower, FiPackage, FiList, FiInfo, FiDatabase, FiRefreshCw } from 'react-icons/fi';
+import { FiWifi, FiClock, FiCpu, FiHardDrive, FiServer, FiActivity, FiPower, FiPackage, FiList, FiInfo, FiDatabase, FiRefreshCw, FiTerminal, FiPlus, FiTrash2 } from 'react-icons/fi';
 
 export default function BotSettingsPage() {
   const { accentColor } = useTheme();
@@ -18,6 +18,13 @@ export default function BotSettingsPage() {
   const [activeTab, setActiveTab] = useState("stats");
   const [selectedModule, setSelectedModule] = useState(null);
   const [showModal, setShowModal] = useState(false);
+
+  // Command Management States
+  const [commandsList, setCommandsList] = useState([]);
+  const [cmdGuildId, setCmdGuildId] = useState("");
+  const [cmdRegType, setCmdRegType] = useState("global"); // 'global' | 'guild'
+  const [cmdUpdating, setCmdUpdating] = useState(false);
+  const [cmdMessage, setCmdMessage] = useState("");
 
   const fetchData = async () => {
     try {
@@ -42,6 +49,13 @@ export default function BotSettingsPage() {
 
       const dbRes = await fetch("/api/proxy/api/logs/db");
       if (dbRes.ok) setDbLogs(await dbRes.json());
+
+      // Fetch Commands
+      const cmdRes = await fetch("/api/proxy/api/commands");
+      if (cmdRes.ok) {
+        const cmdData = await cmdRes.json();
+        setCommandsList(cmdData.commands || []);
+      }
     } catch (err) {
       console.error(err);
       setHealth({ error: err.message });
@@ -132,6 +146,43 @@ export default function BotSettingsPage() {
     }
   };
 
+  // --- Command Management Functions ---
+  const manageCommands = async (action, commandName = null) => {
+    setCmdUpdating(true);
+    setCmdMessage("");
+    const endpoint = action === 'register' ? '/api/commands/register' : '/api/commands/unregister';
+    
+    try {
+      const res = await fetch(`/api/proxy${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          type: cmdRegType, 
+          guildId: cmdGuildId, 
+          commandName 
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCmdMessage(`✅ ${action === 'register' ? 'Zarejestrowano' : 'Usunięto'} ${commandName ? commandName : 'wszystkie komendy'}`);
+      } else {
+        setCmdMessage(`❌ Błąd: ${data.error}`);
+      }
+    } catch (err) {
+      setCmdMessage(`❌ Błąd: ${err.message}`);
+    } finally {
+      setCmdUpdating(false);
+    }
+  };
+
+  const refreshCommands = async () => {
+    const cmdRes = await fetch("/api/proxy/api/commands");
+    if (cmdRes.ok) {
+      const cmdData = await cmdRes.json();
+      setCommandsList(cmdData.commands || []);
+    }
+  };
+
   if (loading) return <div className="loading">Ładowanie...</div>;
   if (health?.error) return <div className="error">Błąd: {health.error}</div>;
 
@@ -162,6 +213,9 @@ export default function BotSettingsPage() {
         </button>
         <button className={`tab ${activeTab === 'modules' ? 'active' : ''}`} onClick={() => setActiveTab('modules')} style={activeTab === 'modules' ? { borderBottomColor: accentColor, color: accentColor } : {}}>
           <FiPackage /> Moduły
+        </button>
+        <button className={`tab ${activeTab === 'commands' ? 'active' : ''}`} onClick={() => setActiveTab('commands')} style={activeTab === 'commands' ? { borderBottomColor: accentColor, color: accentColor } : {}}>
+          <FiTerminal /> Komendy
         </button>
         <button className={`tab ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')} style={activeTab === 'logs' ? { borderBottomColor: accentColor, color: accentColor } : {}}>
           <FiList /> Logi systemowe
@@ -253,6 +307,89 @@ export default function BotSettingsPage() {
         </div>
       )}
 
+      {activeTab === 'commands' && (
+        <div className="section">
+          <h2 style={{ color: accentColor }}>Zarządzanie Komendami Slash</h2>
+          
+          <div className="command-setup" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <div className="setup-group">
+              <label style={{ display: 'block', fontSize: '0.8rem', color: '#6b6b76', marginBottom: '0.5rem' }}>Zakres rejestracji</label>
+              <div className="setup-toggle" style={{ display: 'flex', gap: '0.5rem' }}>
+                <button 
+                  onClick={() => setCmdRegType('global')}
+                  className={`toggle-btn ${cmdRegType === 'global' ? 'active' : ''}`}
+                  style={{ background: cmdRegType === 'global' ? accentColor : '#1e1e26', border: 'none', color: 'white', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}
+                >Globalne</button>
+                <button 
+                  onClick={() => setCmdRegType('guild')}
+                  className={`toggle-btn ${cmdRegType === 'guild' ? 'active' : ''}`}
+                  style={{ background: cmdRegType === 'guild' ? accentColor : '#1e1e26', border: 'none', color: 'white', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}
+                >Serwerowe</button>
+              </div>
+            </div>
+            
+            {cmdRegType === 'guild' && (
+              <div className="setup-group">
+                <label style={{ display: 'block', fontSize: '0.8rem', color: '#6b6b76', marginBottom: '0.5rem' }}>ID Serwera (Guild ID)</label>
+                <input 
+                  type="text" 
+                  value={cmdGuildId} 
+                  onChange={(e) => setCmdGuildId(e.target.value)}
+                  placeholder="Wpisz ID serwera..."
+                  className="status-input" 
+                  style={{ width: '200px' }}
+                />
+              </div>
+            )}
+
+            <button onClick={refreshCommands} className="action-btn" style={{ background: accentColor }}><FiRefreshCw /> Odśwież listę</button>
+          </div>
+
+          <div className="command-bulk-actions" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+            <button onClick={() => manageCommands('register')} className="action-btn" style={{ background: accentColor, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><FiPlus /> Zarejestruj wszystkie</button>
+            <button onClick={() => manageCommands('unregister')} className="action-btn" style={{ background: '#ef4444', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><FiTrash2 /> Usuń wszystkie</button>
+          </div>
+
+          {cmdMessage && <div className={`message ${cmdMessage.startsWith('✅') ? 'success' : 'error'}`} style={{ marginBottom: '1rem' }}>{cmdMessage}</div>}
+
+          <div className="commands-table-wrapper" style={{ overflowX: 'auto' }}>
+            <table className="commands-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: 'white' }}>
+              <thead>
+                <tr style={{ borderBottom: `2px solid ${accentColor}`, color: '#6b6b76', fontSize: '0.8rem' }}>
+                  <th style={{ padding: '1rem' }}>Nazwa</th>
+                  <th style={{ padding: '1rem' }}>Opis</th>
+                  <th style={{ padding: '1rem', textAlign: 'right' }}>Akcje</th>
+                </tr>
+              </thead>
+              <tbody>
+                {commandsList.length === 0 ? (
+                  <tr><td colSpan="3" className="empty" style={{ padding: '2rem' }}>Brak załadowanych komend w pamięci bota.</td></tr>
+                ) : (
+                  commandsList.map((cmd, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid #1e1e26' }}>
+                      <td style={{ padding: '1rem', fontWeight: '600' }}>/{cmd.name}</td>
+                      <td style={{ padding: '1rem', color: '#9c9ca7', fontSize: '0.9rem' }}>{cmd.description}</td>
+                      <td style={{ padding: '1rem', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                        <button 
+                          onClick={() => manageCommands('register', cmd.name)} 
+                          className="cmd-action-btn"
+                          style={{ background: accentColor, color: 'white', border: 'none', padding: '0.3rem 0.6rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
+                        >Zarejestruj</button>
+                        <button 
+                          onClick={() => manageCommands('unregister', cmd.name)} 
+                          className="cmd-action-btn"
+                          style={{ background: '#ef4444', color: 'white', border: 'none', padding: '0.3rem 0.6rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
+                        >Usuń</button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {activeTab === 'logs' && (
         <div className="section">
           <h2 style={{ color: accentColor }}>Logi systemowe (ostatnie 200)</h2>
@@ -290,7 +427,6 @@ export default function BotSettingsPage() {
         </div>
       )}
 
-      
       {activeTab === 'db' && (
         <div className="section">
           <h2 style={{ color: accentColor }}>Logi bazy danych (Kolekcje, Zapytania, Błędy)</h2>
@@ -308,7 +444,6 @@ export default function BotSettingsPage() {
           <button onClick={async () => { const res = await fetch("/api/proxy/api/logs/db"); setDbLogs(await res.json()); }} className="refresh-btn" style={{ background: accentColor }}>Odśwież</button>
         </div>
       )}
-    
 
 {showModal && selectedModule && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
