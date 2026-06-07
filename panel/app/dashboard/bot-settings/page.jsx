@@ -1,10 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useTheme } from '@/lib/useTheme';
+import { useSearchParams } from 'next/navigation';
 import { FiWifi, FiClock, FiCpu, FiHardDrive, FiServer, FiActivity, FiPower, FiPackage, FiList, FiInfo, FiDatabase, FiRefreshCw, FiTerminal, FiPlus, FiTrash2 } from 'react-icons/fi';
 
 export default function BotSettingsPage() {
   const { accentColor } = useTheme();
+  const searchParams = useSearchParams();
+  const guildId = searchParams.get("guild");
   const [health, setHealth] = useState(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("online");
@@ -21,7 +24,6 @@ export default function BotSettingsPage() {
 
   // Command Management States
   const [commandsList, setCommandsList] = useState([]);
-  const [cmdGuildId, setCmdGuildId] = useState("");
   const [cmdRegType, setCmdRegType] = useState("global"); // 'global' | 'guild'
   const [cmdUpdating, setCmdUpdating] = useState(false);
   const [cmdMessage, setCmdMessage] = useState("");
@@ -158,7 +160,7 @@ export default function BotSettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           type: cmdRegType, 
-          guildId: cmdGuildId, 
+          guildId: guildId, 
           commandName 
         }),
       });
@@ -328,20 +330,6 @@ export default function BotSettingsPage() {
               </div>
             </div>
             
-            {cmdRegType === 'guild' && (
-              <div className="setup-group">
-                <label style={{ display: 'block', fontSize: '0.8rem', color: '#6b6b76', marginBottom: '0.5rem' }}>ID Serwera (Guild ID)</label>
-                <input 
-                  type="text" 
-                  value={cmdGuildId} 
-                  onChange={(e) => setCmdGuildId(e.target.value)}
-                  placeholder="Wpisz ID serwera..."
-                  className="status-input" 
-                  style={{ width: '200px' }}
-                />
-              </div>
-            )}
-
             <button onClick={refreshCommands} className="action-btn" style={{ background: accentColor }}><FiRefreshCw /> Odśwież listę</button>
           </div>
 

@@ -60,13 +60,19 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
 
   // 1. Lista załadowanych komend
   app.get('/api/commands', (req, res) => {
+    logger.system('debug', 'Otrzymano zapytanie o listę komend', 'commands');
     const commandsList = [];
+    if (!client.commands) {
+      logger.system('warn', 'Kolekcja client.commands nie istnieje!', 'commands');
+      return res.json({ commands: [], error: 'Kolekcja komend nie zainicjalizowana' });
+    }
     client.commands.forEach(cmd => {
       commandsList.push({
         name: cmd.data.name,
         description: cmd.data.description
       });
     });
+    logger.system('debug', `Zwrócono ${commandsList.length} komend z pamięci bota`, 'commands');
     res.json({ commands: commandsList });
   });
 
