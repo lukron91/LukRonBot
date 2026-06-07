@@ -4,8 +4,9 @@ import { useTheme } from '@/lib/useTheme';
 import { FiSun, FiMoon, FiCheck, FiSettings } from 'react-icons/fi';
 
 export default function ThemeSettings() {
-  const { theme, updateTheme } = useTheme();
-  const { accentColor, mode } = theme;
+  const { theme = {}, updateTheme } = useTheme();
+  const accentColor = theme?.accentColor || '#3b82f6';
+  const mode = theme?.mode || 'dark';
 
   const applyColor = (color) => {
     updateTheme({ accentColor: color });

@@ -3,6 +3,11 @@ import { createContext, useContext, useState, useEffect } from 'react';
 
 const ThemeContext = createContext();
 
+const DEFAULT_THEME = {
+  mode: 'dark',
+  accentColor: '#3b82f6',
+};
+
 const PALETTES = {
   dark: {
     backgroundColor: '#0a0a0f',
@@ -21,24 +26,28 @@ const PALETTES = {
 };
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState({
-    mode: 'dark',
-    accentColor: '#3b82f6',
-  });
+  const [theme, setTheme] = useState(DEFAULT_THEME);
 
   useEffect(() => {
     const saved = localStorage.getItem('theme_settings');
     if (saved) {
       try {
-        setTheme(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && parsed.accentColor) {
+          setTheme(parsed);
+        } else {
+          setTheme(DEFAULT_THEME);
+        }
       } catch (e) {
-        console.error('Błąd ładowania motywu:', e);
+        console.error('Błąd ładowania motywu, reset do domyślnych:', e);
+        setTheme(DEFAULT_THEME);
       }
     }
   }, []);
 
   useEffect(() => {
-    const currentPalette = PALETTES[theme.mode];
+    const currentMode = theme?.mode || 'dark';
+    const currentPalette = PALETTES[currentMode] || PALETTES.dark;
     const root = document.documentElement;
 
     root.style.setProperty('--bg-color', currentPalette.backgroundColor);
@@ -46,7 +55,7 @@ export function ThemeProvider({ children }) {
     root.style.setProperty('--border-color', currentPalette.borderColor);
     root.style.setProperty('--text-color', currentPalette.textColor);
     root.style.setProperty('--text-muted', currentPalette.textMuted);
-    root.style.setProperty('--accent-color', theme.accentColor);
+    root.style.setProperty('--accent-color', theme?.accentColor || DEFAULT_THEME.accentColor);
 
     localStorage.setItem('theme_settings', JSON.stringify(theme));
   }, [theme]);
