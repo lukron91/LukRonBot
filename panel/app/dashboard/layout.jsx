@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useTheme } from '@/lib/useTheme';
+import { useTheme } from '@/lib/theme-context';
 import {
   FiArrowLeft, FiGrid, FiSettings, FiMessageSquare, FiShield,
   FiUserPlus, FiFileText, FiActivity, FiLogOut, FiServer,
