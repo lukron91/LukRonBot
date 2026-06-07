@@ -83,7 +83,7 @@ client.on('messageCreate', async (message) => {
 });
 
 // ---------- API ENDPOINTY ----------
-app.get('/api/bot/health', (req, res) => res.json({ running: true }));
+// Health endpoint moved to modules/health.js
 app.get('/api/status', (req, res) => res.json({ mongo: dbConnected }));
 app.get('/api/database/status', (req, res) => {
   res.json({ activeDatabase, environments: ['main', 'test'], dbConnected });
