@@ -144,7 +144,7 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
 
   // 5. Usuwanie komend
   app.post('/api/commands/unregister', async (req, res) => {
-    const { type, guildId, commandNames } = req.body; // commandNames: array of strings
+    const { type, guildId, commandNames } = req.body;
 
     try {
       if (type === 'global') {
@@ -158,6 +158,7 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
           logger.system('info', `Wyczyszczono wszystkie komendy globalne.`, 'commands');
         }
       } else if (type === 'guild' && guildId) {
+        logger.system('debug', `Próba usunięcia komend z serwera ${guildId}. Lista: ${commandNames ? commandNames.join(', ') : 'Wszystkie'}`, 'commands');
         const guild = await client.guilds.fetch(guildId);
         if (commandNames && Array.isArray(commandNames) && commandNames.length > 0) {
           for (const name of commandNames) {
@@ -169,11 +170,12 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
           logger.system('info', `Wyczyszczono wszystkie komendy na serwerze ${guildId}.`, 'commands');
         }
       } else {
+        logger.system('warn', `Błąd usuwania: brak guildId dla typu guild. Typ: ${type}`, 'commands');
         return res.status(400).json({ error: 'Brak guildId dla usuwania serwerowego' });
       }
       res.json({ success: true });
     } catch (err) {
-      logger.system('error', `Błąd usuwania: ${err.message}`, 'commands');
+      logger.system('error', `Krytyczny błąd usuwania: ${err.message}`, 'commands');
       res.status(500).json({ error: err.message });
     }
   });

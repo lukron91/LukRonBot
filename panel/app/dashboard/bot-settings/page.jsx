@@ -58,7 +58,7 @@ export default function BotSettingsPage() {
       // Initial Command Load
       await refreshAllCommands();
     } catch (err) {
-      console.error(err);
+      console.error("Error in fetchData:", err);
       setHealth({ error: err.message });
     } finally { setLoading(false); }
   };
@@ -175,7 +175,6 @@ export default function BotSettingsPage() {
     setCmdMessage("");
     const endpoint = action === 'register' ? '/api/commands/register' : '/api/commands/unregister';
     
-    // If no specific names provided, and we are in registration tab, use selected checkboxes
     const finalNames = commandNames || (action === 'register' ? Array.from(selectedCmds) : null);
 
     try {
@@ -425,21 +424,26 @@ export default function BotSettingsPage() {
                </div>
                {registeredLocalCommands.length === 0 ? <div className="empty">Brak zarejestrowanych komend lokalnie.</div> : (
                  <div className="commands-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
-                   {registeredLocalCommands.map((cmd, idx) => (
-                     <div key={idx} className="module-card" style={{ borderLeftColor: '#ef4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                       <div className="module-info">
-                         <div className="module-name">/{cmd.name}</div>
-                         <div className="module-status" style={{ fontSize: '0.75rem' }}>{cmd.description}</div>
+                   {registeredLocalCommands.map((cmd, idx) => {
+                     const isGlobal = registeredGlobalCommands.some(g => g.name === cmd.name);
+                     return (
+                       <div key={idx} className="module-card" style={{ borderLeftColor: '#ef4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                         <div className="module-info">
+                           <div className="module-name" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                             /{cmd.name} {isGlobal && <span style={{ fontSize: '0.6rem', background: '#6b6b76', padding: '2px 4px', borderRadius: '4px', color: 'white' }}>Globalna</span>}
+                           </div>
+                           <div className="module-status" style={{ fontSize: '0.75rem' }}>{cmd.description}</div>
+                         </div>
+                         <button 
+                           onClick={() => manageCommands('unregister', [cmd.name])}
+                           className="action-btn" 
+                           style={{ background: '#ef4444', padding: '0.3rem 0.6rem', fontSize: '0.7rem' }}
+                         >
+                           <FiTrash2 /> Usuń
+                         </button>
                        </div>
-                       <button 
-                         onClick={() => manageCommands('unregister', [cmd.name])}
-                         className="action-btn" 
-                         style={{ background: '#ef4444', padding: '0.3rem 0.6rem', fontSize: '0.7rem' }}
-                       >
-                         <FiTrash2 /> Usuń
-                       </button>
-                     </div>
-                   ))}
+                     );
+                   })}
                  </div>
                )}
             </div>
