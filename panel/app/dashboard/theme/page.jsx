@@ -1,24 +1,18 @@
 "use client";
 import { useEffect, useState } from "react";
-import { FiSun, FiCheck } from 'react-icons/fi';
+import { useTheme } from '@/lib/useTheme';
+import { FiSun, FiMoon, FiCheck, FiPalette } from 'react-icons/fi';
 
 export default function ThemeSettings() {
-  const [accentColor, setAccentColor] = useState("#3b82f6");
+  const { theme, updateTheme } = useTheme();
+  const { accentColor, mode } = theme;
 
-  useEffect(() => {
-    const saved = localStorage.getItem("theme-accent");
-    if (saved) setAccentColor(saved);
-  }, []);
-
-  const applyTheme = (color) => {
-    localStorage.setItem("theme-accent", color);
-    document.documentElement.style.setProperty('--accent-color', color);
-    window.dispatchEvent(new CustomEvent('theme-change', { detail: { color } }));
+  const applyColor = (color) => {
+    updateTheme({ accentColor: color });
   };
 
-  const handleColorChange = (color) => {
-    setAccentColor(color);
-    applyTheme(color);
+  const toggleMode = () => {
+    updateTheme({ mode: mode === 'dark' ? 'light' : 'dark' });
   };
 
   const presetColors = [
@@ -35,20 +29,36 @@ export default function ThemeSettings() {
   return (
     <div className="theme-settings">
       <div className="page-header">
-        <h1><FiSun /> Ustawienia motywu</h1>
+        <h1><FiPalette /> Ustawienia motywu</h1>
         <p>Dostosuj wygląd panelu do swoich preferencji</p>
       </div>
 
       <div className="theme-section">
+        <h2 style={{ color: accentColor }}>Tryb kolorystyczny</h2>
+        <p className="section-description">Wybierz między ciemnym a jasnym trybem pracy.</p>
+        
+        <div className="mode-toggle">
+          <button 
+            onClick={toggleMode} 
+            className={`mode-btn ${mode === 'dark' ? 'active' : ''}`}
+            style={{ borderColor: mode === 'dark' ? accentColor : 'transparent' }}
+          >
+            {mode === 'dark' ? <FiMoon /> : <FiSun />}
+            <span>{mode === 'dark' ? 'Tryb Ciemny' : 'Tryb Jasny'}</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="theme-section">
         <h2 style={{ color: accentColor }}>Kolor akcentu</h2>
-        <p className="section-description">Wybierz jeden z presetów lub ustaw własny kolor. Zmiany są zapisywane automatycznie.</p>
+        <p className="section-description">Wybierz jeden z presetów lub ustaw własny kolor.</p>
         
         <div className="preset-colors">
           {presetColors.map(preset => (
             <button
               key={preset.color}
               className={`preset-btn ${accentColor === preset.color ? 'active' : ''}`}
-              onClick={() => handleColorChange(preset.color)}
+              onClick={() => applyColor(preset.color)}
               style={{ backgroundColor: preset.color }}
               title={preset.name}
             >
@@ -63,7 +73,7 @@ export default function ThemeSettings() {
             <input
               type="color"
               value={accentColor}
-              onChange={(e) => handleColorChange(e.target.value)}
+              onChange={(e) => applyColor(e.target.value)}
               className="color-picker"
             />
           </label>
@@ -76,7 +86,7 @@ export default function ThemeSettings() {
           <div className="preview-header" style={{ color: accentColor }}>
             Przykładowy nagłówek
           </div>
-          <p className="preview-text">To jest przykładowy tekst w nowym motywie. Zmiana powinna być widoczna natychmiast.</p>
+          <p className="preview-text">To jest przykładowy tekst w nowym motywie. Zmiana trybu i koloru akcentu jest widoczna natychmiastowo w całym panelu.</p>
           <button 
             className="preview-button"
             style={{ backgroundColor: accentColor }}
@@ -91,6 +101,7 @@ export default function ThemeSettings() {
           max-width: 800px;
           margin: 0 auto;
           padding: 2rem;
+          color: var(--text-color);
         }
         .page-header h1 {
           display: flex;
@@ -100,12 +111,12 @@ export default function ThemeSettings() {
           margin-bottom: 0.5rem;
         }
         .page-header p {
-          color: #6b6b76;
+          color: var(--text-muted);
           margin-bottom: 2rem;
         }
         .theme-section {
-          background: #14141c;
-          border: 1px solid #1e1e26;
+          background: var(--surface-color);
+          border: 1px solid var(--border-color);
           border-radius: 1rem;
           padding: 1.5rem;
           margin-bottom: 1.5rem;
@@ -115,8 +126,30 @@ export default function ThemeSettings() {
           margin-bottom: 0.5rem;
         }
         .section-description {
-          color: #6b6b76;
+          color: var(--text-muted);
           margin-bottom: 1.5rem;
+        }
+        .mode-toggle {
+          display: flex;
+          gap: 1rem;
+          margin-bottom: 1.5rem;
+        }
+        .mode-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.75rem 1.5rem;
+          background: var(--backgroundColor);
+          border: 2px solid var(--border-color);
+          border-radius: 0.75rem;
+          color: var(--text-color);
+          cursor: pointer;
+          transition: all 0.2s;
+          font-weight: 600;
+        }
+        .mode-btn.active {
+          background: var(--surface-color);
+          box-shadow: 0 0 0 1px var(--accent-color);
         }
         .preset-colors {
           display: flex;
@@ -150,7 +183,7 @@ export default function ThemeSettings() {
           display: flex;
           align-items: center;
           gap: 1rem;
-          color: #6b6b76;
+          color: var(--text-muted);
         }
         .color-picker {
           width: 60px;
@@ -160,7 +193,7 @@ export default function ThemeSettings() {
           cursor: pointer;
         }
         .preview-card {
-          background: #14141c;
+          background: var(--surface-color);
           border: 2px solid;
           border-radius: 0.75rem;
           padding: 1.5rem;
@@ -170,7 +203,7 @@ export default function ThemeSettings() {
           margin-bottom: 1rem;
         }
         .preview-text {
-          color: #9c9ca7;
+          color: var(--text-muted);
           margin-bottom: 1rem;
         }
         .preview-button {

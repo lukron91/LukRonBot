@@ -3,18 +3,31 @@ import { createContext, useContext, useState, useEffect } from 'react';
 
 const ThemeContext = createContext();
 
-export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState({
-    accentColor: '#3b82f6',
+const PALETTES = {
+  dark: {
     backgroundColor: '#0a0a0f',
     surfaceColor: '#14141c',
-    borderColor: '#25252d',
+    borderColor: '#1e1e26',
     textColor: '#ffffff',
     textMuted: '#6b6b76'
+  },
+  light: {
+    backgroundColor: '#f3f4f6',
+    surfaceColor: '#ffffff',
+    borderColor: '#e5e7eb',
+    textColor: '#111827',
+    textMuted: '#6b7280'
+  }
+};
+
+export function ThemeProvider({ children }) {
+  const [theme, setTheme] = useState({
+    mode: 'dark',
+    accentColor: '#3b82f6',
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem('theme');
+    const saved = localStorage.getItem('theme_settings');
     if (saved) {
       try {
         setTheme(JSON.parse(saved));
@@ -24,10 +37,22 @@ export function ThemeProvider({ children }) {
     }
   }, []);
 
-  const updateTheme = (newTheme) => {
-    const updated = { ...theme, ...newTheme };
-    setTheme(updated);
-    localStorage.setItem('theme', JSON.stringify(updated));
+  useEffect(() => {
+    const currentPalette = PALETTES[theme.mode];
+    const root = document.documentElement;
+
+    root.style.setProperty('--bg-color', currentPalette.backgroundColor);
+    root.style.setProperty('--surface-color', currentPalette.surfaceColor);
+    root.style.setProperty('--border-color', currentPalette.borderColor);
+    root.style.setProperty('--text-color', currentPalette.textColor);
+    root.style.setProperty('--text-muted', currentPalette.textMuted);
+    root.style.setProperty('--accent-color', theme.accentColor);
+
+    localStorage.setItem('theme_settings', JSON.stringify(theme));
+  }, [theme]);
+
+  const updateTheme = (newSettings) => {
+    setTheme(prev => ({ ...prev, ...newSettings }));
   };
 
   return (

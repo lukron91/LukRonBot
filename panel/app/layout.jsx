@@ -1,4 +1,5 @@
 import './globals.css';
+import { Providers } from './providers';
 
 export const metadata = {
   title: 'LukRon Bot Panel',
@@ -8,7 +9,11 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="pl">
-      <body>{children}</body>
+      <body>
+        <Providers>
+          {children}
+        </Providers>
+      </body>
     </html>
   );
 }
