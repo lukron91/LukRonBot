@@ -12,7 +12,7 @@
   --text-color: #ffffff;
   --text-muted: #6b6b76;
   --accent-color: #3b82f6;
-  --border-radius: var(--border-radius);
+  --border-radius: 12px;
   --surface-opacity: 0.9;
   --bg-intensity: 100%;
 }
@@ -65,7 +65,7 @@ body {
   font-size: 1.2rem;
   font-weight: 600;
   margin-bottom: 1rem;
-  color: var(--text-color);
+  color: var(--text-//text-color);
 }
 
 /* LAYOUT DASHBOARD */
@@ -398,7 +398,7 @@ body {
 .btn-primary {
   background: linear-gradient(135deg, var(--accent-color), #4752c4);
   border: none;
-  border-//border-radius: var(--border-radius);
+  border-radius: var(--border-radius);
   padding: 0.7rem 1.5rem;
   color: white;
   font-weight: 600;
