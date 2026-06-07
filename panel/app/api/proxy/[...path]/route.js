@@ -5,6 +5,7 @@ const BOT_API = process.env.BOT_API_URL || 'http://localhost:3001';
 export async function GET(request, { params }) {
   const path = (await params).path?.join('/') || '';
   try {
+    // USUNIĘTO /api/ z prefiksu. Teraz przekazuje dokładnie to, co dostał.
     const res = await fetch(`${BOT_API}/${path}`, {
       headers: { 'Content-Type': 'application/json' },
     });
