@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useTheme } from '@/lib/useTheme';
 import { useSearchParams } from 'next/navigation';
-import { FiWifi, FiClock, FiCpu, FiHardDrive, FiServer, FiActivity, FiPower, FiPackage, FiList, FiInfo, FiDatabase, FiRefreshCw, FiTerminal, FiPlus, FiTrash2, FiCheckSquare, FiSquare, FiGlobe } from 'react-icons/fi';
+import { FiWifi, FiClock, FiCpu, FiHardDrive, FiServer, FiActivity, FiPower, FiPackage, FiList, FiInfo, FiDatabase, FiRefreshCw, FiTerminal, FiPlus, FiTrash2, FiCheckSquare, FiSquare, FiGlobe, FiCopy, FiX } from 'react-icons/fi';
 
 export default function BotSettingsPage() {
   const { accentColor } = useTheme();
@@ -13,7 +13,6 @@ export default function BotSettingsPage() {
   const [status, setStatus] = useState("online");
   const [customText, setCustomText] = useState("");
   const [updating, setUpdating] = useState(false);
-  const [message, setMessage] = useState("");
   const [modules, setModules] = useState([]);
   const [systemLogs, setSystemLogs] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
@@ -22,14 +21,26 @@ export default function BotSettingsPage() {
   const [selectedModule, setSelectedModule] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
+  // Notification System State
+  const [toast, setToast] = useState(null); // { message, type: 'success' | 'error' }
+
   // Command Management States
-  const [cmdSubTab, setCmdSubTab] = useState("registration"); // 'registration' | 'local' | 'global'
+  const [cmdSubTab, setCmdSubTab] = useState("registration"); 
   const [memoryCommands, setMemoryCommands] = useState([]);
   const [registeredLocalCommands, setRegisteredLocalCommands] = useState([]);
   const [registeredGlobalCommands, setRegisteredGlobalCommands] = useState([]);
   const [selectedCmds, setSelectedCmds] = useState(new Set());
   const [cmdUpdating, setCmdUpdating] = useState(false);
-  const [cmdMessage, setCmdMessage] = useState("");
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 5000);
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    showToast("Skopiowano do schowka!", "success");
+  };
 
   const fetchData = async () => {
     try {
@@ -55,7 +66,6 @@ export default function BotSettingsPage() {
       const dbRes = await fetch("/api/proxy/api/logs/db");
       if (dbRes.ok) setDbLogs(await dbRes.json());
 
-      // Initial Command Load
       await refreshAllCommands();
     } catch (err) {
       console.error("Error in fetchData:", err);
@@ -91,7 +101,6 @@ export default function BotSettingsPage() {
 
   const updateStatus = async (newStatus, newCustomText) => {
     setUpdating(true);
-    setMessage("");
     try {
       const res = await fetch("/api/proxy/bot/status", {
         method: "POST",
@@ -102,14 +111,14 @@ export default function BotSettingsPage() {
       if (res.ok) {
         setStatus(newStatus);
         setCustomText(newCustomText);
-        setMessage("✅ Status zaktualizowany");
+        showToast("Status zaktualizowany", "success");
         const healthRes = await fetch("/api/proxy/api/bot/health");
         if (healthRes.ok) {
           const text = await healthRes.text();
           try { const healthData = JSON.parse(text); setHealth(healthData); } catch(e) {}
         }
-      } else { setMessage(`❌ Błąd: ${data.error}`); }
-    } catch (err) { setMessage(`❌ Błąd: ${err.message}`); }
+      } else { showToast(`Błąd: ${data.error}`, "error"); }
+    } catch (err) { showToast(`Błąd: ${err.message}`, "error"); }
     finally { setUpdating(false); }
   };
 
@@ -121,12 +130,12 @@ export default function BotSettingsPage() {
       const res = await fetch("/api/proxy/debug/test");
       if (res.ok) {
         const data = await res.json();
-        alert(data.message || "✅ Test OK");
+        showToast(data.message || "Test OK", "success");
       } else {
-        alert(`❌ Błąd: HTTP ${res.status} – moduł debug nie odpowiada`);
+        showToast(`Błąd: HTTP ${res.status}`, "error");
       }
     } catch (err) {
-      alert(`❌ Błąd: ${err.message} – moduł debug nie jest dostępny`);
+      showToast(`Błąd: ${err.message}`, "error");
     }
   };
 
@@ -135,19 +144,18 @@ export default function BotSettingsPage() {
       const res = await fetch("/api/proxy/api/modules/reload", { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        alert(`✅ Dodano: ${data.added.join(', ') || 'brak'}\n⚠️ Usunięte (wymagają restartu): ${data.removed.join(', ') || 'brak'}`);
+        showToast("Moduły przeładowane", "success");
         const modulesRes = await fetch("/api/proxy/api/modules");
         const modulesData = await modulesRes.json();
         setModules(modulesData.modules || []);
       } else {
-        alert("❌ Błąd przeładowania");
+        showToast("Błąd przeładowania", "error");
       }
     } catch (err) {
-      alert(`❌ Błąd: ${err.message}`);
+      showToast(`Błąd: ${err.message}`, "error");
     }
   };
 
-  // --- Command Management Functions ---
   const refreshAllCommands = async () => {
     try {
       const [memRes, localRes, globalRes] = await Promise.all([
@@ -172,9 +180,7 @@ export default function BotSettingsPage() {
 
   const manageCommands = async (action, commandNames = null) => {
     setCmdUpdating(true);
-    setCmdMessage("");
     const endpoint = action === 'register' ? '/api/commands/register' : '/api/commands/unregister';
-    
     const finalNames = commandNames || (action === 'register' ? Array.from(selectedCmds) : null);
 
     try {
@@ -189,13 +195,13 @@ export default function BotSettingsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setCmdMessage(`✅ ${action === 'register' ? 'Zarejestrowano' : 'Usunięto'} ${finalNames ? finalNames.join(', ') : 'wszystkie komendy'}`);
+        showToast(`${action === 'register' ? 'Zarejestrowano' : 'Usunięto'} komendy`, "success");
         await refreshAllCommands();
       } else {
-        setCmdMessage(`❌ Błąd: ${data.error}`);
+        showToast(`Błąd: ${data.error}`, "error");
       }
     } catch (err) {
-      setCmdMessage(`❌ Błąd: ${err.message}`);
+      showToast(`Błąd: ${err.message}`, "error");
     } finally {
       setCmdUpdating(false);
     }
@@ -220,6 +226,20 @@ export default function BotSettingsPage() {
 
   return (
     <div className="bot-settings-page">
+      {toast && (
+        <div className={`toast-notification ${toast.type}`}>
+          <div className="toast-content">
+            <span>{toast.message}</span>
+            {toast.type === 'error' && (
+              <button onClick={() => copyToClipboard(toast.message)} className="toast-copy-btn" title="Kopiuj błąd">
+                <FiCopy />
+              </button>
+            )}
+          </div>
+          <button onClick={() => setToast(null)} className="toast-close-btn"><FiX /></button>
+        </div>
+      )}
+
       <div className="page-header">
         <h1 style={{ color: accentColor }}><FiActivity /> Zarządzanie botem</h1>
         <p>Statystyki, moduły i logi systemowe</p>
@@ -294,7 +314,6 @@ export default function BotSettingsPage() {
               <button type="submit" className="save-btn" style={{ background: accentColor }}>
                 {updating ? "Aktualizowanie..." : "💾 Zaktualizuj status"}
               </button>
-              {message && <div className={`message ${message.startsWith('✅') ? 'success' : 'error'}`}>{message}</div>}
             </form>
           </div>
         </>
@@ -382,8 +401,6 @@ export default function BotSettingsPage() {
                   Zarejestruj Wszystkie (Lokalnie)
                 </button>
               </div>
-
-              {cmdMessage && <div className={`message ${cmdMessage.startsWith('✅') ? 'success' : 'error'}`} style={{ marginBottom: '1rem' }}>{cmdMessage}</div>}
 
               <div className="commands-table-wrapper" style={{ overflowX: 'auto' }}>
                 <table className="commands-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: 'white' }}>
@@ -557,6 +574,7 @@ export default function BotSettingsPage() {
           border: 1px solid ${accentColor};
           border-radius: 1rem;
           background: #0a0a0f;
+          position: relative;
         }
         .page-header h1 {
           display: flex;
@@ -678,22 +696,6 @@ export default function BotSettingsPage() {
         }
         .save-btn:hover:not(:disabled) {
           opacity: 0.9;
-        }
-        .message {
-          padding: 0.75rem;
-          border-radius: 0.5rem;
-          text-align: center;
-          font-weight: 600;
-        }
-        .message.success {
-          background: rgba(16, 185, 129, 0.1);
-          border: 1px solid #10b981;
-          color: #10b981;
-        }
-        .message.error {
-          background: rgba(239, 68, 68, 0.1);
-          border: 1px solid #ef4444;
-          color: #ef4444;
         }
         .module-actions {
           display: flex;
@@ -855,6 +857,68 @@ export default function BotSettingsPage() {
         }
         .sub-tab.active {
           color: #fff;
+        }
+
+        .toast-notification {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          z-index: 9999;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          padding: 1rem 1.5rem;
+          border-radius: 0.75rem;
+          color: white;
+          font-weight: 600;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+          animation: slideIn 0.3s ease-out;
+          min-width: 300px;
+          max-width: 500px;
+        }
+        .toast-notification.success {
+          background: #10b981;
+          border-left: 5px solid #059669;
+        }
+        .toast-notification.error {
+          background: #ef4444;
+          border-left: 5px solid #dc2626;
+        }
+        .toast-content {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+        .toast-copy-btn {
+          background: rgba(255,255,255,0.2);
+          border: none;
+          color: white;
+          padding: 0.3rem;
+          border-radius: 4px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.2s;
+        }
+        .toast-copy-btn:hover {
+          background: rgba(255,255,255,0.3);
+        }
+        .toast-close-btn {
+          background: none;
+          border: none;
+          color: white;
+          cursor: pointer;
+          opacity: 0.7;
+          transition: opacity 0.2s;
+        }
+        .toast-close-btn:hover {
+          opacity: 1;
+        }
+        @keyframes slideIn {
+          from { transform: translateX(120%); }
+          to { transform: translateX(0); }
         }
       `}</style>
     </div>
