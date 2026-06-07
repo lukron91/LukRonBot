@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useTheme } from '@/lib/useTheme';
+import { useTheme } from '@/lib/theme-context';
 import { FiSun, FiMoon, FiCheck, FiSettings, FiSliders } from 'react-icons/fi';
 
 export default function ThemeSettings() {
