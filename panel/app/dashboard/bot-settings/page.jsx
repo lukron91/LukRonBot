@@ -1,13 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useTheme } from '@/lib/theme-context';
-import { useSearchParams } from 'next/navigation';
 import { FiWifi, FiClock, FiCpu, FiHardDrive, FiServer, FiActivity, FiPower, FiPackage, FiList, FiInfo, FiDatabase, FiRefreshCw, FiTerminal, FiPlus, FiTrash2, FiCheckSquare, FiSquare, FiGlobe, FiCopy, FiX } from 'react-icons/fi';
 
 export default function BotSettingsPage() {
-  const { accentColor } = useTheme();
-  const searchParams = useSearchParams();
-  const guildId = searchParams.get("guild");
+  const { theme, updateTheme } = useTheme();
+  const accentColor = theme?.accentColor || '#3b82f6';
+  const mode = theme?.mode || 'dark';
+
   const [health, setHealth] = useState(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("online");
@@ -21,10 +21,8 @@ export default function BotSettingsPage() {
   const [selectedModule, setSelectedModule] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  // Notification System State
-  const [toast, setToast] = useState(null); // { message, type: 'success' | 'error' }
+  const [toast, setToast] = useState(null);
 
-  // Command Management States
   const [cmdSubTab, setCmdSubTab] = useState("registration"); 
   const [memoryCommands, setMemoryCommands] = useState([]);
   const [registeredLocalCommands, setRegisteredLocalCommands] = useState([]);
@@ -152,7 +150,7 @@ export default function BotSettingsPage() {
         showToast("Błąd przeładowania", "error");
       }
     } catch (err) {
-      showToast(`Błąd: ${err.message}`, "error");
+      showToast(`Błąd: ${err.//message}`, "error");
     }
   };
 
@@ -296,7 +294,7 @@ export default function BotSettingsPage() {
                     className="status-btn"
                     style={{
                       display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1rem", borderRadius: "40px",
-                      background: status === opt.value ? opt.color : "#1e1e26", border: "1px solid rgba(255,255,255,0.1)", color: "white", cursor: "pointer"
+                      background: status === opt.value ? opt.color : "var(--surface-color)", border: "1px solid var(--border-color)", color: "var(--text-color)", cursor: "pointer"
                     }}
                   >
                     {opt.icon} {opt.label}
@@ -334,7 +332,7 @@ export default function BotSettingsPage() {
                   <div className="module-info">
                     <div className="module-name">{mod.name}</div>
                     <div className="module-status">{mod.status === 'active' ? '✅ aktywny' : '❌ uszkodzony'}</div>
-                    {mod.error && <div className="module-error">{mod.error}</div>}
+                    {mod.error && <div className, a="module-error">{mod.error}</div>}
                   </div>
                   <div className="module-hint">Kliknij po opis</div>
                 </div>
@@ -348,7 +346,7 @@ export default function BotSettingsPage() {
         <div className="section">
           <h2 style={{ color: accentColor }}>Zarządzanie Komendami Slash</h2>
           
-          <div className="sub-tabs" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid #1e1e26' }}>
+          <div className="sub-tabs" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)' }}>
             <button 
               className={`sub-tab ${cmdSubTab === 'registration' ? 'active' : ''}`} 
               onClick={() => setCmdSubTab('registration')}
@@ -402,10 +400,12 @@ export default function BotSettingsPage() {
                 </button>
               </div>
 
+              {cmdMessage && <div className={`message ${cmdMessage.startsWith('✅') ? 'success' : 'error'}`} style={{ marginBottom: '1rem' }}>{cmdMessage}</div>}
+
               <div className="commands-table-wrapper" style={{ overflowX: 'auto' }}>
-                <table className="commands-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: 'white' }}>
+                <table className="commands-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: 'var(--text-color)' }}>
                   <thead>
-                    <tr style={{ borderBottom: `2px solid ${accentColor}`, color: '#6b6b76', fontSize: '0.8rem' }}>
+                    <tr style={{ borderBottom: `2px solid ${accentColor}`, color: 'var(--text-muted)', fontSize: '0.8rem' }}>
                       <th style={{ padding: '1rem', width: '40px' }}>Wybierz</th>
                       <th style={{ padding: '1rem' }}>Nazwa</th>
                       <th style={{ padding: '1rem' }}>Opis</th>
@@ -416,14 +416,14 @@ export default function BotSettingsPage() {
                       <tr><td colSpan="3" className="empty" style={{ padding: '2rem' }}>Brak załadowanych komend w pamięci bota.</td></tr>
                     ) : (
                       memoryCommands.map((cmd, idx) => (
-                        <tr key={idx} style={{ borderBottom: '1px solid #1e1e26' }}>
+                        <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)' }}>
                           <td style={{ padding: '1rem', textAlign: 'center' }}>
                             <div onClick={() => toggleCommandSelection(cmd.name)} style={{ cursor: 'pointer', color: accentColor, fontSize: '1.2rem' }}>
                               {selectedCmds.has(cmd.name) ? <FiCheckSquare /> : <FiSquare />}
                             </div>
                           </td>
                           <td style={{ padding: '1rem', fontWeight: '600' }}>/{cmd.name}</td>
-                          <td style={{ padding: '1rem', color: '#9c9ca7', fontSize: '0.9rem' }}>{cmd.description}</td>
+                          <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{cmd.description}</td>
                         </tr>
                       ))
                     )}
@@ -436,7 +436,7 @@ export default function BotSettingsPage() {
           {cmdSubTab === 'local' && (
             <div className="registered-list">
                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                 <h3 style={{ color: '#fff', fontSize: '1rem' }}>Komendy aktywne na tym serwerze</h3>
+                 <h3 style={{ color: 'var(--text-color)', fontSize: '1rem' }}>Komendy aktywne na tym serwerze</h3>
                  <button onClick={refreshAllCommands} className="action-btn" style={{ background: accentColor, fontSize: '0.8rem' }}><FiRefreshCw /> Odśwież</button>
                </div>
                {registeredLocalCommands.length === 0 ? <div className="empty">Brak zarejestrowanych komend lokalnie.</div> : (
@@ -469,14 +469,14 @@ export default function BotSettingsPage() {
           {cmdSubTab === 'global' && (
             <div className="registered-list">
                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                 <h3 style={{ color: '#fff', fontSize: '1rem' }}>Komendy aktywne globalnie</h3>
+                 <h3 style={{ color: 'var(--text-color)', fontSize: '1rem' }}>Komendy aktywne globalnie</h3>
                  <button onClick={refreshAllCommands} className="action-btn" style={{ background: accentColor, fontSize: '0.8rem' }}><FiRefreshCw /> Odśwież</button>
                </div>
                {registeredGlobalCommands.length === 0 ? <div className="empty">Brak zarejestrowanych komend globalnie.</div> : (
                  <div className="commands-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
                    {registeredGlobalCommands.map((cmd, idx) => (
                      <div key={idx} className="module-card" style={{ borderLeftColor: '#ef4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                       <div className="module-info">
+                       <div className, a="module-info">
                          <div className="module-name">/{cmd.name}</div>
                          <div className="module-status" style={{ fontSize: '0.75rem' }}>{cmd.description}</div>
                        </div>
@@ -529,7 +529,7 @@ export default function BotSettingsPage() {
               ))
             }
           </div>
-          <button onClick={async () => { const res = await fetch("/api/proxy/api/logs/activity"); setActivityLogs(await res.json()); }} className="refresh-btn" style={{ background: accentColor }}>Odśwież</button>
+          <button onClick={async () => { const res = await fetch("/api/proxy/api/logs/activity"); setActivityLogs(await res.//json()); }} className="refresh-btn" style={{ background: accentColor }}>Odśwież</button>
         </div>
       )}
 
@@ -571,9 +571,9 @@ export default function BotSettingsPage() {
         .bot-settings-page {
           margin: 100px 200px 2rem 200px;
           padding: 1.5rem;
-          border: 1px solid ${accentColor};
+          border: 1px solid var(--border-color);
           border-radius: var(--border-radius);
-          background: #0a0a0f;
+          background: transparent;
           position: relative;
         }
         .page-header h1 {
@@ -584,13 +584,13 @@ export default function BotSettingsPage() {
           margin-bottom: 0.5rem;
         }
         .page-header p {
-          color: #6b6b76;
+          color: var(--text-muted);
           margin-bottom: 1.5rem;
         }
         .loading, .error, .empty {
           text-align: center;
           padding: 3rem;
-          color: #6b6b76;
+          color: var(--text-muted);
         }
         .error {
           color: #ef4444;
@@ -599,7 +599,7 @@ export default function BotSettingsPage() {
           display: flex;
           gap: 0.5rem;
           margin-bottom: 2rem;
-          border-bottom: 1px solid #1e1e26;
+          border-bottom: 1px solid var(--border-color);
         }
         .tab {
           display: flex;
@@ -609,7 +609,7 @@ export default function BotSettingsPage() {
           background: none;
           border: none;
           border-bottom: 2px solid transparent;
-          color: #9c9ca7;
+          color: var(--text-muted);
           cursor: pointer;
           font-size: 0.9rem;
           transition: all 0.2s;
@@ -618,11 +618,12 @@ export default function BotSettingsPage() {
           color: #fff;
         }
         .section {
-          background: #14141c;
-          border: 1px solid #1e1e26;
+          background: rgba(var(--surface-rgb), var(--surface-opacity));
+          border: 1px solid var(--border-color);
           border-radius: var(--border-radius);
           padding: 1.5rem;
           margin-bottom: 1.5rem;
+          backdrop-filter: blur(12px);
         }
         .section h2 {
           font-size: 1.1rem;
@@ -637,7 +638,7 @@ export default function BotSettingsPage() {
           gap: 1rem;
         }
         .health-card {
-          background: #1e1e26;
+          background: rgba(var(--surface-rgb), 0.5);
           border-radius: var(--border-radius);
           padding: 1.5rem;
           border-top: 3px solid;
@@ -654,13 +655,13 @@ export default function BotSettingsPage() {
         }
         .health-title {
           font-size: 0.9rem;
-          color: #6b6b76;
+          color: var(--text-muted);
           margin-bottom: 0.25rem;
         }
         .health-value {
           font-size: 1.5rem;
           font-weight: 700;
-          color: #fff;
+          color: var(--text-color);
         }
         .status-form {
           display: flex;
@@ -669,19 +670,29 @@ export default function BotSettingsPage() {
         }
         .status-form label {
           font-weight: 600;
-          color: #fff;
+          color: var(--text-color);
         }
         .status-buttons {
           display: flex;
           gap: 0.5rem;
           flex-wrap: wrap;
         }
+        .status-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.5rem 1rem;
+          border-radius: var(--border-radius);
+          border: 1px solid var(--border-color);
+          color: var(--text-color);
+          cursor: pointer;
+        }
         .status-input {
           padding: 0.75rem;
-          background: #1e1e26;
-          border: 1px solid #25252d;
+          background: var(--bg-color);
+          border: 1px solid var(--border-color);
           border-radius: var(--border-radius);
-          color: #fff;
+          color: var(--text-color);
           font-size: 0.9rem;
         }
         .save-btn {
@@ -696,6 +707,22 @@ export default function BotSettingsPage() {
         }
         .save-btn:hover:not(:disabled) {
           opacity: 0.9;
+        }
+        .message {
+          padding: 0.75rem;
+          border-radius: var(--border-radius);
+          text-align: center;
+          font-weight: 600;
+        }
+        .message.success {
+          background: rgba(16, 185, 129, 0.1);
+          border: 1px solid #10b981;
+          color: #10b91;
+        }
+        .message.error {
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid #ef4444;
+          color: #ef4444;
         }
         .module-actions {
           display: flex;
@@ -723,14 +750,14 @@ export default function BotSettingsPage() {
           align-items: center;
           gap: 1rem;
           padding: 1rem;
-          background: #1e1e26;
+          background: rgba(var(--surface-rgb), 0.5);
           border-radius: var(--border-radius);
           border-left: 3px solid;
           cursor: pointer;
           transition: background 0.2s;
         }
         .module-card:hover {
-          background: #25252d;
+          background: rgba(var(--surface-rgb), 0.8);
         }
         .module-icon {
           font-size: 1.5rem;
@@ -740,11 +767,11 @@ export default function BotSettingsPage() {
         }
         .module-name {
           font-weight: 600;
-          color: #fff;
+          color: var(--text-color);
         }
         .module-status {
           font-size: 0.8rem;
-          color: #6b6b76;
+          color: var(--text-muted);
         }
         .module-error {
           font-size: 0.8rem;
@@ -753,12 +780,12 @@ export default function BotSettingsPage() {
         }
         .module-hint {
           font-size: 0.75rem;
-          color: #6b6b76;
+          color: var(--text-muted);
           text-align: right;
         }
         .logs-container {
-          background: #0a0a0f;
-          border: 1px solid #1e1e26;
+          background: var(--bg-color);
+          border: 1px solid var(--border-color);
           border-radius: var(--border-radius);
           padding: 1rem;
           max-height: 400px;
@@ -771,10 +798,10 @@ export default function BotSettingsPage() {
         }
         .log-entry {
           padding: 0.25rem 0;
-          border-bottom: 1px solid #1e1e26;
+          border-bottom: 1px solid var(--border-color);
         }
         .log-time {
-          color: #6b6b76;
+          color: var(--text-muted);
           margin-right: 0.5rem;
         }
         .log-source {
@@ -782,7 +809,7 @@ export default function BotSettingsPage() {
           margin-right: 0.5rem;
         }
         .log-message {
-          color: #fff;
+          color: var(--text-color);
         }
         .refresh-btn {
           padding: 0.5rem 1rem;
@@ -804,8 +831,8 @@ export default function BotSettingsPage() {
           z-index: 1000;
         }
         .modal-content {
-          background: #14141c;
-          border: 1px solid #1e1e26;
+          background: var(--surface-color);
+          border: 1px solid var(--border-color);
           border-radius: var(--border-radius);
           max-width: 700px;
           width: 90%;
@@ -823,13 +850,13 @@ export default function BotSettingsPage() {
         .close-btn {
           background: none;
           border: none;
-          color: #6b6b76;
+          color: var(--text-muted);
           font-size: 1.5rem;
           cursor: pointer;
         }
         .modal-body {
           padding: 1rem;
-          color: #fff;
+          color: var(--text-color);
         }
         .error-text {
           color: #ef4444;
@@ -847,7 +874,7 @@ export default function BotSettingsPage() {
           background: none;
           border: none;
           border-bottom: 2px solid transparent;
-          color: #9c9ca7;
+          color: var(--text-muted);
           cursor: pointer;
           font-size: 0.85rem;
           display: flex;
@@ -858,7 +885,6 @@ export default function BotSettingsPage() {
         .sub-tab.active {
           color: #fff;
         }
-
         .toast-notification {
           position: fixed;
           top: 20px;
@@ -895,7 +921,7 @@ export default function BotSettingsPage() {
           border: none;
           color: white;
           padding: 0.3rem;
-          border-radius: var(--border-radius);
+          border-radius: 4px;
           cursor: pointer;
           display: flex;
           align-items: center;
