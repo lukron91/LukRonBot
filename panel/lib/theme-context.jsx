@@ -14,14 +14,14 @@ const DEFAULT_THEME = {
 const PALETTES = {
   dark: {
     backgroundColor: '#0a0a0f',
-    surfaceColor: '#14141c',
+    surfaceRGB: '20, 20, 28', // #14141c
     borderColor: '#1e1e26',
     textColor: '#ffffff',
     textMuted: '#6b6b76'
   },
   light: {
     backgroundColor: '#f3f4f6',
-    surfaceColor: '#ffffff',
+    surfaceRGB: '255, 255, 255', // #ffffff
     borderColor: '#e5e7eb',
     textColor: '#111827',
     textMuted: '#6b7280'
@@ -36,10 +36,9 @@ export function ThemeProvider({ children }) {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Merge saved settings with defaults to ensure no missing properties
         setTheme({ ...DEFAULT_THEME, ...parsed });
       } catch (e) {
-        console.error('Błąd ładowania motywu, reset do domyślnych:', e);
+        console.error('Błąd ładowania motywu:', e);
         setTheme(DEFAULT_THEME);
       }
     }
@@ -51,7 +50,7 @@ export function ThemeProvider({ children }) {
     const root = document.documentElement;
 
     root.style.setProperty('--bg-color', currentPalette.backgroundColor);
-    root.style.setProperty('--surface-color', currentPalette.surfaceColor);
+    root.style.setProperty('--surface-rgb', currentPalette.surfaceRGB);
     root.style.setProperty('--border-color', currentPalette.borderColor);
     root.style.setProperty('--text-color', currentPalette.textColor);
     root.style.setProperty('--text-muted', currentPalette.textMuted);

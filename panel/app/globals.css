@@ -7,7 +7,7 @@
 
 :root {
   --bg-color: #0a0a0f;
-  --surface-color: #14141c;
+  --surface-rgb: 20, 20, 28;
   --border-color: #1e1e26;
   --text-color: #ffffff;
   --text-muted: #6b6b76;
@@ -34,7 +34,7 @@ body {
 /* SIDEBAR */
 .sidebar {
   width: 280px;
-  background: var(--surface-color);
+  background: rgba(var(--surface-rgb), var(--surface-opacity));
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
@@ -42,6 +42,7 @@ body {
   top: 0;
   height: 100vh;
   border-radius: 0 var(--border-radius) var(--border-radius) 0;
+  backdrop-filter: blur(10px);
 }
 .sidebar-header {
   padding: 1.5rem;
@@ -98,7 +99,7 @@ body {
   text-decoration: none;
 }
 .nav-link:hover {
-  background: var(--surface-color);
+  background: rgba(var(--surface-rgb), 0.5);
   color: white;
 }
 .nav-link.active {
@@ -143,7 +144,7 @@ body {
   color: var(--text-muted);
 }
 .logout-btn {
-  background: var(--surface-color);
+  background: rgba(var(--surface-rgb), 0.5);
   border: 1px solid var(--border-color);
   padding: 0.3rem 0.7rem;
   border-radius: var(--border-radius);
@@ -221,7 +222,7 @@ body {
   margin-bottom: 2rem;
 }
 .stat-card {
-  background: var(--surface-color);
+  background: rgba(var(--surface-rgb), var(--surface-opacity));
   border-radius: var(--border-radius);
   padding: 1.25rem;
   border: 1px solid var(--border-color);
@@ -229,6 +230,7 @@ body {
   display: flex;
   align-items: center;
   gap: 1rem;
+  backdrop-filter: blur(10px);
 }
 .stat-card:hover {
   border-color: var(--accent-color);
@@ -281,11 +283,12 @@ body {
   font-size: 0.85rem;
 }
 .settings-card {
-  background: var(--surface-color);
+  background: rgba(var(--surface-rgb), var(--surface-opacity));
   border-radius: var(--border-radius);
   padding: 1.5rem;
   margin-bottom: 1.8rem;
   border: 1px solid var(--border-color);
+  backdrop-filter: blur(10px);
 }
 .card-title {
   font-size: 1.2rem;
@@ -431,7 +434,7 @@ input:checked + .toggle-slider-modern:before {
   text-align: center;
   background: var(--bg-color);
   padding: 0.2rem 0.6rem;
-  border-radius: 20px;
+  border-radius: var(--border-radius);
   font-size: 0.8rem;
   color: var(--text-color);
 }
@@ -443,7 +446,7 @@ input:checked + .toggle-slider-modern:before {
   gap: 1rem;
 }
 .health-card {
-  background: var(--surface-color);
+  background: rgba(var(--surface-rgb), var(--surface-opacity));
   border-radius: var(--border-radius);
   padding: 0.75rem 1rem;
   display: flex;
@@ -451,6 +454,7 @@ input:checked + .toggle-slider-modern:before {
   gap: 1rem;
   border: 1px solid var(--border-color);
   transition: all 0.2s;
+  backdrop-filter: blur(10px);
 }
 .health-card:hover {
   border-color: var(--accent-color);
@@ -486,13 +490,14 @@ input:checked + .toggle-slider-modern:before {
 
 /* KOMUNIKAT BRAKU BOTA */
 .bot-missing-card {
-  background: var(--surface-color);
+  background: rgba(var(--surface-rgb), var(--surface-opacity));
   border-radius: var(--border-radius);
   padding: 2rem;
   text-align: center;
   max-width: 500px;
   margin: 3rem auto;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-//border-color);
+  backdrop-filter: blur(10px);
 }
 .bot-missing-icon {
   font-size: 4rem;
@@ -538,7 +543,7 @@ input:checked + .toggle-slider-modern:before {
   justify-content: center;
 }
 .login-card {
-  background: var(--surface-color);
+  background: rgba(var(--surface-rgb), var(--surface-opacity));
   backdrop-filter: blur(12px);
   border-radius: var(--border-radius);
   padding: 2rem;

@@ -1,7 +1,7 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useTheme } from '@/lib/useTheme';
+import { useTheme } from '@/lib/theme-context';
 import { FiSettings, FiSave } from 'react-icons/fi';
 
 export default function ConfigPage() {

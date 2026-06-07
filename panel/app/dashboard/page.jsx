@@ -1,7 +1,7 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useTheme } from '@/lib/useTheme';
+import { useTheme } from '@/lib/theme-context';
 import {
   FiUsers, FiHash, FiShield, FiUserPlus, FiUserMinus, FiActivity,
   FiTrendingUp, FiMessageSquare, FiAward
