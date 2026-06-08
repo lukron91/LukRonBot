@@ -99,16 +99,17 @@ ZAKAZ: inline style={{background: ...}} na przyciskach, gradienty - tylko jednol
 
 ---
 
-## Proces pracy
+## Proces pracy (KAZDY COMMIT)
 
 1. git pull origin dev
 2. Praca nad kodem
 3. git add -A
 4. git commit -m "krotki opis po polsku"
-5. Aktualizacja .arena/SESSION.md (dodaj wpis)
+5. **DOPISZ do swojego pliku logow** (`.arena/logs/NNN-twoja-nazwa.md`) - szczegolowy wpis co zmieniono
 6. Aktualizacja .arena/STATE.md (jesli zmienil sie stan)
-7. git push origin dev
-8. Poinformuj uzytkownika co zrobiono
+7. Aktualizacja .arena/SESSION.md (dodaj wpis o commicie)
+8. git push origin dev
+9. Poinformuj uzytkownika co zrobiono
 
 ---
 
@@ -131,7 +132,11 @@ Format logu:
   - konkretna zmiana 2
 ```
 
-Agent tworzy NOWY plik logu dla swojej sesji (kolejny numer: 004, 005...).
+Agent tworzy NOWY plik logu dla swojej sesji.
+Numer: kolejny wolny (sprawdz ls .arena/logs/ i wez nastepny).
+Nazwa: NNN-[twoj-identyfikator].md
+Przyklady: 004-gemini.md, 005-claude-sonnet.md, 006-gpt4o.md
+Identyfikator: nazwa modelu lub ID agenta (cokolwiek jednoznacznego).
 Na koniec sesji aktualizuje `.arena/STATE.md` i `.arena/SESSION.md`.
 
 ### Dlaczego to wazne
