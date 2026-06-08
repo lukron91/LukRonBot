@@ -41,22 +41,24 @@ export default function ServersPage() {
   return (
     <div className="sp-root">
 
-      {/* Baner — ten sam co dashboard */}
-      <div className="sp-banner">
-        <img src="/resources/baner-dashboard.png" alt="" className="sp-banner-img" />
-        <div className="sp-banner-overlay" />
-        <div className="sp-banner-content">
-          <div className="sp-logo-row">
-            <img src="/resources/logo.png" alt="LukRon Bot" className="sp-logo" />
-            <span className="sp-title" style={{ color: accentColor }}>LukRon Bot</span>
-          </div>
-          <p className="sp-subtitle">Panel sterowania</p>
-        </div>
-      </div>
-
       {/* Okno — wyśrodkowane, czarne tło */}
       <div className="sp-window-wrap">
         <div className="sp-window">
+
+          {/* Baner wewnątrz okna */}
+          <div className="sp-banner">
+            <img src="/resources/baner-dashboard.png" alt="" className="sp-banner-img" />
+            <div className="sp-banner-overlay" />
+            <div className="sp-banner-content">
+              <div className="sp-logo-row">
+                <img src="/resources/logo.png" alt="LukRon Bot" className="sp-logo" />
+                <div>
+                  <div className="sp-title" style={{ color: accentColor }}>LukRon Bot</div>
+                  <div className="sp-subtitle">Panel sterowania</div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Nagłówek okna */}
           <div className="sp-window-header">
@@ -146,14 +148,29 @@ export default function ServersPage() {
           min-height: 100vh;
           background: var(--bg-color);
           display: flex;
-          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 2rem 1rem;
         }
 
-        /* Baner */
+        /* Okno */
+        .sp-window-wrap {
+          width: 100%;
+          max-width: 680px;
+        }
+        .sp-window {
+          width: 100%;
+          background: #000;
+          border: 1px solid var(--border-color);
+          border-radius: var(--border-radius);
+          overflow: hidden;
+          box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+        }
+
+        /* Baner wewnątrz okna */
         .sp-banner {
           position: relative;
-          height: 200px;
-          flex-shrink: 0;
+          height: 160px;
           overflow: hidden;
         }
         .sp-banner-img {
@@ -168,15 +185,14 @@ export default function ServersPage() {
         .sp-banner-overlay {
           position: absolute;
           inset: 0;
-          background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.6) 75%, var(--bg-color) 100%);
+          background: linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.65) 70%, #000 100%);
         }
         .sp-banner-content {
           position: absolute;
           inset: 0;
           display: flex;
-          flex-direction: column;
-          justify-content: flex-end;
-          padding: 1.25rem 2rem;
+          align-items: flex-end;
+          padding: 1.25rem 1.5rem;
         }
         .sp-logo-row {
           display: flex;
@@ -184,39 +200,22 @@ export default function ServersPage() {
           gap: 0.75rem;
         }
         .sp-logo {
-          width: 36px;
-          height: 36px;
-          border-radius: 8px;
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
           object-fit: contain;
         }
         .sp-title {
-          font-size: 1.4rem;
+          font-size: 1.3rem;
           font-weight: 700;
-          text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+          line-height: 1.2;
+          text-shadow: 0 2px 6px rgba(0,0,0,0.9);
         }
         .sp-subtitle {
-          font-size: 0.8rem;
-          color: rgba(255,255,255,0.6);
-          margin: 0.1rem 0 0 0;
-          text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-        }
-
-        /* Okno */
-        .sp-window-wrap {
-          flex: 1;
-          display: flex;
-          align-items: flex-start;
-          justify-content: center;
-          padding: 2rem 1rem 3rem;
-        }
-        .sp-window {
-          width: 100%;
-          max-width: 680px;
-          background: #000;
-          border: 1px solid var(--border-color);
-          border-radius: var(--border-radius);
-          overflow: hidden;
-          box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+          font-size: 0.75rem;
+          color: rgba(255,255,255,0.55);
+          text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+          margin-top: 0.15rem;
         }
 
         /* Header okna */
@@ -224,7 +223,7 @@ export default function ServersPage() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 1.5rem 1.5rem 1rem;
+          padding: 1.25rem 1.5rem 1rem;
           border-bottom: 1px solid var(--border-color);
           gap: 1rem;
         }
