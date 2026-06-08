@@ -231,9 +231,14 @@ body {
 /* MAIN */
 .main-content {
   flex: 1;
-  padding: 2rem;
+  padding: 0;
   overflow-y: auto;
   background-color: var(--bg-color);
+}
+
+/* Padding dla zawartości stron wewnątrz main-content */
+.page-content {
+  padding: 2rem;
 }
 .dashboard-header {
   display: flex;
