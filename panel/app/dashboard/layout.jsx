@@ -315,7 +315,9 @@ export default function DashboardLayout({ children }) {
             </div>
           </div>
         ) : (
-          children
+          <div className="page-content-wrapper" style={{ borderColor: accentColor }}>
+            {children}
+          </div>
         )}
       <Modal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} title="Potwierdź wylogowanie">
         <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
@@ -533,6 +535,15 @@ export default function DashboardLayout({ children }) {
           flex-direction: column;
           overflow: hidden;
           min-width: 0;
+          overflow-y: auto;
+        }
+
+        .page-content-wrapper {
+          margin: 1.5rem;
+          border: 1px solid;
+          border-radius: var(--border-radius);
+          overflow: hidden;
+          flex: 1;
         }
 
         .top-bar {
