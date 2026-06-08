@@ -533,17 +533,20 @@ export default function DashboardLayout({ children }) {
           flex: 1;
           display: flex;
           flex-direction: column;
-          overflow: hidden;
-          min-width: 0;
           overflow-y: auto;
+          min-width: 0;
+          background: var(--bg-color);
+          padding: 2rem;
         }
 
         .page-content-wrapper {
-          margin: 1.5rem;
+          width: 100%;
+          max-width: 1100px;
+          margin: 0 auto;
           border: 1px solid;
           border-radius: var(--border-radius);
           overflow: hidden;
-          flex: 1;
+          background: var(--bg-color);
         }
 
         .top-bar {
