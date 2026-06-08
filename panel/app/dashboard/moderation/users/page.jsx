@@ -1,7 +1,7 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
-import { FiX, FiRefreshCw, FiTrash2, FiUnlock, FiBell, FiAlertTriangle } from 'react-icons/fi';
+import { FiX, FiRefreshCw, FiTrash2, FiUnlock, FiBell, FiAlertTriangle, FiClock, FiList } from 'react-icons/fi';
 import { useTheme } from '@/lib/theme-context';
 import Modal from '@/components/Modal';
 
@@ -20,6 +20,8 @@ export default function UsersPage() {
   const [activeTab, setActiveTab] = useState("apply");
   const [punishments, setPunishments] = useState({ warnings: [], mutes: [], bans: [] });
   const [activePunishments, setActivePunishments] = useState({ mute: null, ban: null });
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
   const [muteDuration, setMuteDuration] = useState(60);
@@ -86,6 +88,22 @@ export default function UsersPage() {
     }
   };
 
+  const fetchHistory = async (userId) => {
+    setHistoryLoading(true);
+    try {
+      // Używa GET /api/guilds/:guildId/punishments/:userId
+      // Bot zwraca { success: true, punishments: [...] } — wszystkie kary chronologicznie
+      const res = await fetch('/api/proxy/api/guilds/' + guildId + '/punishments/' + userId);
+      const data = await res.json();
+      setHistory(Array.isArray(data?.punishments) ? data.punishments : []);
+    } catch (err) {
+      console.error('Błąd pobierania historii kar:', err);
+      setHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   const fetchActivePunishments = async (userId) => {
     try {
       const res = await fetch('/api/proxy/api/guilds/' + guildId + '/punishments/' + userId + '/active');
@@ -100,7 +118,7 @@ export default function UsersPage() {
   const openActionMenu = async (user) => {
     setSelectedUser(user);
     setActionMenu(user.id);
-    await Promise.all([fetchPunishments(user.id), fetchActivePunishments(user.id)]);
+    await Promise.all([fetchPunishments(user.id), fetchActivePunishments(user.id), fetchHistory(user.id)]);
     setActionMessage("");
     setWarnReason("");
     setMuteReason("");
@@ -114,6 +132,7 @@ export default function UsersPage() {
     setActionMenu(null);
     setPunishments({ warnings: [], mutes: [], bans: [] });
     setActivePunishments({ mute: null, ban: null });
+    setHistory([]);
   };
 
   const executeAction = async (action) => {
@@ -144,7 +163,7 @@ export default function UsersPage() {
       const data = await res.json();
       if (data.success) {
         setActionMessage('✅ ' + (action === 'mute' ? 'Wyciszono' : action === 'ban' ? 'Zbanowano' : 'Dodano warn') + ' pomyślnie');
-        await Promise.all([fetchPunishments(selectedUser.id), fetchActivePunishments(selectedUser.id)]);
+        await Promise.all([fetchPunishments(selectedUser.id), fetchActivePunishments(selectedUser.id), fetchHistory(selectedUser.id)]);
         if (action === 'warn') setWarnReason("");
         if (action === 'mute') setMuteReason("");
         if (action === 'ban') setBanReason("");
@@ -204,6 +223,18 @@ export default function UsersPage() {
         } catch (err) { setActionMessage('❌ Błąd: ' + err.message); }
       }
     });
+  };
+
+  // Mapowanie typów kar na ikonę, label i klasę modal-info-row
+  // Zgodne ze schematem bota: type enum ['warn', 'mute', 'ban', 'kick']
+  // Przyszły agent może tu dodać nowe typy bez zmiany reszty kodu
+  const PUNISHMENT_STYLE = {
+    warn:  { icon: <FiAlertTriangle />, label: 'Warn',    rowClass: 'warning' },
+    mute:  { icon: <FiBell />,          label: 'Mute',    rowClass: 'warning' },
+    ban:   { icon: <FiAlertTriangle />, label: 'Ban',     rowClass: 'danger'  },
+    kick:  { icon: <FiX />,             label: 'Kick',    rowClass: 'danger'  },
+    unmute:{ icon: <FiUnlock />,        label: 'Unmute',  rowClass: 'success' },
+    unban: { icon: <FiUnlock />,        label: 'Unban',   rowClass: 'success' },
   };
 
   if (!guildId) {
@@ -279,6 +310,9 @@ export default function UsersPage() {
             <button className={'modal-tab' + (activeTab === 'apply' ? ' active' : '')} onClick={() => setActiveTab('apply')}>Nałóż karę</button>
             <button className={'modal-tab' + (activeTab === 'active' ? ' active' : '')} onClick={() => setActiveTab('active')}>Aktywne kary</button>
             <button className={'modal-tab' + (activeTab === 'warns' ? ' active' : '')} onClick={() => setActiveTab('warns')}>Warny</button>
+            <button className={'modal-tab' + (activeTab === 'history' ? ' active' : '')} onClick={() => setActiveTab('history')}>
+              <FiList /> Historia
+            </button>
           </div>
 
           {activeTab === 'apply' && (
@@ -373,6 +407,47 @@ export default function UsersPage() {
             </div>
           )}
 
+          {activeTab === 'history' && (
+            <div className="modal-tab-content">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div className="modal-section-title" style={{ marginBottom: 0 }}><FiClock /> Historia kar ({history.length})</div>
+                <button className="btn-base btn-standard" style={{ minWidth: 'auto', fontSize: '0.8rem' }}
+                  onClick={() => fetchHistory(selectedUser.id)} disabled={historyLoading}>
+                  <FiRefreshCw className={historyLoading ? 'spinning' : ''} /> Odśwież
+                </button>
+              </div>
+
+              {historyLoading ? (
+                <div className="modal-empty">Ładowanie historii...</div>
+              ) : history.length === 0 ? (
+                <div className="modal-empty">Brak historii kar dla tego użytkownika</div>
+              ) : (
+                <div className="history-list">
+                  {history.map((entry, idx) => (
+                    <div key={entry._id || idx} className={'modal-info-row ' + PUNISHMENT_STYLE[entry.type]?.rowClass}>
+                      <div className="punishment-info">
+                        <div className="punishment-type">
+                          {PUNISHMENT_STYLE[entry.type]?.icon}
+                          {PUNISHMENT_STYLE[entry.type]?.label || entry.type}
+                        </div>
+                        <div className="punishment-reason">{entry.reason || 'Brak powodu'}</div>
+                        <div className="punishment-meta">
+                          {new Date(entry.createdAt).toLocaleString('pl-PL')}
+                          {entry.moderatorId && entry.moderatorId !== 'panel' && (
+                            <span style={{ marginLeft: '0.5rem' }}>· Moderator: {entry.moderatorId}</span>
+                          )}
+                          {entry.duration && (
+                            <span style={{ marginLeft: '0.5rem' }}>· {entry.duration} min</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {actionMessage && (
             <div style={{ padding: '0 1.25rem 0.5rem' }}>
               <div className={'modal-message ' + (actionMessage.startsWith('✅') ? 'success' : 'error')}>
@@ -392,6 +467,7 @@ export default function UsersPage() {
         .clear-search { cursor: pointer; color: var(--text-muted); }
         .spinning { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .history-list { max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; }
         .users-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
         .user-card { background: rgba(var(--surface-rgb), var(--surface-opacity)); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 1rem; display: flex; align-items: center; gap: 1rem; transition: all 0.2s; }
         .user-card:hover { border-color: var(--accent-color); transform: translateY(-2px); }
