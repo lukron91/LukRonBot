@@ -6,7 +6,7 @@ const fs      = require('fs');
 const path    = require('path');
 const http    = require('http');
 const { WebSocketServer } = require('ws');
-const { connectDB, initDbStructure, BOT_ENV } = require('./db');
+const { connectDB, initDbStructure, setLogger, BOT_ENV } = require('./db');
 
 // ─── Express ──────────────────────────────────────────────────────────────────
 
@@ -69,6 +69,9 @@ app.use(cors({ origin: ['http://localhost:3000', 'http://localhost:3002'] }));
   };
 
   app.locals.logger = logger;
+
+  // Przekaż logger do db.js — od tej chwili wszystkie operacje na bazie są logowane
+  setLogger(logger);
 
   // Endpointy logów — tu bo logger jest lokalny dla tego bloku
   app.get('/api/logs/system',   (req, res) => res.json(systemLogs));

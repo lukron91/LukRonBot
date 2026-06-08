@@ -9,10 +9,72 @@ if (!['main', 'test'].includes(BOT_ENV)) {
   process.exit(1);
 }
 
-// Wybór URI na podstawie środowiska
 const MONGODB_URI = BOT_ENV === 'main'
   ? process.env.MONGODB_URI_MAIN
   : process.env.MONGODB_URI_TEST;
+
+// ─── Logger (ustawiany przez index.js po inicjalizacji) ───────────────────────
+
+let _logger = null;
+
+function setLogger(logger) {
+  _logger = logger;
+}
+
+function dbLog(type, message) {
+  if (_logger) {
+    _logger.db(type, message);
+  } else {
+    console.log(`[DB] [${type.toUpperCase()}] ${message}`);
+  }
+}
+
+// ─── Mongoose plugin — automatyczne logowanie operacji ────────────────────────
+// Podpięty globalnie — każdy model w każdym module jest automatycznie objęty logowaniem.
+// Moduły nie muszą nic robić.
+
+function dbLoggingPlugin(schema, options) {
+  const collectionName = options?.collection || 'unknown';
+
+  // Przed zapytaniem — loguj co jest odpytywane
+  schema.pre(['find', 'findOne', 'findOneAndUpdate', 'findOneAndDelete', 'countDocuments'], function() {
+    const filter = JSON.stringify(this.getFilter ? this.getFilter() : {});
+    dbLog('debug', `[${collectionName}] query: ${this.op} ${filter}`);
+  });
+
+  // Po zapisie dokumentu
+  schema.post('save', function(doc) {
+    dbLog('info', `[${collectionName}] save: _id=${doc._id}`);
+  });
+
+  // Po updateOne / updateMany
+  schema.post(['updateOne', 'updateMany', 'findOneAndUpdate'], function(result) {
+    const modified = result?.modifiedCount ?? result?.nModified ?? (result?._id ? 1 : 0);
+    dbLog('info', `[${collectionName}] update: zmodyfikowano ${modified} dok.`);
+  });
+
+  // Po deleteOne / deleteMany
+  schema.post(['deleteOne', 'deleteMany', 'findOneAndDelete'], function(result) {
+    const deleted = result?.deletedCount ?? result?.n ?? 0;
+    dbLog('info', `[${collectionName}] delete: usunięto ${deleted} dok.`);
+  });
+
+  // Po insertMany
+  schema.post('insertMany', function(result) {
+    dbLog('info', `[${collectionName}] insertMany: wstawiono ${result?.length ?? 0} dok.`);
+  });
+
+  // Błędy
+  schema.post(['find', 'findOne', 'findOneAndUpdate', 'findOneAndDelete',
+               'updateOne', 'updateMany', 'deleteOne', 'deleteMany', 'save', 'insertMany'],
+    function(err, result, next) {
+      if (err) {
+        dbLog('error', `[${collectionName}] błąd: ${err.message}`);
+        if (next) next(err);
+      }
+    }
+  );
+}
 
 // ─── Połączenie ───────────────────────────────────────────────────────────────
 
@@ -22,18 +84,22 @@ async function connectDB() {
     return false;
   }
   try {
-    console.log(`📡 Łączenie z MongoDB [${BOT_ENV}]...`);
-    await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000,
-    });
-    console.log(`✅ MongoDB [${BOT_ENV}] połączone`);
+    dbLog('info', `Łączenie z MongoDB [${BOT_ENV}]...`);
+
+    // Eventy połączenia mongoose
+    mongoose.connection.on('connected',    () => dbLog('info',  `MongoDB połączone [${BOT_ENV}]`));
+    mongoose.connection.on('disconnected', () => dbLog('warn',  `MongoDB rozłączone [${BOT_ENV}]`));
+    mongoose.connection.on('reconnected',  () => dbLog('info',  `MongoDB ponownie połączone [${BOT_ENV}]`));
+    mongoose.connection.on('error',        err => dbLog('error', `MongoDB błąd połączenia: ${err.message}`));
+
+    await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
     return true;
   } catch (err) {
-    console.error(`❌ Błąd połączenia z MongoDB [${BOT_ENV}]: ${err.message}`);
+    dbLog('error', `Błąd połączenia [${BOT_ENV}]: ${err.message}`);
     if (err.message.includes('auth failed'))
-      console.error('   → Sprawdź login/hasło w URI');
+      dbLog('error', '→ Sprawdź login/hasło w URI');
     if (err.message.includes('ENOTFOUND') || err.message.includes('timeout'))
-      console.error('   → Sprawdź whitelist IP w MongoDB Atlas');
+      dbLog('error', '→ Sprawdź whitelist IP w MongoDB Atlas');
     return false;
   }
 }
@@ -43,26 +109,25 @@ async function connectDB() {
 // Nie wstawia żadnych danych — to zadanie modułów.
 // Bezpieczne: wywołanie wielokrotne nic nie nadpisuje.
 
+function makeModel(name, schema) {
+  // Podepnij plugin logowania z nazwą kolekcji
+  schema.plugin(dbLoggingPlugin, { collection: name });
+  return mongoose.models[name] || mongoose.model(name, schema, name);
+}
+
 async function initDbStructure() {
   try {
-    // Każdy moduł definiuje własny schemat i rejestruje model przez mongoose.
-    // Tu tylko upewniamy się że kolekcje i indeksy istnieją.
+    dbLog('info', 'Inicjalizacja struktury bazy...');
 
     // ── global_config ─────────────────────────────────────────────────────
-    // Jeden dokument per klucz — status bota, ustawienia właściciela.
-    // Wypełniany przez moduł status.js przy starcie.
-    const GlobalConfigSchema = new mongoose.Schema({
+    makeModel('global_config', new mongoose.Schema({
       key:       { type: String, required: true, unique: true },
       value:     { type: mongoose.Schema.Types.Mixed },
       updatedAt: { type: Date, default: Date.now },
-    });
-    if (!mongoose.models.global_config)
-      mongoose.model('global_config', GlobalConfigSchema, 'global_config');
+    }));
 
     // ── guild_config ──────────────────────────────────────────────────────
-    // Jeden dokument per serwer — prefix, język, strefy czasowe itd.
-    // Wypełniany przez moduł config.js.
-    const GuildConfigSchema = new mongoose.Schema({
+    makeModel('guild_config', new mongoose.Schema({
       guildId:            { type: String, required: true, unique: true },
       prefix:             { type: String, default: '!' },
       language:           { type: String, default: 'pl' },
@@ -70,34 +135,26 @@ async function initDbStructure() {
       commandLimit:       { type: Number, default: 10 },
       autoDeleteCommands: { type: Boolean, default: false },
       responseDelay:      { type: Number, default: 0 },
-    }, { timestamps: true });
-    if (!mongoose.models.guild_config)
-      mongoose.model('guild_config', GuildConfigSchema, 'guild_config');
+    }, { timestamps: true }));
 
     // ── moderation_settings ───────────────────────────────────────────────
-    // Jeden dokument per serwer — ustawienia moderacji.
-    // Wypełniany przez moduł moderation.js.
-    const ModerationSettingsSchema = new mongoose.Schema({
-      guildId:          { type: String, required: true, unique: true },
-      banType:          { type: String, default: 'discord', enum: ['discord', 'role'] },
-      banRoleId:        String,
-      appealChannelId:  String,
-      modLogChannel:    String,
-      autoModEnabled:   { type: Boolean, default: false },
-      blockLinks:       { type: Boolean, default: false },
-      blockInvites:     { type: Boolean, default: false },
-      warnThreshold:    { type: Number, default: 3 },
-      muteRoleId:       String,
+    makeModel('moderation_settings', new mongoose.Schema({
+      guildId:            { type: String, required: true, unique: true },
+      banType:            { type: String, default: 'discord', enum: ['discord', 'role'] },
+      banRoleId:          String,
+      appealChannelId:    String,
+      modLogChannel:      String,
+      autoModEnabled:     { type: Boolean, default: false },
+      blockLinks:         { type: Boolean, default: false },
+      blockInvites:       { type: Boolean, default: false },
+      warnThreshold:      { type: Number, default: 3 },
+      muteRoleId:         String,
       commandPermissions: { type: mongoose.Schema.Types.Mixed, default: {} },
       commandEnabled:     { type: mongoose.Schema.Types.Mixed, default: {} },
-    }, { timestamps: true });
-    if (!mongoose.models.moderation_settings)
-      mongoose.model('moderation_settings', ModerationSettingsSchema, 'moderation_settings');
+    }, { timestamps: true }));
 
     // ── punishments ───────────────────────────────────────────────────────
-    // Wiele dokumentów — historia wszystkich kar ze wszystkich serwerów.
-    // Wypełniany przez moduł moderation.js.
-    const PunishmentSchema = new mongoose.Schema({
+    const PunishmentModel = makeModel('punishments', new mongoose.Schema({
       guildId:     { type: String, required: true },
       userId:      { type: String, required: true },
       moderatorId: { type: String, required: true },
@@ -107,55 +164,42 @@ async function initDbStructure() {
       duration:    Number,
       expiresAt:   Date,
       active:      { type: Boolean, default: true },
-    }, { timestamps: true });
-    const Punishment = mongoose.models.punishments
-      || mongoose.model('punishments', PunishmentSchema, 'punishments');
-    await Punishment.collection.createIndex({ guildId: 1, userId: 1 });
-    await Punishment.collection.createIndex({ guildId: 1, active: 1 });
+    }, { timestamps: true }));
+    await PunishmentModel.collection.createIndex({ guildId: 1, userId: 1 });
+    await PunishmentModel.collection.createIndex({ guildId: 1, active: 1 });
 
     // ── welcome_settings ──────────────────────────────────────────────────
-    // Jeden dokument per serwer — ustawienia powitań.
-    // Wypełniany przez moduł welcome.js (przyszły).
-    const WelcomeSchema = new mongoose.Schema({
+    makeModel('welcome_settings', new mongoose.Schema({
       guildId:   { type: String, required: true, unique: true },
       enabled:   { type: Boolean, default: false },
       channelId: String,
       message:   { type: String, default: 'Witaj {user} na serwerze {server}!' },
-    }, { timestamps: true });
-    if (!mongoose.models.welcome_settings)
-      mongoose.model('welcome_settings', WelcomeSchema, 'welcome_settings');
+    }, { timestamps: true }));
 
     // ── role_groups ───────────────────────────────────────────────────────
-    // Hierarchia ról parent/child.
-    // Wypełniany przez moduł roles.js.
-    const RoleGroupSchema = new mongoose.Schema({
+    const RoleGroupModel = makeModel('role_groups', new mongoose.Schema({
       guildId:        { type: String, required: true },
       parentRoleId:   { type: String, required: true },
       parentRoleName: String,
       mode:           { type: String, default: 'multiple', enum: ['single', 'multiple'] },
       childRoles:     [{ roleId: String, roleName: String }],
-    }, { timestamps: true });
-    const RoleGroup = mongoose.models.role_groups
-      || mongoose.model('role_groups', RoleGroupSchema, 'role_groups');
-    await RoleGroup.collection.createIndex({ guildId: 1 });
+    }, { timestamps: true }));
+    await RoleGroupModel.collection.createIndex({ guildId: 1 });
 
     // ── tickets ───────────────────────────────────────────────────────────
-    // System ticketów (przyszły moduł).
-    const TicketSchema = new mongoose.Schema({
+    const TicketModel = makeModel('tickets', new mongoose.Schema({
       guildId:   { type: String, required: true },
       userId:    { type: String, required: true },
       channelId: String,
       status:    { type: String, default: 'open', enum: ['open', 'closed', 'resolved'] },
       reason:    String,
-    }, { timestamps: true });
-    const Ticket = mongoose.models.tickets
-      || mongoose.model('tickets', TicketSchema, 'tickets');
-    await Ticket.collection.createIndex({ guildId: 1, status: 1 });
+    }, { timestamps: true }));
+    await TicketModel.collection.createIndex({ guildId: 1, status: 1 });
 
-    console.log(`✅ Struktura bazy gotowa [${BOT_ENV}]: global_config, guild_config, moderation_settings, punishments, welcome_settings, role_groups, tickets`);
+    dbLog('info', 'Struktura bazy gotowa: global_config, guild_config, moderation_settings, punishments, welcome_settings, role_groups, tickets');
 
   } catch (err) {
-    console.error(`❌ Błąd inicjalizacji struktury bazy: ${err.message}`);
+    dbLog('error', `Błąd inicjalizacji struktury: ${err.message}`);
     throw err;
   }
 }
@@ -165,6 +209,8 @@ async function initDbStructure() {
 module.exports = {
   connectDB,
   initDbStructure,
-  mongoose,      // moduły importują mongoose stąd żeby nie rejestrować modeli podwójnie
+  setLogger,        // wywoływane przez index.js zaraz po inicjalizacji loggera
+  mongoose,         // moduły importują stąd — jeden obiekt mongoose w całym projekcie
   BOT_ENV,
+  makeModel,        // moduły używają do rejestracji własnych modeli z automatycznym logowaniem
 };
