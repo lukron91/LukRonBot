@@ -80,7 +80,7 @@ export default function DashboardLayout({ children }) {
     if (!selectedGuildId) { setBotOnGuild(null); return; }
     const checkBot = async () => {
       try {
-        const res = await fetch(`/api/proxy/api/guilds/${selectedGuildId}/stats`);
+        const res = await fetch('/api/proxy/api/guilds/' + selectedGuildId + '/stats');
         setBotOnGuild(res.ok);
       } catch { setBotOnGuild(false); }
     };

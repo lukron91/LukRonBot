@@ -452,18 +452,19 @@ export default function ModerationSettings() {
           gap: 0.75rem;
           font-size: 1.5rem;
           margin-bottom: 0.5rem;
-          color: #fff;
+          color: var(--text-color);
         }
         .page-header p {
-          color: #6b6b76;
+          color: var(--text-muted);
           margin-bottom: 2rem;
         }
         .config-section {
-          background: #14141c;
-          border: 1px solid #25252d;
+          background: rgba(var(--surface-rgb), var(--surface-opacity));
+          border: 1px solid var(--border-color);
           border-radius: var(--border-radius);
           margin-bottom: 1.5rem;
           overflow: hidden;
+          backdrop-filter: blur(12px);
         }
         .section-header {
           width: 100%;
@@ -471,58 +472,63 @@ export default function ModerationSettings() {
           justify-content: space-between;
           align-items: center;
           padding: 1.2rem 1.5rem;
-          background: #1a1a24;
+          background: rgba(var(--surface-rgb), 0.5);
           border: none;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: background 0.2s;
         }
         .section-header:hover {
-          background: #202028;
+          background: rgba(var(--surface-rgb), 0.8);
         }
         .section-header h2 {
           font-size: 1.1rem;
           margin: 0;
-          color: #a5b4fc;
+          color: var(--accent-color);
           display: flex;
           align-items: center;
           gap: 0.5rem;
         }
         .section-header span {
-          color: #6b6b76;
+          color: var(--text-muted);
           font-size: 1rem;
         }
         .section-content {
           padding: 1.5rem;
-          border-top: 1px solid #25252d;
+          border-top: 1px solid var(--border-color);
         }
         .config-item {
           margin-bottom: 1.5rem;
         }
+        .config-item:last-child { margin-bottom: 0; }
         .config-item label {
           display: block;
           font-weight: 600;
           margin-bottom: 0.5rem;
-          color: #fff;
+          color: var(--text-color);
         }
         .config-select {
           width: 100%;
           padding: 0.75rem;
-          border: 1px solid #25252d;
+          border: 1px solid var(--border-color);
           border-radius: var(--border-radius);
-          background: #1e1e26;
-          color: #fff;
+          background: var(--bg-color);
+          color: var(--text-color);
           font-size: 0.9rem;
+          font-family: inherit;
+          transition: border-color 0.2s;
         }
+        .config-select:focus { outline: none; border-color: var(--accent-color); }
         .config-description {
           display: block;
           font-size: 0.8rem;
-          color: #6b6b76;
+          color: var(--text-muted);
           margin-top: 0.25rem;
         }
         .toggle {
           padding: 1rem;
-          background: #1e1e26;
+          background: rgba(var(--surface-rgb), 0.4);
           border-radius: var(--border-radius);
+          border: 1px solid var(--border-color);
         }
         .toggle-header {
           display: flex;
@@ -530,111 +536,49 @@ export default function ModerationSettings() {
           align-items: center;
           margin-bottom: 0.5rem;
         }
-        .toggle-header span {
-          font-weight: 600;
-          color: #fff;
-        }
-        .toggle-input {
-          width: 40px;
-          height: 20px;
-          accent-color: #5865f2;
-        }
-        .range-input {
-          width: 100%;
-          margin: 0.5rem 0;
-        }
+        .toggle-header span { font-weight: 600; color: var(--text-color); }
+        .range-input { width: 100%; margin: 0.5rem 0; accent-color: var(--accent-color); }
         .range-value {
           display: inline-block;
-          background: #5865f2;
+          background: var(--accent-color);
           color: #fff;
           padding: 0.25rem 0.75rem;
           border-radius: 0.25rem;
           font-weight: 600;
           margin-left: 0.5rem;
         }
-        .radio-label {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          cursor: pointer;
-        }
-        .radio-label input[type="radio"] {
-          width: 18px;
-          height: 18px;
-          accent-color: #5865f2;
-        }
+        .radio-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--text-color); }
+        .radio-label input[type="radio"] { width: 18px; height: 18px; accent-color: var(--accent-color); }
         .roles-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
           gap: 0.75rem;
           margin-top: 0.75rem;
         }
-
-        .checkbox-label:hover {
-          background: #25252d;
-        }
-
+        .checkbox-label:hover { background: rgba(var(--surface-rgb), 0.5); border-radius: var(--border-radius); }
         .command-permissions {
           margin-bottom: 1.5rem;
           padding: 1rem;
-          background: #1e1e26;
+          background: rgba(var(--surface-rgb), 0.4);
+          border: 1px solid var(--border-color);
           border-radius: var(--border-radius);
         }
-        .command-permissions h3 {
-          font-size: 0.95rem;
-          margin-bottom: 0.75rem;
-          color: #fff;
-        }
-        .commands-toggle {
-          display: flex;
-          gap: 1rem;
-          flex-wrap: wrap;
-        }
+        .command-permissions h3 { font-size: 0.95rem; margin-bottom: 0.75rem; color: var(--text-color); }
+        .commands-toggle { display: flex; gap: 1rem; flex-wrap: wrap; }
         .toggle-label {
           display: flex;
           align-items: center;
           gap: 0.5rem;
           padding: 0.5rem 1rem;
-          background: #1e1e26;
+          background: rgba(var(--surface-rgb), 0.4);
+          border: 1px solid var(--border-color);
           border-radius: var(--border-radius);
           cursor: pointer;
+          color: var(--text-color);
         }
-        .save-button {
-          width: 100%;
-          padding: 1rem 2rem;
-          background: #5865f2;
-          color: #fff;
-          border: none;
-          border-radius: var(--border-radius);
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-          margin-bottom: 1rem;
-        }
-        .save-button:hover:not(:disabled) {
-          background: #4752c4;
-          transform: translateY(-2px);
-        }
-        .save-button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-        .message {
-          padding: 1rem;
-          border-radius: var(--border-radius);
-          text-align: center;
-          font-weight: 600;
-        }
-        .message.success {
-          background: rgba(16, 185, 129, 0.1);
-          border: 1px solid #10b981;
-          color: #10b981;
-        }
-        .message.error {
-          background: rgba(239, 68, 68, 0.1);
-          border: 1px solid #ef4444;
-          color: #ef4444;
-        }
+        .message { padding: 1rem; border-radius: var(--border-radius); text-align: center; font-weight: 600; }
+        .message.success { background: rgba(16,185,129,0.1); border: 1px solid #10b981; color: #10b981; }
+        .message.error { background: rgba(239,68,68,0.1); border: 1px solid #ef4444; color: #ef4444; }
       `}</style>
     </div>
   );
