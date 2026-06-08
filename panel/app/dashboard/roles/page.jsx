@@ -420,12 +420,12 @@ export default function RolesPage() {
               </div>
               <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '0.75rem' }}>
                 <label className="toggle-switch" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--text-color)', fontSize: '0.9rem' }}>
-                  <input type="checkbox" checked={roleForm.hoist} onChange={e => setRoleForm(p => ({ ...p, hoist: e.target.checked })} style={{ display: 'none' }} />
+                  <input type="checkbox" checked={roleForm.hoist} onChange={e => setRoleForm(p => ({ ...p, hoist: e.target.checked }))} style={{ display: 'none' }} />
                   <span className="slider" />
                   Wyświetlaj oddzielnie
                 </label>
                 <label className="toggle-switch" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--text-color)', fontSize: '0.9rem' }}>
-                  <input type="checkbox" checked={roleForm.mentionable} onChange={e => setRoleForm(p => ({ ...p, mentionable: e.target.checked })} style={{ display: 'none' }} />
+                  <input type="checkbox" checked={roleForm.mentionable} onChange={e => setRoleForm(p => ({ ...p, mentionable: e.target.checked }))} style={{ display: 'none' }} />
                   <span className="slider" />
                   Wzmiankowana
                 </label>

@@ -38,6 +38,15 @@ Ostatnia aktualizacja: 2026-06-08
 - Toggle switch (zastepuje checkboxy)
 - Lista uzytkownikow moderacji (z oknem akcji, historia kar)
 - Ustawienia moderacji - error state zamiast crashu przy braku polaczenia
+- Panel zarządzania rolami (CRUD, kopiowanie, nadawanie, real-time WS + polling fallback)
+
+## ARCHITEKTURA — WebSocket
+
+- Bot: `http.createServer(app)` + `WebSocketServer` na `/ws` (ten sam port co REST)
+- Klienci panelu łączą się przez `ws://localhost:3001/ws?guildId=XXX`
+- Bot broadcastuje eventy Discord: roleCreate, roleUpdate, roleDelete, guildMemberUpdate
+- Panel fallback: polling co 10s gdy WS niedostępny
+- WYMAGANE: `npm install ws` w katalogu `bot/`
 
 ---
 

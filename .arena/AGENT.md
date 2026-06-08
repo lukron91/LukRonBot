@@ -153,11 +153,22 @@ LukRonBot/
 2. Praca nad kodem
 3. `git add -A`
 4. `git commit -m "krotki opis po polsku"`
-5. **Dopisz wpis do swojego pliku logów** `.arena/logs/NNN-twoj-id.md`
-6. Zaktualizuj `.arena/SESSION.md` (dodaj wpis o commicie)
-7. Zaktualizuj `.arena/STATE.md` (jeśli zmienił się stan projektu)
+5. **Dopisz wpis do swojego pliku logów** `.arena/logs/NNN-twoj-id.md` — OBOWIĄZKOWE po każdym commicie
+6. **Zaktualizuj `.arena/STATE.md`** — OBOWIĄZKOWE gdy:
+   - dodajesz nowy plik/moduł/stronę
+   - zmieniasz architekturę (np. WebSocket, nowy endpoint, nowa zależność npm)
+   - coś zaczyna działać lub przestaje
+   - dodajesz nowe endpointy do bota
+7. Zaktualizuj `.arena/SESSION.md` (dodaj wpis o commicie)
 8. `git push origin dev`
 9. Poinformuj użytkownika co zrobiono
+
+### Co ZAWSZE wymaga aktualizacji STATE.md
+- Nowy moduł bota (`bot/modules/*.js`) → dodaj do listy endpointów
+- Nowa strona panelu → dodaj do "CO DZIALA"
+- Zmiana architektury (WebSocket, nowa lib, zmiana portu) → dodaj do sekcji ARCHITEKTURA
+- Nowa zależność npm → odnotuj z `npm install XXX`
+- Coś przestało działać lub zostało naprawione → zaktualizuj odpowiednią sekcję
 
 ---
 
