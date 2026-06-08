@@ -58,7 +58,24 @@ Na koniec sesji zaktualizuj `.arena/SESSION.md` i `.arena/STATE.md`.
 
 ---
 
-## KROK 3 — Przeczytaj stan projektu
+## KROK 3 — Sprawdź czy poprzedni agent skończył
+
+⚠️ **Sesja agenta mogła zostać przerwana w trakcie** — użytkownik zamknął kartę, timeout, błąd środowiska.
+Ostatnie zlecone zmiany mogą NIE być wprowadzone mimo że agent twierdził że je zrobił.
+
+```bash
+git log --oneline -5
+# Porównaj z ostatnim wpisem w .arena/logs/ — czy się zgadzają?
+```
+
+Jeśli ostatni commit w logach nie zgadza się z ostatnim commitem na repo, albo użytkownik mówi
+że coś nie działa mimo że poprzedni agent to "naprawił" — sprawdź czy zmiana faktycznie jest w plikach.
+
+Zapytaj użytkownika: **"Czy poprzednia sesja skończyła się poprawnie? Czy mam coś sprawdzić?"**
+
+---
+
+## KROK 4 — Przeczytaj stan projektu
 
 - `.arena/STATE.md` — aktualny stan, roadmap, priorytety
 - `.arena/SESSION.md` — historia commitów poprzednich agentów
