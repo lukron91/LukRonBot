@@ -1,57 +1,44 @@
-const mongoose = require('mongoose');
+const { makeModel, mongoose } = require('../db');
 
 module.exports = (app, client, registerModule, unregisterModule, moduleName) => {
   registerModule(moduleName, false, 'Konfiguracja serwerów Discord');
-
   const logger = app.locals.logger;
-  const col = app.locals.dbCollection;
 
-  const ServerConfigSchema = new mongoose.Schema({
-    guildId: { type: String, required: true, unique: true },
-    prefix: { type: String, default: '!' },
-    language: { type: String, default: 'pl', enum: ['pl', 'en', 'de'] },
-    commandLimit: { type: Number, default: 10, min: 1, max: 100 },
+  const GuildConfig = makeModel('guild_config', new mongoose.Schema({
+    guildId:            { type: String, required: true, unique: true },
+    prefix:             { type: String, default: '!' },
+    language:           { type: String, default: 'pl', enum: ['pl', 'en', 'de'] },
+    timezone:           { type: String, default: 'Europe/Warsaw' },
+    commandLimit:       { type: Number, default: 10, min: 1, max: 100 },
     autoDeleteCommands: { type: Boolean, default: false },
-    responseDelay: { type: Number, default: 0, min: 0, max: 5000 },
-    autoModEnabled: { type: Boolean, default: false },
-    blockLinks: { type: Boolean, default: false },
-    blockInvites: { type: Boolean, default: false },
-    warnThreshold: { type: Number, default: 3 },
-    banMethod: { type: String, default: 'discord', enum: ['discord', 'role'] },
-    banRoleId: { type: String, default: null },
-    modLogChannel: { type: String, default: null },
-    logEnabled: { type: Boolean, default: false },
-    welcomeEnabled: { type: Boolean, default: false },
-  }, { timestamps: true, collection: col('serverconfigs') });
-
-  const ServerConfig = mongoose.models[col('serverconfigs')]
-    || mongoose.model(col('serverconfigs'), ServerConfigSchema);
+    responseDelay:      { type: Number, default: 0, min: 0, max: 5000 },
+  }, { timestamps: true }));
 
   const getGuildConfig = async (guildId) => {
     try {
-      let config = await ServerConfig.findOne({ guildId });
+      let config = await GuildConfig.findOne({ guildId });
       if (!config) {
-        logger.activity('warn', `Brak konfiguracji dla serwera ${guildId} – tworzę domyślną`, 'config');
-        config = await ServerConfig.create({ guildId });
+        logger.activity('warn', 'Brak konfiguracji serwera ' + guildId + ' — tworzę domyślną', 'config');
+        config = await GuildConfig.create({ guildId });
       }
       return config;
     } catch (err) {
-      logger.activity('error', `Błąd odczytu konfiguracji serwera ${guildId}: ${err.message}`, 'config');
+      logger.activity('error', 'Błąd odczytu konfiguracji ' + guildId + ': ' + err.message, 'config');
       return null;
     }
   };
 
   const updateGuildConfig = async (guildId, updates) => {
     try {
-      const config = await ServerConfig.findOneAndUpdate(
+      const config = await GuildConfig.findOneAndUpdate(
         { guildId },
         { ...updates },
         { upsert: true, new: true }
       );
-      logger.activity('info', `Konfiguracja serwera ${guildId} zaktualizowana: ${Object.keys(updates).join(', ')}`, 'config');
+      logger.activity('info', 'Konfiguracja ' + guildId + ' zaktualizowana: ' + Object.keys(updates).join(', '), 'config');
       return config;
     } catch (err) {
-      logger.activity('error', `Błąd zapisu konfiguracji serwera ${guildId}: ${err.message}`, 'config');
+      logger.activity('error', 'Błąd zapisu konfiguracji ' + guildId + ': ' + err.message, 'config');
       return null;
     }
   };
@@ -60,23 +47,29 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
     try {
       const config = await getGuildConfig(req.params.guildId);
       res.json(config);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
+    } catch (err) { res.status(500).json({ error: err.message }); }
   });
 
   app.post('/api/guilds/:guildId/config', async (req, res) => {
     try {
       const config = await updateGuildConfig(req.params.guildId, req.body);
-      if (config) {
-        logger.activity('info', `[API] Konfiguracja serwera ${req.params.guildId} zapisana przez panel`, 'config');
-        res.json({ success: true, config });
-      } else {
-        res.status(500).json({ error: 'Błąd zapisu' });
-      }
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
+      if (config) res.json({ success: true, config });
+      else res.status(500).json({ error: 'Błąd zapisu' });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Endpoint moderacji — ustawienia moderacji per serwer
+  app.post('/api/guilds/:guildId/config/moderation', async (req, res) => {
+    try {
+      const ModerationSettings = mongoose.models.moderation_settings;
+      if (!ModerationSettings) return res.status(503).json({ error: 'Moduł moderacji niezaładowany' });
+      const settings = await ModerationSettings.findOneAndUpdate(
+        { guildId: req.params.guildId },
+        { ...req.body },
+        { upsert: true, new: true }
+      );
+      res.json({ success: true, settings });
+    } catch (err) { res.status(500).json({ error: err.message }); }
   });
 
   app.locals.getGuildConfig = getGuildConfig;

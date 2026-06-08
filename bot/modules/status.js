@@ -1,46 +1,90 @@
 const { ActivityType } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
-
-const STATUS_FILE = path.join(__dirname, '..', 'status.json');
-
-function saveBotStatus(status, customStatus) {
-  const data = { status, customStatus: customStatus || '' };
-  fs.writeFileSync(STATUS_FILE, JSON.stringify(data, null, 2));
-}
+const { makeModel, mongoose } = require('../db');
 
 module.exports = (app, client, registerModule, unregisterModule, moduleName) => {
-  registerModule(moduleName);
-  const logger = app.locals?.logger || console;
+  registerModule(moduleName, false, 'Status bota — zapisywany w bazie, przywracany przy restarcie');
+  const logger = app.locals.logger;
 
-  app.post('/bot/status', async (req, res) => {
-    const { status, customText } = req.body;
-    if (status && !['online', 'idle', 'dnd', 'invisible'].includes(status)) {
-      logger.warn(`Nieprawidłowy status: ${status}`);
-      return res.status(400).json({ error: 'Invalid status' });
+  // global_config — klucz-wartość, status bota i ustawienia właściciela
+  const GlobalConfig = makeModel('global_config', new mongoose.Schema({
+    key:       { type: String, required: true, unique: true },
+    value:     { type: mongoose.Schema.Types.Mixed },
+    updatedAt: { type: Date, default: Date.now },
+  }));
+
+  async function getConfig(key) {
+    try {
+      const doc = await GlobalConfig.findOne({ key });
+      return doc?.value ?? null;
+    } catch { return null; }
+  }
+
+  async function setConfig(key, value) {
+    try {
+      await GlobalConfig.findOneAndUpdate(
+        { key },
+        { key, value, updatedAt: new Date() },
+        { upsert: true }
+      );
+    } catch (err) {
+      logger.db('error', 'Błąd zapisu global_config [' + key + ']: ' + err.message);
+    }
+  }
+
+  // Przywróć status przy starcie bota
+  client.once('ready', async () => {
+    logger.system('info', 'Bot zalogowany jako ' + client.user.tag, 'status');
+
+    const status     = await getConfig('bot_status')     || 'online';
+    const customText = await getConfig('custom_status')  || '';
+
+    const presenceData = { status };
+    if (customText.trim()) {
+      presenceData.activities = [{ name: customText, type: ActivityType.Custom }];
     }
     try {
-      const presenceData = {};
-      if (status) presenceData.status = status;
-      let newCustomText = customText;
-      if (customText !== undefined) {
-        if (customText && customText.trim() !== '') {
-          presenceData.activities = [{ name: customText, type: ActivityType.Custom }];
-          logger.info(`Ustawiono custom status: ${customText}`);
-        } else {
-          presenceData.activities = [];
-          newCustomText = '';
-        }
-      }
       await client.user.setPresence(presenceData);
-      saveBotStatus(status || client.user?.presence?.status, newCustomText);
-      res.json({ success: true, status: status || client.user?.presence?.status, customText: newCustomText });
-      logger.info(`Status bota zmieniony na ${status || 'online'}`);
+      logger.system('info', 'Przywrócono status: ' + status + (customText ? ' | ' + customText : ''), 'status');
     } catch (err) {
-      logger.error(`Błąd zmiany statusu: ${err.message}`);
+      logger.system('error', 'Błąd ustawiania statusu: ' + err.message, 'status');
+    }
+  });
+
+  // Endpoint zmiany statusu
+  app.post('/bot/status', async (req, res) => {
+    const { status, customText } = req.body;
+
+    if (status && !['online', 'idle', 'dnd', 'invisible'].includes(status)) {
+      return res.status(400).json({ error: 'Nieprawidłowy status' });
+    }
+    try {
+      const newStatus     = status || (await getConfig('bot_status')) || 'online';
+      const newCustomText = customText !== undefined ? customText : (await getConfig('custom_status')) || '';
+
+      const presenceData = { status: newStatus };
+      if (newCustomText.trim()) {
+        presenceData.activities = [{ name: newCustomText, type: ActivityType.Custom }];
+      } else {
+        presenceData.activities = [];
+      }
+
+      await client.user.setPresence(presenceData);
+
+      // Zapisz do bazy — przywrócone przy restarcie
+      await setConfig('bot_status', newStatus);
+      await setConfig('custom_status', newCustomText);
+
+      logger.system('info', 'Status zmieniony: ' + newStatus + (newCustomText ? ' | ' + newCustomText : ''), 'status');
+      res.json({ success: true, status: newStatus, customText: newCustomText });
+    } catch (err) {
+      logger.system('error', 'Błąd zmiany statusu: ' + err.message, 'status');
       res.status(500).json({ error: err.message });
     }
   });
-};
 
-module.exports.description = `Moduł zmiany statusu bota – pozwala ustawić status online/idle/dnd/invisible oraz niestandardowy tekst. Ustawienia są zapisywane w pliku status.json i przywracane po restarcie.`;
+  // Udostępnij helper dla innych modułów
+  app.locals.getGlobalConfig = getConfig;
+  app.locals.setGlobalConfig = setConfig;
+
+  logger.system('info', 'Moduł status załadowany', 'status');
+};

@@ -1,170 +1,217 @@
-const mongoose = require('mongoose');
+const { makeModel, mongoose } = require('../db');
 
 module.exports = (app, client, registerModule, unregisterModule, moduleName) => {
   registerModule(moduleName, false, 'System moderacji i kar');
-
   const logger = app.locals.logger;
-  const col = app.locals.dbCollection;
 
-  const ModerationSchema = new mongoose.Schema({
-    guildId: { type: String, required: true },
-    userId: { type: String, required: true },
+  // Model kar — używa kolekcji 'punishments' zdefiniowanej w db.js
+  // makeModel nie rejestruje duplikatu jeśli model już istnieje
+  const Punishment = makeModel('punishments', new mongoose.Schema({
+    guildId:     { type: String, required: true },
+    userId:      { type: String, required: true },
     moderatorId: { type: String, required: true },
-    type: { type: String, required: true, enum: ['warn', 'mute', 'ban', 'kick'] },
-    reason: { type: String, default: 'Brak powodu' },
-    duration: { type: Number, default: null },
-    expiresAt: { type: Date, default: null }
-  }, { timestamps: true, collection: col('moderations') });
+    type:        { type: String, required: true, enum: ['warn', 'mute', 'ban', 'kick', 'unmute', 'unban'] },
+    banType:     { type: String, enum: ['discord', 'role'] },
+    reason:      { type: String, default: 'Brak powodu' },
+    duration:    Number,
+    expiresAt:   Date,
+    active:      { type: Boolean, default: true },
+  }, { timestamps: true }));
 
-  ModerationSchema.index({ guildId: 1, userId: 1 });
+  // Model ustawień moderacji per serwer
+  const ModerationSettings = makeModel('moderation_settings', new mongoose.Schema({
+    guildId:            { type: String, required: true, unique: true },
+    banType:            { type: String, default: 'discord', enum: ['discord', 'role'] },
+    banRoleId:          String,
+    appealChannelId:    String,
+    modLogChannel:      String,
+    autoModEnabled:     { type: Boolean, default: false },
+    blockLinks:         { type: Boolean, default: false },
+    blockInvites:       { type: Boolean, default: false },
+    warnThreshold:      { type: Number, default: 3 },
+    muteRoleId:         String,
+    commandPermissions: { type: mongoose.Schema.Types.Mixed, default: {} },
+    commandEnabled:     { type: mongoose.Schema.Types.Mixed, default: {} },
+  }, { timestamps: true }));
 
-  const Moderation = mongoose.models[col('moderations')]
-    || mongoose.model(col('moderations'), ModerationSchema);
+  // ── Endpointy kar ─────────────────────────────────────────────────────────
 
-  app.post('/api/guilds/:guildId/punishments', async (req, res) => {
-    const { guildId } = req.params;
-    const { userId, moderatorId, type, reason, duration, banMethod, bannedRoleId } = req.body;
+  app.post('/api/guilds/:guildId/moderation/:action', async (req, res) => {
+    const { guildId, action } = req.params;
+    if (!['warn', 'mute', 'ban', 'kick'].includes(action))
+      return res.status(400).json({ error: 'Nieprawidłowa akcja' });
 
-    if (!['warn', 'mute', 'ban', 'kick'].includes(type)) {
-      return res.status(400).json({ error: 'Nieprawidłowy typ kary' });
-    }
+    const { userId, moderatorId, reason, duration, banType: banMethod, bannedRoleId } = req.body;
 
     try {
-      const punishment = await Moderation.create({
-        guildId,
-        userId,
-        moderatorId,
-        type,
+      const punishment = await Punishment.create({
+        guildId, userId,
+        moderatorId: moderatorId || 'panel',
+        type: action,
         reason: reason || 'Brak powodu',
-        duration: type === 'mute' ? duration : null,
-        expiresAt: (type === 'mute' && duration) ? new Date(Date.now() + duration * 60000) : null
+        duration: action === 'mute' ? duration : undefined,
+        expiresAt: (action === 'mute' && duration) ? new Date(Date.now() + duration * 60000) : undefined,
+        banType: action === 'ban' ? banMethod : undefined,
+        active: true,
       });
 
+      // Akcja na Discordzie
       const guild = client.guilds.cache.get(guildId);
       if (guild) {
         try {
-          if (type === 'ban') {
+          if (action === 'ban') {
             if (banMethod === 'role' && bannedRoleId) {
               const member = guild.members.cache.get(userId) || await guild.members.fetch(userId).catch(() => null);
-              if (member) {
-                await member.roles.add(bannedRoleId, `Ban przez panel: ${reason}`);
-                logger.activity('info', `[API] Nadano rolę bana ${bannedRoleId} dla user=${userId} w ${guildId}`, 'moderation');
-              }
+              if (member) await member.roles.add(bannedRoleId, 'Ban przez panel: ' + reason);
             } else {
-              await guild.members.ban(userId, { reason: `Ban przez panel: ${reason}` });
-              logger.activity('info', `[API] Zbanowano user=${userId} na Discordzie w ${guildId}`, 'moderation');
+              await guild.members.ban(userId, { reason: 'Ban przez panel: ' + reason });
             }
-          } else if (type === 'kick') {
+          } else if (action === 'kick') {
             const member = guild.members.cache.get(userId) || await guild.members.fetch(userId).catch(() => null);
-            if (member) {
-              await member.kick(`Kick przez panel: ${reason}`);
-              logger.activity('info', `[API] Wyrzucono user=${userId} z ${guildId}`, 'moderation');
-            }
-          } else if (type === 'mute') {
+            if (member) await member.kick('Kick przez panel: ' + reason);
+          } else if (action === 'mute') {
             const member = guild.members.cache.get(userId) || await guild.members.fetch(userId).catch(() => null);
-            if (member && duration) {
-              await member.timeout(duration * 60 * 1000, `Mute przez panel: ${reason}`);
-              logger.activity('info', `[API] Wyciszono user=${userId} w ${guildId} na ${duration} minut`, 'moderation');
-            }
+            if (member && duration) await member.timeout(duration * 60 * 1000, 'Mute przez panel: ' + reason);
           }
         } catch (discordErr) {
-          logger.activity('warn', `[API] Nie udało się wykonać kary ${type} na Discordzie: ${discordErr.message}`, 'moderation');
+          logger.activity('warn', 'Błąd Discord przy ' + action + ': ' + discordErr.message, 'moderation');
         }
       }
 
-      logger.activity('info', `[API] Kara ${type} zapisana w bazie: user=${userId} moderator=${moderatorId} (id=${punishment._id})`, 'moderation');
       res.json({ success: true, punishmentId: punishment._id });
     } catch (err) {
-      logger.activity('error', `[API] Błąd przy karze ${type} dla user=${userId} w ${guildId}: ${err.message}`, 'moderation');
+      logger.activity('error', 'Błąd kary ' + action + ': ' + err.message, 'moderation');
       res.status(500).json({ error: err.message });
     }
   });
 
-  app.get('/api/guilds/:guildId/punishments/:userId', async (req, res) => {
+  app.post('/api/guilds/:guildId/moderation/unmute', async (req, res) => {
+    const { guildId } = req.params;
+    const { userId } = req.body;
     try {
-      const punishments = await Moderation.find({ guildId: req.params.guildId, userId: req.params.userId }).sort({ createdAt: -1 });
-      res.json({ success: true, punishments });
-    } catch (err) {
-      logger.activity('error', `[API] Błąd odczytu kar dla user=${req.params.userId}: ${err.message}`, 'moderation');
-      res.status(500).json({ error: err.message });
-    }
-  });
-
-  app.delete('/api/guilds/:guildId/punishments/:punishmentId', async (req, res) => {
-    try {
-      const result = await Moderation.deleteOne({ guildId: req.params.guildId, _id: req.params.punishmentId });
-      if (result.deletedCount === 0) {
-        logger.activity('warn', `[API] Próba usunięcia nieistniejącej kary ${req.params.punishmentId}`, 'moderation');
-        return res.status(404).json({ error: 'Kara nie znaleziona' });
+      const guild = client.guilds.cache.get(guildId);
+      if (guild) {
+        const member = guild.members.cache.get(userId) || await guild.members.fetch(userId).catch(() => null);
+        if (member) await member.timeout(null, 'Odciszenie przez panel');
       }
-      logger.activity('info', `[API] Usunięto karę ${req.params.punishmentId} w ${req.params.guildId}`, 'moderation');
+      await Punishment.updateMany({ guildId, userId, type: 'mute', active: true }, { active: false });
+      await Punishment.create({ guildId, userId, moderatorId: 'panel', type: 'unmute', reason: 'Odciszenie przez panel', active: false });
       res.json({ success: true });
     } catch (err) {
-      logger.activity('error', `[API] Błąd usuwania kary: ${err.message}`, 'moderation');
+      logger.activity('error', 'Błąd unmute: ' + err.message, 'moderation');
       res.status(500).json({ error: err.message });
     }
   });
 
+  app.post('/api/guilds/:guildId/moderation/unban', async (req, res) => {
+    const { guildId } = req.params;
+    const { userId } = req.body;
+    try {
+      const guild = client.guilds.cache.get(guildId);
+      if (guild) await guild.members.unban(userId, 'Odbanowanie przez panel').catch(() => {});
+      await Punishment.updateMany({ guildId, userId, type: 'ban', active: true }, { active: false });
+      await Punishment.create({ guildId, userId, moderatorId: 'panel', type: 'unban', reason: 'Odbanowanie przez panel', active: false });
+      res.json({ success: true });
+    } catch (err) {
+      logger.activity('error', 'Błąd unban: ' + err.message, 'moderation');
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Historia kar użytkownika
+  app.get('/api/guilds/:guildId/punishments/:userId', async (req, res) => {
+    try {
+      const punishments = await Punishment.find({
+        guildId: req.params.guildId,
+        userId: req.params.userId,
+      }).sort({ createdAt: -1 });
+      res.json({ success: true, punishments });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Aktywne kary użytkownika
+  app.get('/api/guilds/:guildId/punishments/:userId/active', async (req, res) => {
+    try {
+      const mute = await Punishment.findOne({ guildId: req.params.guildId, userId: req.params.userId, type: 'mute', active: true });
+      const ban  = await Punishment.findOne({ guildId: req.params.guildId, userId: req.params.userId, type: 'ban',  active: true });
+      res.json({ success: true, mute: mute || null, ban: ban || null });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Usuwanie warna
+  app.delete('/api/guilds/:guildId/punishments/warn/:warnId', async (req, res) => {
+    try {
+      const result = await Punishment.deleteOne({ _id: req.params.warnId, guildId: req.params.guildId, type: 'warn' });
+      if (result.deletedCount === 0) return res.status(404).json({ error: 'Warn nie znaleziony' });
+      res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Ustawienia moderacji
+  app.get('/api/guilds/:guildId/moderation/settings', async (req, res) => {
+    try {
+      const settings = await ModerationSettings.findOne({ guildId: req.params.guildId });
+      res.json(settings || {});
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ── Kanały (potrzebne dla ustawień moderacji w panelu) ────────────────────
+  app.get('/api/guilds/:guildId/channels', async (req, res) => {
+    try {
+      const guild = client.guilds.cache.get(req.params.guildId);
+      if (!guild) return res.status(404).json({ error: 'Serwer nie znaleziony' });
+      const channels = guild.channels.cache
+        .filter(c => c.type === 0) // tylko tekstowe
+        .map(c => ({ id: c.id, name: c.name, type: c.type }));
+      res.json(channels);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ── Członkowie ────────────────────────────────────────────────────────────
   const membersCache = new Map();
-  const MEMBERS_CACHE_TTL = 10 * 60 * 1000;
+  const CACHE_TTL = 10 * 60 * 1000;
 
   app.get('/api/guilds/:guildId/members', async (req, res) => {
     try {
       const { guildId } = req.params;
       const cached = membersCache.get(guildId);
-      if (cached && Date.now() - cached.timestamp < MEMBERS_CACHE_TTL) return res.json(cached.data);
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL) return res.json(cached.data);
 
       const guild = client.guilds.cache.get(guildId);
       if (!guild) return res.status(404).json({ error: 'Bot nie jest na tym serwerze' });
 
-      let members = guild.members.cache
-        .filter(m => !m.user.bot)
-        .map(m => ({
-          id: m.id, username: m.user.username, displayName: m.displayName,
-          avatar: m.user.avatar, joinedAt: m.joinedAt,
-          roles: m.roles.cache.filter(r => r.id !== guild.id).map(r => ({ id: r.id, name: r.name }))
-        }));
-
-      if (members.length < 10) {
-        try {
-          const fetched = await guild.members.fetch({ limit: 1000 });
-          members = fetched.filter(m => !m.user.bot).map(m => ({
-            id: m.id, username: m.user.username, displayName: m.displayName,
-            avatar: m.user.avatar, joinedAt: m.joinedAt,
-            roles: m.roles.cache.filter(r => r.id !== guild.id).map(r => ({ id: r.id, name: r.name }))
-          }));
-        } catch (fetchErr) {
-          logger.activity('warn', `[API] Rate limit przy pobieraniu członków: ${fetchErr.message}`, 'moderation');
-        }
+      let members = guild.members.cache.filter(m => !m.user.bot);
+      if (members.size < 10) {
+        try { members = await guild.members.fetch({ limit: 1000 }); members = members.filter(m => !m.user.bot); }
+        catch {}
       }
 
-      membersCache.set(guildId, { data: members, timestamp: Date.now() });
-      res.json(members);
-    } catch (err) {
-      logger.activity('error', `[API] Błąd pobierania członków: ${err.message}`, 'moderation');
-      res.status(500).json({ error: err.message });
-    }
+      const data = members.map(m => ({
+        id: m.id, username: m.user.username, displayName: m.displayName,
+        avatar: m.user.avatar, joinedAt: m.joinedAt,
+        roles: m.roles.cache.filter(r => r.id !== guild.id).map(r => r.id),
+      }));
+
+      membersCache.set(guildId, { data, timestamp: Date.now() });
+      res.json(data);
+    } catch (err) { res.status(500).json({ error: err.message }); }
   });
 
+  // ── Role ──────────────────────────────────────────────────────────────────
   app.get('/api/guilds/:guildId/roles', async (req, res) => {
     try {
       const guild = client.guilds.cache.get(req.params.guildId);
       if (!guild) return res.status(404).json({ error: 'Serwer nie znaleziony' });
       const roles = guild.roles.cache
-        .filter(r => r.id !== guild.id && r.name !== '@everyone')
+        .filter(r => r.name !== '@everyone')
         .map(r => ({ id: r.id, name: r.name }));
       res.json(roles);
-    } catch (err) {
-      logger.activity('error', `[API] Błąd pobierania ról: ${err.message}`, 'moderation');
-      res.status(500).json({ error: err.message });
-    }
+    } catch (err) { res.status(500).json({ error: err.message }); }
   });
 
   setInterval(() => {
     const now = Date.now();
-    membersCache.forEach((value, key) => {
-      if (now - value.timestamp > MEMBERS_CACHE_TTL) membersCache.delete(key);
-    });
+    membersCache.forEach((v, k) => { if (now - v.timestamp > CACHE_TTL) membersCache.delete(k); });
   }, 15 * 60 * 1000);
 
   logger.system('info', 'Moduł moderation załadowany', 'moderation');
