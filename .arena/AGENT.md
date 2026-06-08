@@ -28,10 +28,13 @@ ls .arena/logs/   # sprawdz jaki jest najwyzszy numer NNN
 
 Utworz plik `.arena/logs/NNN-twoj-identyfikator.md` gdzie:
 - `NNN` = kolejny numer (np. jesli jest 004, ty tworzysz 005)
-- `twoj-identyfikator` = nazwa modelu lub unikalny ID (np. `gpt4o`, `gemini-25`, `claude-37`)
-- ZAKAZ uzycia slowa `current` lub samego `agent` — zawsze unikalny identyfikator
+- `twoj-identyfikator` = unikalny ID tej konkretnej sesji — musi rozrozniac te sesje od innych sesji tego samego modelu
+  - Dobry format: `model-YYYYMMDD` np. `gpt4o-20260608`, `gemini-20260610`, `claude-20260615`
+  - Alternatywnie ID sesji jesli model go podaje: `agent-abc123`
+  - ZAKAZ slow ogolnych: `current`, `agent`, `arena`, `arena-agent` — same w sobie nie sa unikalne
+  - ZAKAZ samej nazwy modelu bez daty/ID: `gpt4o`, `claude`, `gemini` — przy kolejnej sesji tego samego modelu bedzie konflikt
 
-Przyklad nazwy: `005-gemini-25.md`, `006-claude-37.md`, `007-gpt4o.md`
+Przyklad nazwy: `005-gpt4o-20260610.md`, `006-claude-20260615.md`, `007-gemini-20260620.md`
 
 Format pliku:
 ```markdown
@@ -163,4 +166,4 @@ LukRonBot/
 - `.arena/logs/001-claude-qwen.md` — wczesna faza (Claude + Qwen)
 - `.arena/logs/002-agent-019e9f72.md` — poprzedni agent (sesja sprzed zamrożenia)
 - `.arena/logs/003-agent-019e9f72-cont.md` — kontynuacja poprzedniego agenta (sprint UI/UX)
-- `.arena/logs/004-arena-agent.md` — arena-agent (fix guildId, system przycisków, baner, logi)
+- `.arena/logs/004-arena-20260608.md` — arena-agent sesja 2026-06-08 (fix guildId, system przycisków, baner, logi, modal-*)
