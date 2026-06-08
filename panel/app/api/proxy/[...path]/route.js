@@ -2,38 +2,44 @@ import { NextResponse } from 'next/server';
 
 const BOT_API = process.env.BOT_API_URL || 'http://localhost:3001';
 
-export async function GET(request, { params }) {
+async function proxyRequest(request, params, method) {
   const path = (await params).path?.join('/') || '';
   try {
-    // USUNIĘTO /api/ z prefiksu. Teraz przekazuje dokładnie to, co dostał.
-    const res = await fetch(`${BOT_API}/${path}`, {
+    const options = {
+      method,
       headers: { 'Content-Type': 'application/json' },
-    });
+    };
+    if (method !== 'GET' && method !== 'DELETE') {
+      options.body = await request.text();
+    }
+    const res = await fetch(BOT_API + '/' + path, options);
     const data = await res.text();
+    const contentType = res.headers.get('content-type') || 'application/json';
     return new NextResponse(data, {
       status: res.status,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': contentType },
     });
   } catch (error) {
-    return NextResponse.json({ error: 'Proxy error' }, { status: 500 });
+    return NextResponse.json({ error: 'Proxy error: ' + error.message }, { status: 500 });
   }
 }
 
+export async function GET(request, { params }) {
+  return proxyRequest(request, params, 'GET');
+}
+
 export async function POST(request, { params }) {
-  const path = (await params).path?.join('/') || '';
-  try {
-    const body = await request.text();
-    const res = await fetch(`${BOT_API}/${path}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body,
-    });
-    const data = await res.text();
-    return new NextResponse(data, {
-      status: res.status,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (error) {
-    return NextResponse.json({ error: 'Proxy error' }, { status: 500 });
-  }
+  return proxyRequest(request, params, 'POST');
+}
+
+export async function PATCH(request, { params }) {
+  return proxyRequest(request, params, 'PATCH');
+}
+
+export async function DELETE(request, { params }) {
+  return proxyRequest(request, params, 'DELETE');
+}
+
+export async function PUT(request, { params }) {
+  return proxyRequest(request, params, 'PUT');
 }
