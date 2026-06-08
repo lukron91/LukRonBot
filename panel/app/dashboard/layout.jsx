@@ -243,7 +243,7 @@ export default function DashboardLayout({ children }) {
       <main className="main-content">
         <header className="top-bar">
           <img src="/resources/baner-dashboard.png" alt="" className="top-bar-bg" />
-          <div className="top-bar-overlay" />
+          <div className="top-bar-overlay" style={{ background: `linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.6) 75%, var(--bg-color) 100%)` }} />
           <div className="top-bar-content">
             {selectedGuild && (
               <div className="server-info">
@@ -510,12 +510,14 @@ export default function DashboardLayout({ children }) {
 
         .top-bar {
           position: relative;
-          height: 220px;
+          height: 200px;
           overflow: hidden;
           flex-shrink: 0;
           border-bottom: 1px solid var(--border-color, #1e1e26);
           margin: 0;
           padding: 0;
+          width: 100%;
+          display: block;
         }
 
         .top-bar-bg {
@@ -525,32 +527,28 @@ export default function DashboardLayout({ children }) {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          object-position: top center;
-          min-width: 100%;
-          min-height: 100%;
+          object-position: center top;
+          display: block;
         }
 
         .top-bar-overlay {
           position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
+          inset: 0;
           background: linear-gradient(
             to bottom,
-            rgba(0, 0, 0, 0.15) 0%,
-            rgba(0, 0, 0, 0.4) 100%
+            rgba(0, 0, 0, 0.1) 0%,
+            rgba(0, 0, 0, 0.55) 100%
           );
         }
 
         .top-bar-content {
-          position: relative;
+          position: absolute;
+          inset: 0;
           z-index: 1;
           display: flex;
-          align-items: flex-start;
+          align-items: flex-end;
           justify-content: space-between;
-          padding: 50px 1.5rem 1rem 1.5rem;
-          height: 100%;
+          padding: 1rem 1.5rem 1.25rem 1.5rem;
         }
 
         .server-info {
