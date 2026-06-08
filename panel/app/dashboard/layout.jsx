@@ -7,7 +7,7 @@ import Modal from '@/components/Modal';
 import {
   FiArrowLeft, FiGrid, FiSettings, FiMessageSquare, FiShield,
   FiUserPlus, FiFileText, FiActivity, FiLogOut, FiServer,
-  FiDatabase, FiCheckCircle, FiXCircle, FiSun, FiMoon, FiChevronDown
+  FiDatabase, FiCheckCircle, FiXCircle, FiChevronDown
 } from 'react-icons/fi';
 
 export default function DashboardLayout({ children }) {
@@ -21,7 +21,7 @@ export default function DashboardLayout({ children }) {
   const [serverActive, setServerActive] = useState(false);
   const [serverDropdownOpen, setServerDropdownOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const { theme, accentColor, updateTheme } = useTheme();
+  const { theme, accentColor } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -233,14 +233,6 @@ export default function DashboardLayout({ children }) {
         </nav>
 
         <div className="sidebar-footer">
-          <button 
-            onClick={() => updateTheme({ mode: theme?.mode === 'dark' ? 'light' : 'dark' })}
-            className="theme-quick-toggle"
-            title={theme?.mode === 'dark' ? 'Przełącz na jasny' : 'Przełącz na ciemny'}
-          >
-            {theme?.mode === 'dark' ? <FiSun /> : <FiMoon />}
-            <span>{theme?.mode === 'dark' ? 'Tryb jasny' : 'Tryb ciemny'}</span>
-          </button>
           <button onClick={handleLogout} className="logout-btn">
             <FiLogOut />
             <span>Wyloguj</span>
@@ -329,15 +321,15 @@ export default function DashboardLayout({ children }) {
         .dashboard-layout {
           display: flex;
           min-height: 100vh;
-          background: #0a0a0f;
-          color: #ffffff;
+          background: var(--bg-color, #0a0a0f);
+          color: var(--text-color, #ffffff);
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
         .sidebar {
           width: 280px;
-          background: #111118;
-          border-right: 1px solid #1e1e26;
+          background: rgba(var(--surface-rgb, 17, 17, 24), var(--surface-opacity, 0.95));
+          border-right: 1px solid var(--border-color, #1e1e26);
           display: flex;
           flex-direction: column;
           overflow: hidden;
@@ -349,7 +341,7 @@ export default function DashboardLayout({ children }) {
           align-items: center;
           gap: 0.75rem;
           padding: 1rem;
-          border-bottom: 1px solid #1e1e26;
+          border-bottom: 1px solid var(--border-color, #1e1e26);
         }
 
         .logo {
@@ -373,12 +365,12 @@ export default function DashboardLayout({ children }) {
 
         .logo-text span {
           font-size: 0.7rem;
-          color: #6b6b76;
+          color: var(--text-muted, #6b6b76);
         }
 
         .server-selector {
           padding: 1rem;
-          border-bottom: 1px solid #1e1e26;
+          border-bottom: 1px solid var(--border-color, #1e1e26);
           position: relative;
         }
 
@@ -386,7 +378,7 @@ export default function DashboardLayout({ children }) {
           font-size: 0.7rem;
           text-transform: uppercase;
           letter-spacing: 1px;
-          color: #6b6b76;
+          color: var(--text-muted, #6b6b76);
           margin-bottom: 0.5rem;
         }
 
@@ -400,10 +392,10 @@ export default function DashboardLayout({ children }) {
           align-items: center;
           justify-content: space-between;
           padding: 0.6rem 0.75rem;
-          background: #0a0a0f;
-          border: 1px solid #1e1e26;
-          border-radius: var(--border-radius);
-          color: #ffffff;
+          background: var(--bg-color, #0a0a0f);
+          border: 1px solid var(--border-color, #1e1e26);
+          border-radius: var(--border-radius, 12px);
+          color: var(--text-color, #ffffff);
           font-size: 0.85rem;
           cursor: pointer;
           transition: border-color 0.2s;
@@ -419,12 +411,13 @@ export default function DashboardLayout({ children }) {
           left: 0;
           right: 0;
           margin-top: 0.25rem;
-          background: #14141c;
-          border: 1px solid #1e1e26;
-          border-radius: var(--border-radius);
+          background: rgba(var(--surface-rgb, 20, 20, 28), var(--surface-opacity, 0.95));
+          border: 1px solid var(--border-color, #1e1e26);
+          border-radius: var(--border-radius, 12px);
           z-index: 100;
           max-height: 250px;
           overflow-y: auto;
+          backdrop-filter: blur(8px);
         }
 
         .dropdown-item {
@@ -432,7 +425,7 @@ export default function DashboardLayout({ children }) {
           padding: 0.6rem 0.75rem;
           background: none;
           border: none;
-          color: #ffffff;
+          color: var(--text-color, #ffffff);
           text-align: left;
           cursor: pointer;
           font-size: 0.85rem;
@@ -440,7 +433,7 @@ export default function DashboardLayout({ children }) {
         }
 
         .dropdown-item:hover {
-          background: #1e1e26;
+          background: var(--border-color, #1e1e26);
         }
 
         .sidebar-nav {
@@ -457,7 +450,7 @@ export default function DashboardLayout({ children }) {
           font-size: 0.7rem;
           text-transform: uppercase;
           letter-spacing: 1px;
-          color: #6b6b76;
+          color: var(--text-muted, #6b6b76);
           padding: 0.5rem 1rem;
         }
 
@@ -470,40 +463,22 @@ export default function DashboardLayout({ children }) {
           font-size: 0.85rem;
           transition: all 0.2s;
           border-left: 3px solid transparent;
+          color: var(--text-color, #ffffff);
         }
 
         .nav-link:hover {
-          background: rgba(59, 130, 246, 0.1);
+          background: rgba(var(--surface-rgb, 20, 20, 28), 0.3);
         }
 
         .nav-link.active {
-          background: rgba(59, 130, 246, 0.15);
+          background: rgba(var(--surface-rgb, 20, 20, 28), 0.5);
         }
 
         .sidebar-footer {
           padding: 1rem;
-          border-top: 1px solid #1e1e26;
+          border-top: 1px solid var(--border-color, #1e1e26);
         }
 
-        .theme-quick-toggle {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 0.6rem 0.75rem;
-          background: none;
-          border: 1px solid #1e1e26;
-          border-radius: var(--border-radius);
-          color: var(--accent-color);
-          cursor: pointer;
-          font-size: 0.85rem;
-          transition: all 0.2s;
-          margin-bottom: 0.5rem;
-        }
-        .theme-quick-toggle:hover {
-          background: rgba(var(--surface-rgb), 0.5);
-          border-color: var(--accent-color);
-        }
         .logout-btn {
           width: 100%;
           display: flex;
@@ -511,16 +486,16 @@ export default function DashboardLayout({ children }) {
           gap: 0.75rem;
           padding: 0.6rem 0.75rem;
           background: none;
-          border: 1px solid #1e1e26;
-          border-radius: var(--border-radius);
-          color: #9c9ca7;
+          border: 1px solid var(--border-color, #1e1e26);
+          border-radius: var(--border-radius, 12px);
+          color: var(--text-muted, #9c9ca7);
           cursor: pointer;
           font-size: 0.85rem;
           transition: all 0.2s;
         }
         .logout-btn:hover {
-          background: #0a0a0f;
-          color: #ffffff;
+          background: rgba(var(--surface-rgb, 20, 20, 28), 0.3);
+          color: var(--text-color, #ffffff);
         }
 
         .main-content {
@@ -535,7 +510,7 @@ export default function DashboardLayout({ children }) {
           height: 250px;
           overflow: hidden;
           flex-shrink: 0;
-          border-bottom: 1px solid #1e1e26;
+          border-bottom: 1px solid var(--border-color, #1e1e26);
         }
 
         .top-bar-bg {
@@ -580,7 +555,7 @@ export default function DashboardLayout({ children }) {
         .server-avatar {
           width: 56px;
           height: 56px;
-          border-radius: var(--border-radius);
+          border-radius: var(--border-radius, 12px);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -600,6 +575,7 @@ export default function DashboardLayout({ children }) {
           font-size: 1.3rem;
           margin: 0;
           text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+          color: #fff;
         }
 
         .server-details span {
@@ -619,7 +595,7 @@ export default function DashboardLayout({ children }) {
           align-items: center;
           gap: 0.5rem;
           padding: 0.4rem 0.75rem;
-          border-radius: var(--border-radius);
+          border-radius: var(--border-radius, 12px);
           font-size: 0.8rem;
           border: 1px solid;
           background: rgba(10, 10, 15, 0.8);
@@ -654,10 +630,11 @@ export default function DashboardLayout({ children }) {
         .warning-content h1 {
           font-size: 1.5rem;
           margin-bottom: 1rem;
+          color: var(--text-color, #fff);
         }
 
         .warning-content p {
-          color: #6b6b76;
+          color: var(--text-muted, #6b6b76);
           margin-bottom: 1.5rem;
         }
 
@@ -666,7 +643,7 @@ export default function DashboardLayout({ children }) {
           padding: 0.75rem 1.5rem;
           color: #fff;
           text-decoration: none;
-          border-radius: var(--border-radius);
+          border-radius: var(--border-radius, 12px);
           font-weight: 600;
           transition: opacity 0.2s;
         }
@@ -678,6 +655,7 @@ export default function DashboardLayout({ children }) {
         .refresh-hint {
           font-size: 0.85rem;
           margin-top: 1rem;
+          color: var(--text-muted, #6b6b76);
         }
       `}</style>
     </div>

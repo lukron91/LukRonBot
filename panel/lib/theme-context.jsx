@@ -69,7 +69,7 @@ export function ThemeProvider({ children }) {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, updateTheme }}>
+    <ThemeContext.Provider value={{ theme, updateTheme, accentColor: theme?.accentColor || DEFAULT_THEME.accentColor }}>
       {children}
     </ThemeContext.Provider>
   );
