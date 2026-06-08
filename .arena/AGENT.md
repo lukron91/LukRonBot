@@ -109,3 +109,38 @@ ZAKAZ: inline style={{background: ...}} na przyciskach, gradienty - tylko jednol
 6. Aktualizacja .arena/STATE.md (jesli zmienil sie stan)
 7. git push origin dev
 8. Poinformuj uzytkownika co zrobiono
+
+---
+
+## OBOWIAZKOWE LOGOWANIE (po kazdym commicie)
+
+Po KAZDYM commicie agent MUSI dopisac wpis do `.arena/logs/NNN-nazwa-agenta.md` zawierajacy:
+
+1. Numer i hash commitu
+2. Liste zmienionych plikow
+3. SZCZEGOLOWY opis co zmieniono w kazdym pliku (funkcje, linie, klasy CSS)
+4. Powod zmiany (co bylo zle / co nowego dodano)
+
+Format logu:
+```
+## Commit X: `hash` — krotki opis
+
+### Co zmieniono
+- `sciezka/do/pliku`:
+  - konkretna zmiana 1
+  - konkretna zmiana 2
+```
+
+Agent tworzy NOWY plik logu dla swojej sesji (kolejny numer: 004, 005...).
+Na koniec sesji aktualizuje `.arena/STATE.md` i `.arena/SESSION.md`.
+
+### Dlaczego to wazne
+- Kazdy nowy agent widzi PELNA historie wszystkich zmian
+- Nie trzeba zgadywac co poprzedni agent zrobil
+- Latwo znalezc kiedy i gdzie wprowadzono blad
+
+## Pliki logow
+
+- `.arena/logs/001-claude-qwen.md` — wczesna faza (Claude + Qwen)
+- `.arena/logs/002-agent-019e9f72.md` — poprzedni agent
+- `.arena/logs/003-agent-current.md` — biezaca sesja
