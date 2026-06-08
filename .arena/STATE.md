@@ -117,3 +117,19 @@ Zeby unmute/unban pojawily sie w historii kar — zapisuj jako osobny dokument z
 1. Zaimplementowac brakujace endpointy moderacji (tabela powyzej)
 2. initDbStructure() — tworzy puste kolekcje przy starcie
 3. System banowania + kanal odwolan (ETAP 3, szczegoly w DESIGN.md)
+4. System ról hierarchicznych (szczegoly w DESIGN.md) — wymaga bazy (kolekcja role_groups)
+
+---
+
+## SYSTEM RÓL HIERARCHICZNYCH — status: ZAPLANOWANY
+
+Szczegółowy opis w `DESIGN.md` sekcja "SYSTEM RÓL HIERARCHICZNYCH".
+
+Krótko:
+- 3 typy ról: standardowa / nadrzędna (kategoria, pusta) / podrzędna (należy do kategorii)
+- Bot automatycznie nadaje rolę nadrzędną gdy user dostaje podrzędną (listener guildMemberUpdate)
+- Bot odbiera nadrzędną gdy user straci WSZYSTKIE podrzędne z tej grupy
+- Wymaga kolekcji MongoDB `role_groups` (schemat w DESIGN.md)
+- Panel UI (docelowy): rozwijane zakładki dla grup, dwa przyciski tworzenia
+- Aktualny panel ról obsługuje TYLKO role standardowe — hierarchia do zrobienia po bazie
+- DO ZROBIENIA: najpierw baza, potem endpoint /api/guilds/:id/role-groups, potem panel
