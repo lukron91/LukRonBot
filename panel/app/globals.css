@@ -400,19 +400,118 @@ body {
   font-size: 0.7rem;
   color: var(--text-muted);
 }
-.btn-primary {
-  background: linear-gradient(135deg, var(--accent-color), #4752c4);
+/* BUTTON SYSTEM – 5 standardowych typów */
+.btn-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
   border: none;
   border-radius: var(--border-radius);
-  padding: 0.7rem 1.5rem;
-  color: white;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  line-height: 1.4;
+}
+.btn-base:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+.btn-base:active:not(:disabled) {
+  transform: translateY(0);
+}
+.btn-base:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 1. Standard – kolor akcentu */
+.btn-standard {
+  background: linear-gradient(135deg, var(--accent-color), #4752c4);
+  box-shadow: 0 4px 10px rgba(88, 101, 242, 0.3);
+}
+.btn-standard:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(88, 101, 242, 0.45);
+}
+
+/* 2. Success – zielony (zapisz/zatwierdź) */
+.btn-success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+}
+.btn-success:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.45);
+}
+
+/* 3. Danger – czerwony (usuń/anuluj) */
+.btn-danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+}
+.btn-danger:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.45);
+}
+
+/* 4. Warning – żółty (Away / BRB) */
+.btn-warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+  color: #111;
+}
+.btn-warning:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.45);
+}
+
+/* 5. DnD – czerwony (Do Not Disturb) */
+.btn-dnd {
+  background: linear-gradient(135deg, #991b1b, #7f1d1d);
+  box-shadow: 0 4px 10px rgba(153, 27, 27, 0.3);
+}
+.btn-dnd:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(153, 27, 27, 0.45);
+}
+
+/* Status indicator pills */
+.btn-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 50px;
+  border: 1px solid var(--border-color);
+  background: rgba(var(--surface-rgb), var(--surface-opacity));
+  color: var(--text-color);
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-  transition: 0.2s;
+  transition: all 0.2s;
 }
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(88,101,242,0.4);
+.btn-status:hover {
+  border-color: var(--accent-color);
+}
+.btn-status.active-online {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: #10b981;
+  color: #10b981;
+}
+.btn-status.active-idle {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+.btn-status.active-dnd {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+.btn-status.active-invisible {
+  background: rgba(107, 107, 118, 0.15);
+  border-color: #6b6b76;
+  color: #9ca3af;
 }
 
 /* TOGGLE */

@@ -413,7 +413,7 @@ export default function ModerationSettings() {
         )}
       </div>
 
-      <button className="save-button" onClick={handleSave} disabled={saving}>
+      <button className="btn-base btn-success" onClick={handleSave} disabled={saving}>
         {saving ? "Zapisywanie..." : "Zapisz wszystkie ustawienia"}
       </button>
       

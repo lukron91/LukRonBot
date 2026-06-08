@@ -101,7 +101,7 @@ export default function ConfigPage() {
         </div>
 
         {!disabled && (
-          <button type="submit" className="save-button" disabled={saving} style={{ background: accentColor }}>
+          <button type="submit" className="btn-base btn-success" disabled={saving}>
             {saving ? "Zapisywanie..." : <><FiSave /> Zapisz ustawienia</>}
           </button>
         )}
@@ -139,9 +139,7 @@ export default function ConfigPage() {
         .toggle-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
         .toggle-header span { font-weight: 600; color: #fff; }
         .toggle-input { width: 40px; height: 20px; }
-        .save-button { width: 100%; padding: 1rem 2rem; color: #fff; border: none; border-radius: var(--border-radius); font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: opacity 0.2s; }
-        .save-button:hover:not(:disabled) { opacity: 0.9; }
-        .save-button:disabled { opacity: 0.5; cursor: not-allowed; }
+.save-button:disabled { opacity: 0.5; cursor: not-allowed; }
         .message { padding: 1rem; border-radius: var(--border-radius); text-align: center; font-weight: 600; }
         .message.success { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; color: #10b981; }
         .message.error { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; }

@@ -150,7 +150,7 @@ export default function BotSettingsPage() {
         showToast("Błąd przeładowania", "error");
       }
     } catch (err) {
-      showToast(`Błąd: ${err.//message}`, "error");
+      showToast(`Błąd: ${err.message}`, "error");
     }
   };
 
@@ -291,7 +291,7 @@ export default function BotSettingsPage() {
                     key={opt.value}
                     type="button"
                     onClick={() => setStatus(opt.value)}
-                    className="status-btn"
+                    className="btn-status"
                     style={{
                       display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1rem", borderRadius: "40px",
                       background: status === opt.value ? opt.color : "var(--surface-color)", border: "1px solid var(--border-color)", color: "var(--text-color)", cursor: "pointer"
@@ -309,7 +309,7 @@ export default function BotSettingsPage() {
                 maxLength={128}
                 className="status-input"
               />
-              <button type="submit" className="save-btn" style={{ background: accentColor }}>
+              <button type="submit" className="btn-base btn-success">
                 {updating ? "Aktualizowanie..." : "💾 Zaktualizuj status"}
               </button>
             </form>
@@ -321,8 +321,8 @@ export default function BotSettingsPage() {
         <div className="section">
           <h2 style={{ color: accentColor }}>Moduły bota</h2>
           <div className="module-actions">
-            <button onClick={testDebugModule} className="action-btn" style={{ background: accentColor }}>🧪 Test modułu debug</button>
-            <button onClick={reloadModules} className="action-btn" style={{ background: accentColor }}><FiRefreshCw /> Przeładuj moduły</button>
+            <button onClick={testDebugModule} className="btn-base btn-standard">🧪 Test modułu debug</button>
+            <button onClick={reloadModules} className="btn-base btn-standard"><FiRefreshCw /> Przeładuj moduły</button>
           </div>
           {modules.length === 0 ? <div className="empty">Brak modułów.</div> : (
             <div className="modules-grid">
@@ -373,28 +373,23 @@ export default function BotSettingsPage() {
           {cmdSubTab === 'registration' && (
             <>
               <div className="command-setup" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                <button onClick={refreshAllCommands} className="action-btn" style={{ background: accentColor }}><FiRefreshCw /> Odśwież listę z pamięci</button>
+                <button onClick={refreshAllCommands} className="btn-base btn-standard"><FiRefreshCw /> Odśwież listę z pamięci</button>
               </div>
 
               <div className="command-bulk-actions" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
                 <button 
                   onClick={() => { setCmdRegType('global'); manageCommands('register'); }} 
-                  className="action-btn" 
-                  style={{ background: accentColor, display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                >
+                  className="btn-base btn-standard">
                   <FiPlus /> Zarejestruj wybrane Globalnie
                 </button>
                 <button 
                   onClick={() => { setCmdRegType('guild'); manageCommands('register'); }} 
-                  className="action-btn" 
-                  style={{ background: accentColor, display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                >
+                  className="btn-base btn-standard">
                   <FiPlus /> Zarejestruj wybrane Lokalnie
                 </button>
                 <button 
                   onClick={() => manageCommands('register', null)} 
-                  className="action-btn" 
-                  style={{ background: '#6b6b76', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                  className="btn-base btn-standard"
                 >
                   Zarejestruj Wszystkie (Lokalnie)
                 </button>
@@ -437,7 +432,7 @@ export default function BotSettingsPage() {
             <div className="registered-list">
                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
                  <h3 style={{ color: 'var(--text-color)', fontSize: '1rem' }}>Komendy aktywne na tym serwerze</h3>
-                 <button onClick={refreshAllCommands} className="action-btn" style={{ background: accentColor, fontSize: '0.8rem' }}><FiRefreshCw /> Odśwież</button>
+                 <button onClick={refreshAllCommands} className="btn-base btn-standard" style={{ fontSize: "0.8rem" }}><FiRefreshCw /> Odśwież</button>
                </div>
                {registeredLocalCommands.length === 0 ? <div className="empty">Brak zarejestrowanych komend lokalnie.</div> : (
                  <div className="commands-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
@@ -453,8 +448,7 @@ export default function BotSettingsPage() {
                          </div>
                          <button 
                            onClick={() => manageCommands('unregister', [cmd.name])}
-                           className="action-btn" 
-                           style={{ background: '#ef4444', padding: '0.3rem 0.6rem', fontSize: '0.7rem' }}
+                           className="btn-base btn-danger" style={{ padding: '0.3rem 0.6rem', fontSize: '0.7rem' }}
                          >
                            <FiTrash2 /> Usuń
                          </button>
@@ -470,7 +464,7 @@ export default function BotSettingsPage() {
             <div className="registered-list">
                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
                  <h3 style={{ color: 'var(--text-color)', fontSize: '1rem' }}>Komendy aktywne globalnie</h3>
-                 <button onClick={refreshAllCommands} className="action-btn" style={{ background: accentColor, fontSize: '0.8rem' }}><FiRefreshCw /> Odśwież</button>
+                 <button onClick={refreshAllCommands} className="btn-base btn-standard" style={{ fontSize: "0.8rem" }}><FiRefreshCw /> Odśwież</button>
                </div>
                {registeredGlobalCommands.length === 0 ? <div className="empty">Brak zarejestrowanych komend globalnie.</div> : (
                  <div className="commands-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
@@ -482,8 +476,7 @@ export default function BotSettingsPage() {
                        </div>
                        <button 
                          onClick={() => manageCommands('unregister', [cmd.name])}
-                         className="action-btn" 
-                         style={{ background: '#ef4444', padding: '0.3rem 0.6rem', fontSize: '0.7rem' }}
+                         className="btn-base btn-danger" style={{ padding: '0.3rem 0.6rem', fontSize: '0.7rem' }}
                        >
                          <FiTrash2 /> Usuń
                        </button>
@@ -510,7 +503,7 @@ export default function BotSettingsPage() {
               ))
             }
           </div>
-          <button onClick={async () => { const res = await fetch("/api/proxy/api/logs/system"); setSystemLogs(await res.json()); }} className="refresh-btn" style={{ background: accentColor }}>Odśwież</button>
+          <button onClick={async () => { const res = await fetch("/api/proxy/api/logs/system"); setSystemLogs(await res.json()); }} className="btn-base btn-standard">Odśwież</button>
         </div>
       )}
 
@@ -529,7 +522,7 @@ export default function BotSettingsPage() {
               ))
             }
           </div>
-          <button onClick={async () => { const res = await fetch("/api/proxy/api/logs/activity"); setActivityLogs(await res.//json()); }} className="refresh-btn" style={{ background: accentColor }}>Odśwież</button>
+          <button onClick={async () => { const res = await fetch("/api/proxy/api/logs/activity"); setActivityLogs(await res.json()); }} className="btn-base btn-standard">Odśwież</button>
         </div>
       )}
 
@@ -547,7 +540,7 @@ export default function BotSettingsPage() {
               ))
             }
           </div>
-          <button onClick={async () => { const res = await fetch("/api/proxy/api/logs/db"); setDbLogs(await res.json()); }} className="refresh-btn" style={{ background: accentColor }}>Odśwież</button>
+          <button onClick={async () => { const res = await fetch("/api/proxy/api/logs/db"); setDbLogs(await res.json()); }} className="btn-base btn-standard">Odśwież</button>
         </div>
       )}
 
@@ -688,25 +681,17 @@ export default function BotSettingsPage() {
           cursor: pointer;
         }
         .status-input {
-          padding: 0.75rem;
-          background: var(--bg-color);
+          padding: 0.5rem;
+          border-radius: var(--border-radius);
           border: 1px solid var(--border-color);
-          border-radius: var(--border-radius);
+          background: var(--bg-color);
           color: var(--text-color);
-          font-size: 0.9rem;
+          text-align: center;
+          width: 60px;
         }
-        .save-btn {
-          padding: 0.75rem 1.5rem;
-          color: #fff;
-          border: none;
-          border-radius: var(--border-radius);
+        .status-text {
           font-weight: 600;
-          cursor: pointer;
-          transition: opacity 0.2s;
-          align-self: flex-start;
-        }
-        .save-btn:hover:not(:disabled) {
-          opacity: 0.9;
+          font-size: 0.85rem;
         }
         .message {
           padding: 0.75rem;
@@ -716,107 +701,43 @@ export default function BotSettingsPage() {
         }
         .message.success {
           background: rgba(16, 185, 129, 0.1);
-          border: 1px solid #10b981;
-          color: #10b91;
+          color: #10b981;
         }
         .message.error {
           background: rgba(239, 68, 68, 0.1);
-          border: 1px solid #ef4444;
           color: #ef4444;
-        }
-        .module-actions {
-          display: flex;
-          gap: 0.5rem;
-          margin-bottom: 1rem;
-          flex-wrap: wrap;
-        }
-        .action-btn {
-          padding: 0.5rem 1rem;
-          color: #fff;
-          border: none;
-          border-radius: var(--border-radius);
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
         }
         .modules-grid {
           display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 0.75rem;
+          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+          gap: 1rem;
+          margin-top: 1rem;
         }
         .module-card {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          padding: 1rem;
-          background: rgba(var(--surface-rgb), 0.5);
-          border-radius: var(--border-radius);
-          border-left: 3px solid;
-          cursor: pointer;
-          transition: background 0.2s;
-        }
-        .module-card:hover {
-          background: rgba(var(--surface-rgb), 0.8);
-        }
-        .module-icon {
-          font-size: 1.5rem;
-        }
-        .module-info {
-          flex: 1;
-        }
-        .module-name {
-          font-weight: 600;
-          color: var(--text-color);
-        }
-        .module-status {
-          font-size: 0.8rem;
-          color: var(--text-muted);
-        }
-        .module-error {
-          font-size: 0.8rem;
-          color: #ef4444;
-          margin-top: 0.25rem;
-        }
-        .module-hint {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          text-align: right;
-        }
-        .logs-container {
           background: var(--bg-color);
           border: 1px solid var(--border-color);
           border-radius: var(--border-radius);
           padding: 1rem;
-          max-height: 400px;
-          overflow-y: auto;
-          overflow-x: auto;
-          margin-bottom: 1rem;
-          font-family: monospace;
-          font-size: 0.85rem;
-          white-space: nowrap;
         }
-        .log-entry {
-          padding: 0.25rem 0;
-          border-bottom: 1px solid var(--border-color);
+        .module-name {
+          font-weight: 600;
+          font-size: 0.9rem;
         }
-        .log-time {
-          color: var(--text-muted);
-          margin-right: 0.5rem;
+        .module-status {
+          display: inline-block;
+          padding: 0.2rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.7rem;
+          margin-top: 0.5rem;
+          font-weight: 600;
         }
-        .log-source {
-          color: #a5b4fc;
-          margin-right: 0.5rem;
+        .module-status.loaded {
+          background: rgba(16, 185, 129, 0.1);
+          color: #10b981;
         }
-        .log-message {
-          color: var(--text-color);
-        }
-        .refresh-btn {
-          padding: 0.5rem 1rem;
-          color: #fff;
-          border: none;
-          border-radius: var(--border-radius);
-          cursor: pointer;
+        .module-status.unloaded {
+          background: rgba(239, 68, 68, 0.1);
+          color: #ef4444;
         }
         .modal-overlay {
           position: fixed;
