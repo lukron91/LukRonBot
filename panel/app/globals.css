@@ -810,7 +810,37 @@ input:checked + .toggle-slider-modern {
 input:checked + .toggle-slider-modern:before {
   transform: translateX(24px);
 }
-/* TOGGLE SWITCH – modern iOS/Android style */
+/* ================================================
+   SCROLLBAR — stylowany pod motyw (webkit + firefox)
+   ================================================ */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 99px;
+  transition: background 0.2s;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ================================================
+   TOGGLE SWITCH — wyraźny w trybie ON i OFF
+   ================================================ */
+
 .toggle-switch {
   position: relative;
   display: inline-block;
@@ -828,27 +858,31 @@ input:checked + .toggle-slider-modern:before {
 .toggle-switch .slider {
   position: absolute;
   inset: 0;
-  background: var(--border-color);
+  background: rgba(var(--surface-rgb), 0.8);
+  border: 1.5px solid var(--text-muted);
   border-radius: 24px;
-  transition: 0.3s;
+  transition: background 0.25s, border-color 0.25s;
 }
 .toggle-switch .slider::before {
   content: "";
   position: absolute;
-  height: 18px;
-  width: 18px;
+  height: 16px;
+  width: 16px;
   left: 3px;
-  bottom: 3px;
-  background: #fff;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--text-muted);
   border-radius: 50%;
-  transition: 0.3s;
+  transition: transform 0.25s, background 0.25s;
   box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 .toggle-switch input:checked + .slider {
   background: var(--accent-color);
+  border-color: var(--accent-color);
 }
 .toggle-switch input:checked + .slider::before {
-  transform: translateX(20px);
+  transform: translateY(-50%) translateX(20px);
+  background: #fff;
 }
 .toggle-switch input:disabled + .slider {
   opacity: 0.4;

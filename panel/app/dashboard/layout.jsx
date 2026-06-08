@@ -451,6 +451,21 @@ export default function DashboardLayout({ children }) {
           flex: 1;
           overflow-y: auto;
           padding: 0.5rem 0;
+          scrollbar-width: thin;
+          scrollbar-color: var(--border-color) transparent;
+        }
+        .sidebar-nav::-webkit-scrollbar {
+          width: 4px;
+        }
+        .sidebar-nav::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .sidebar-nav::-webkit-scrollbar-thumb {
+          background: var(--border-color);
+          border-radius: 99px;
+        }
+        .sidebar-nav::-webkit-scrollbar-thumb:hover {
+          background: var(--text-muted);
         }
 
         .nav-section {
