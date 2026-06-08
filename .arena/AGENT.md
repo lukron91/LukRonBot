@@ -1,157 +1,48 @@
 # Instrukcja dla agenta Arena.ai
 
-## Jak wznowic prace
+## KROK 1 — Setup środowiska (zrób to ZANIM cokolwiek innego)
 
-Wystarczy link do repo. Agent powinien natychmiast:
+Uzytkownik podaje link do repo i token GitHub. Wykonaj od razu:
 
-1. Sklonowac `https://github.com/lukron91/LukRonBot.git` i `git checkout dev`
-2. Przeczytac ten plik (`.arena/AGENT.md`)
-3. Przeczytac `.arena/STATE.md` - biezacy stan projektu
-4. Przeczytac `.arena/SESSION.md` - historia zmian z ostatniej sesji
-6. Zapytac uzytkownika od czego kontynuowac
-
----
-
-## Projekt: LukRonBot
-
-**Discord bot + panel zarzadzania (Next.js 14 + MongoDB)**
-- Repozytorium: `lukron91/LukRonBot`
-- Galaz robocza: `dev` (NIGDY nie pracuj na `main` bez wyraznego polecenia!)
-
-### Struktura katalogow
-
-LukRonBot/
-- bot/               Bot Discord (Node.js + Express)
-  - index.js         Serwer, MongoDB, ladowanie modulow
-  - modules/         Moduly bota
-  - commands/        Pliki komend Slash
-- panel/             Panel webowy (Next.js 14 App Router)
-  - app/             Strony i API routes
-    - layout.jsx     Root layout + Providers
-    - providers.jsx  ThemeProvider
-    - globals.css    Globalne style + system przyciskow
-    - dashboard/     Dashboard (wymaga zalogowania)
-      - layout.jsx   Sidebar + top-bar + statusy
-      - bot-settings/ Health, moduly, komendy, logi
-      - theme/       Ustawienia motywu
-      - config/      Konfiguracja bota
-      - moderation/  Moderacja (users, settings)
-    - servers/       Wybor serwera Discord
-    - api/proxy/     Proxy panel -> bot API
-  - components/
-    - Modal.jsx      Uniwersalny modal (zgodny z motywem)
-  - lib/
-    - theme-context.jsx  System motywow
-  - public/resources/    Obrazy (logo, baner)
-- .arena/            System ciaglosci agentow
-- README.md          Strona glowna GitHub
-
----
-
-## Kluczowe zasady techniczne
-
-### System przyciskow (globals.css)
-Wszystkie przyciski MUSZA uzywac standardowych klas:
-- btn-base + btn-standard - kolor akcentu (oglne akcje)
-- btn-base + btn-success - zielony (zapisz/zatwierdz)
-- btn-base + btn-danger - czerwony (usun/anuluj)
-- btn-base + btn-warning - zolty (status idle/away)
-- btn-base + btn-dnd - ciemna czerwien (Do Not Disturb)
-- btn-status - pill status bota
-
-ZAKAZ: inline style={{background: ...}} na przyciskach, gradienty - tylko jednolite kolory.
-
-### System motywow (theme-context.jsx)
-- useTheme() zwraca { theme, updateTheme, accentColor }
-- Wszystkie komponenty MUSZA uzywac CSS variables: var(--bg-color), var(--text-color), var(--border-color), var(--surface-rgb), var(--accent-color), var(--border-radius)
-- ZAKAZ twardych kolorow #xxx w JSX - uzywaj CSS variables
-- Kazda strona musi importowac useTheme() dla accentColor
-
-### Komponent Modal
-- Import: import Modal from '@/components/Modal'
-- Props: isOpen, onClose, title, children, width (opcjonalnie)
-- ZAKAZ uzywania window.confirm() - zawsze Modal
-
-### MongoDB
-- Srodowisko: BOT_ENV=test (lokalnie) / BOT_ENV=main (produkcja)
-- Kolekcje: global_configs, guild_configs, activities, moderation
-- UWAGA: initDbStructure() musi tworzyc puste kolekcje przy starcie bota!
-
-### Checkboxy -> Switche
-- Uzywaj <label className="toggle-switch"><input type="checkbox" ...><span className="slider"></span></label>
-- Zwykle checkboxy sa niedozwolone w UI
-
-### Logowanie (Discord OAuth)
-- Logowanie przez Discord -> callback -> dane sesji do localStorage
-- Panel sprawdza sesje w DashboardLayout
-
----
-
-## Czego NIE robic
-
-1. Nie pracuj na `main` - zawsze `dev`
-2. Nie uzywaj `window.confirm()` - zawsze Modal
-3. Nie uzywaj gradientow na przyciskach - jednolite kolory
-4. Nie hardcoduj kolorow w JSX - CSS variables
-5. Nie uzywaj template literalow w fetch() przy SSR - konkatenacja stringow
-6. Nie dodawaj zwyklych checkboxow - tylko toggle-switch
-7. Po kazdej zmianie: commituj z opisem po polsku i aktualizuj .arena/SESSION.md + .arena/STATE.md
-
----
-
-## Srodowisko Arena.ai — WAZNE
-
-Agent dziala w sandboxie ktory RESETUJE SIE miedzy wywolaniami basha.
-Oznacza to ze po kazdym restarcie sesji lub po dluzszej przerwie:
-- `git remote` jest pusty — trzeba ustawic ponownie
-- `git config user.name/email` jest pusty — trzeba ustawic ponownie
-- katalog `/home/user/LukRonBot` moze nie istniec — trzeba sklonowac ponownie
-
-### Startup checklist (rób to na początku każdej sesji bash):
 ```bash
-# 1. Klonuj jesli brak repo
+# Klonuj jesli brak
 [ -d /home/user/LukRonBot ] || git clone https://TOKEN@github.com/lukron91/LukRonBot.git --branch dev /home/user/LukRonBot
 
-# 2. Ustaw tożsamość
 cd /home/user/LukRonBot
 git config user.email "arena-agent@arena.ai"
 git config user.name "Arena Agent"
-
-# 3. Ustaw remote z tokenem (token przechowywany w historii wiadomosci od uzytkownika)
 git remote set-url origin https://TOKEN@github.com/lukron91/LukRonBot.git
+git pull origin dev
 ```
 
-TOKEN: uzytkownik podaje go na poczatku sesji — zapisz go i uzywaj przez cala sesje.
-Nie usuwaj tokena z remote po uzyciu — ma byc dostepny przez cala sesje.
+Zamien TOKEN na token podany przez uzytkownika.
+Remote i git config resetuja sie miedzy sesjami basha — zawsze ustawiaj na poczatku.
 
 ---
 
-## Proces pracy (KAZDY COMMIT)
+## KROK 2 — Utwórz swój plik logów (zrób to PRZED pierwszym commitem)
 
-1. git pull origin dev
-2. Praca nad kodem
-3. git add -A
-4. git commit -m "krotki opis po polsku"
-5. **DOPISZ do swojego pliku logow** (`.arena/logs/NNN-twoj-identyfikator.md`) - szczegolowy wpis co zmieniono
-6. Aktualizacja .arena/STATE.md (jesli zmienil sie stan)
-7. Aktualizacja .arena/SESSION.md (dodaj wpis o commicie)
-8. git push origin dev
-9. Poinformuj uzytkownika co zrobiono
+```bash
+ls .arena/logs/   # sprawdz jaki jest najwyzszy numer NNN
+```
+
+Utworz plik `.arena/logs/NNN-twoj-identyfikator.md` gdzie:
+- `NNN` = kolejny numer (np. jesli jest 004, ty tworzysz 005)
+- `twoj-identyfikator` = nazwa modelu lub unikalny ID (np. `gpt4o`, `gemini-25`, `claude-37`)
+- ZAKAZ uzycia slowa `current` lub samego `agent` — zawsze unikalny identyfikator
+
+Przyklad nazwy: `005-gemini-25.md`, `006-claude-37.md`, `007-gpt4o.md`
+
+Format pliku:
+```markdown
+# Log NNN — identyfikator (YYYY-MM-DD)
+
+**Model:** [nazwa modelu]
+**Gałąź:** `dev`
 
 ---
 
-## OBOWIAZKOWE LOGOWANIE (po kazdym commicie)
-
-Po KAZDYM commicie agent MUSI dopisac wpis do `.arena/logs/NNN-nazwa-agenta.md` zawierajacy:
-
-1. Numer i hash commitu
-2. Liste zmienionych plikow
-3. SZCZEGOLOWY opis co zmieniono w kazdym pliku (funkcje, linie, klasy CSS)
-4. Powod zmiany (co bylo zle / co nowego dodano)
-
-Format logu:
-```
-## Commit X: `hash` — krotki opis
+## Commit 1: `hash` — krotki opis
 
 ### Co zmieniono
 - `sciezka/do/pliku`:
@@ -159,22 +50,117 @@ Format logu:
   - konkretna zmiana 2
 ```
 
-Agent tworzy NOWY plik logu dla swojej sesji.
-Numer: kolejny wolny (sprawdz ls .arena/logs/ i wez nastepny).
-Nazwa: NNN-[twoj-identyfikator].md
-Przyklady: 004-gemini.md, 005-claude-sonnet.md, 006-gpt4o.md, 007-arena-agent.md
-Identyfikator: nazwa modelu lub ID agenta (cokolwiek jednoznacznego).
-ZAKAZ nazwy "current" lub "agent" bez identyfikatora - zawsze unikalna nazwa z ID.
-Na koniec sesji aktualizuje `.arena/STATE.md` i `.arena/SESSION.md`.
+Po kazdym commicie dopisuj nowy wpis do TEGO samego pliku.
+Na koniec sesji zaktualizuj `.arena/SESSION.md` i `.arena/STATE.md`.
 
-### Dlaczego to wazne
-- Kazdy nowy agent widzi PELNA historie wszystkich zmian
-- Nie trzeba zgadywac co poprzedni agent zrobil
-- Latwo znalezc kiedy i gdzie wprowadzono blad
+---
 
-## Pliki logow
+## KROK 3 — Przeczytaj stan projektu
+
+- `.arena/STATE.md` — aktualny stan, roadmap, priorytety
+- `.arena/SESSION.md` — historia commitów poprzednich agentów
+- `.arena/logs/` — szczegółowe logi każdego agenta
+
+Potem zapytaj uzytkownika od czego zaczynamy.
+
+---
+
+## Projekt: LukRonBot
+
+**Discord bot + panel zarządzania (Next.js 14 + MongoDB)**
+- Repozytorium: `lukron91/LukRonBot`
+- Gałąź robocza: `dev` (NIGDY nie pracuj na `main` bez wyraźnego polecenia!)
+
+### Struktura katalogów
+
+```
+LukRonBot/
+├── bot/                    Bot Discord (Node.js + Express)
+│   ├── index.js            Serwer, MongoDB, ładowanie modułów
+│   ├── modules/            Moduły bota
+│   └── commands/           Pliki komend Slash
+├── panel/                  Panel webowy (Next.js 14 App Router)
+│   ├── app/
+│   │   ├── globals.css     Globalne style + system przycisków + tokeny
+│   │   ├── layout.jsx      Root layout + Providers
+│   │   ├── providers.jsx   ThemeProvider
+│   │   └── dashboard/
+│   │       ├── layout.jsx  Sidebar + baner + statusy
+│   │       ├── bot-settings/
+│   │       ├── theme/      Ustawienia motywu (filled/outline, kolory itd.)
+│   │       ├── config/
+│   │       └── moderation/
+│   ├── components/
+│   │   └── Modal.jsx       Uniwersalny modal
+│   └── lib/
+│       └── theme-context.jsx  System motywów
+└── .arena/                 System ciągłości agentów
+```
+
+---
+
+## Kluczowe zasady techniczne
+
+### System przycisków (globals.css)
+- Zawsze: `className="btn-base btn-[typ]"`
+- Typy: `btn-standard`, `btn-success`, `btn-danger`, `btn-warning`, `btn-dnd`
+- Kontenery przycisków: `btn-row`, `btn-row-lg`, `btn-col`, `btn-row-end`
+- ZAKAZ: `style={{ background: ... }}` na przyciskach, gradientów, hardkodowanych kolorów
+- Stała wysokość przez token `--btn-height` — nie nadpisuj `padding` wertykalnego
+- Styl (filled/outline) kontrolowany przez `html.btn-outline-mode` — nie dotykaj
+
+### System motywów (theme-context.jsx)
+- `useTheme()` zwraca `{ theme, updateTheme, accentColor }`
+- CSS variables: `var(--bg-color)`, `var(--text-color)`, `var(--border-color)`, `var(--surface-rgb)`, `var(--accent-color)`, `var(--border-radius)`
+- ZAKAZ hardkodowanych kolorów `#xxx` w JSX — zawsze CSS variables
+- Każda strona importuje `useTheme()` dla `accentColor`
+
+### Komponent Modal
+- `import Modal from '@/components/Modal'`
+- Props: `isOpen`, `onClose`, `title`, `children`, `width` (opcjonalnie)
+- ZAKAZ `window.confirm()` — zawsze Modal
+
+### Fetch w komponentach
+- ZAKAZ template literals w `fetch()` przy SSR — używaj konkatenacji stringów
+- Dobrze: `fetch('/api/proxy/api/guilds/' + guildId + '/members')`
+- Źle: `fetch(\`/api/proxy/api/guilds/${guildId}/members\`)`
+
+### Inne
+- Checkboxy → zawsze toggle-switch: `<label className="toggle-switch"><input type="checkbox" /><span className="slider"></span></label>`
+- `window.confirm()` → zawsze Modal
+- MongoDB: `BOT_ENV=test` (lokalnie) / `BOT_ENV=main` (produkcja)
+
+---
+
+## Czego NIE robić
+
+1. Nie pracuj na `main` — zawsze `dev`
+2. Nie używaj `window.confirm()` — zawsze Modal
+3. Nie używaj gradientów na przyciskach — jednolite kolory
+4. Nie hardkoduj kolorów w JSX — CSS variables
+5. Nie używaj template literals w `fetch()` przy SSR
+6. Nie dodawaj zwykłych checkboxów — tylko toggle-switch
+7. Nie nazywaj pliku logu `current` ani `agent` bez ID
+
+---
+
+## Proces pracy (KAŻDY COMMIT)
+
+1. `git pull origin dev`
+2. Praca nad kodem
+3. `git add -A`
+4. `git commit -m "krotki opis po polsku"`
+5. **Dopisz wpis do swojego pliku logów** `.arena/logs/NNN-twoj-id.md`
+6. Zaktualizuj `.arena/SESSION.md` (dodaj wpis o commicie)
+7. Zaktualizuj `.arena/STATE.md` (jeśli zmienił się stan projektu)
+8. `git push origin dev`
+9. Poinformuj użytkownika co zrobiono
+
+---
+
+## Pliki logów
 
 - `.arena/logs/001-claude-qwen.md` — wczesna faza (Claude + Qwen)
-- `.arena/logs/002-agent-019e9f72.md` — poprzedni agent (sesja sprzed zamrozenia)
+- `.arena/logs/002-agent-019e9f72.md` — poprzedni agent (sesja sprzed zamrożenia)
 - `.arena/logs/003-agent-019e9f72-cont.md` — kontynuacja poprzedniego agenta (sprint UI/UX)
-- `.arena/logs/004-arena-agent.md` — bieżąca sesja (fix guildId, system przycisków, baner)
+- `.arena/logs/004-arena-agent.md` — arena-agent (fix guildId, system przycisków, baner, logi)
