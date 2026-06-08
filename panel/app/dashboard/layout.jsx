@@ -172,6 +172,10 @@ export default function DashboardLayout({ children }) {
                   <FiSettings />
                   <span>Konfiguracja ogólna</span>
                 </Link>
+                <Link href={getLink("/dashboard/roles")} className={`nav-link ${pathname.includes("/dashboard/roles") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/roles") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/roles") ? accentColor : 'transparent' }}>
+                  <FiShield />
+                  <span>Zarządzanie rolami</span>
+                </Link>
               </div>
 
               <div className="nav-section">

@@ -5,6 +5,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
+const { WebSocketServer } = require('ws');
 const { connectDB, col, getActiveEnv } = require('./db');
 
 const app = express();
@@ -230,9 +232,40 @@ async function startBot() {
     console.error('❌ Token error:', err);
   }
 
-  // 5. Uruchom API Express
+  // 5. Uruchom HTTP + WebSocket na tym samym porcie
   const PORT = process.env.API_PORT || 3001;
-  app.listen(PORT, () => console.log(`🌐 Bot API on http://localhost:${PORT}`));
+  const httpServer = http.createServer(app);
+
+  // ── WebSocket Server ──────────────────────────────────────────────────────
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  app.locals.wss = wss;
+
+  // Broadcast do klientów obserwujących dany guildId
+  const broadcast = (guildId, payload) => {
+    const msg = JSON.stringify(payload);
+    wss.clients.forEach(ws => {
+      if (ws.readyState === ws.OPEN && ws.guildId === guildId) {
+        ws.send(msg);
+      }
+    });
+  };
+
+  wss.on('connection', (ws, req) => {
+    const url = new URL(req.url, 'http://localhost');
+    ws.guildId = url.searchParams.get('guildId');
+    ws.on('error', () => {}); // ignoruj błędy połączenia
+  });
+
+  // Discord eventy → WebSocket broadcast
+  client.on('roleCreate',       role => broadcast(role.guild.id, { type: 'roleCreate',       roleId: role.id }));
+  client.on('roleUpdate',       (_, r) => broadcast(r.guild.id, { type: 'roleUpdate',        roleId: r.id }));
+  client.on('roleDelete',       role => broadcast(role.guild.id, { type: 'roleDelete',       roleId: role.id }));
+  client.on('guildMemberUpdate',(_, m) => broadcast(m.guild.id, { type: 'guildMemberUpdate', userId: m.id }));
+
+  console.log('🔌 WebSocket server aktywny na ścieżce /ws');
+  // ─────────────────────────────────────────────────────────────────────────
+
+  httpServer.listen(PORT, () => console.log(`🌐 Bot API on http://localhost:${PORT}`));
 }
 
 startBot();
