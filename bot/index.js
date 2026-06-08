@@ -19,26 +19,126 @@ let dbConnected = false;
 // ---------- INICJALIZACJA STRUKTURY BAZY ----------
 async function initDbStructure() {
   try {
+    // ── 1. globalconfigs — ustawienia systemowe klucz-wartość ──────────────
     const GlobalConfigSchema = new mongoose.Schema({
-      key: { type: String, required: true, unique: true },
-      value: { type: mongoose.Schema.Types.Mixed },
+      key:       { type: String, required: true, unique: true },
+      value:     { type: mongoose.Schema.Types.Mixed },
       updatedAt: { type: Date, default: Date.now }
     });
-    const GlobalConfig = mongoose.models.globalconfigs
-      || mongoose.model('globalconfigs', GlobalConfigSchema, 'globalconfigs');
+    const GlobalConfig = mongoose.models[col('globalconfigs')]
+      || mongoose.model(col('globalconfigs'), GlobalConfigSchema, col('globalconfigs'));
 
-    await GlobalConfig.findOneAndUpdate({ key: 'active_env' }, { key: 'active_env', value: activeDatabase, updatedAt: new Date() }, { upsert: true });
-    await GlobalConfig.findOneAndUpdate({ key: 'bot_status' }, { key: 'bot_status', value: 'online', updatedAt: new Date() }, { upsert: true });
-    await GlobalConfig.findOneAndUpdate({ key: 'custom_status' }, { key: 'custom_status', value: '', updatedAt: new Date() }, { upsert: true });
-
-    for (const env of ['main', 'test']) {
-      const EnvConfigSchema = new mongoose.Schema({ key: String, value: mongoose.Schema.Types.Mixed, updatedAt: Date });
-      const EnvConfig = mongoose.models[`${env}_config`] || mongoose.model(`${env}_config`, EnvConfigSchema, `${env}_config`);
-      await EnvConfig.findOneAndUpdate({ key: '_init' }, { key: '_init', value: true, updatedAt: new Date() }, { upsert: true });
+    const systemDefaults = [
+      { key: 'active_env',    value: activeDatabase },
+      { key: 'bot_status',    value: 'online' },
+      { key: 'custom_status', value: '' },
+      { key: 'version',       value: '2.0.0-beta' },
+    ];
+    for (const def of systemDefaults) {
+      await GlobalConfig.findOneAndUpdate(
+        { key: def.key },
+        { ...def, updatedAt: new Date() },
+        { upsert: true }
+      );
     }
-    console.log(`✅ Struktura bazy zainicjalizowana (środowisko: ${activeDatabase})`);
+
+    // ── 2. guildconfigs — ustawienia per serwer Discord ────────────────────
+    const GuildConfigSchema = new mongoose.Schema({
+      guildId: { type: String, required: true, unique: true },
+      prefix:  { type: String, default: '!' },
+      language: { type: String, default: 'pl' },
+      timezone: { type: String, default: 'Europe/Warsaw' },
+      commandLimit:       { type: Number, default: 10 },
+      autoDeleteCommands: { type: Boolean, default: false },
+      responseDelay:      { type: Number, default: 0 },
+      welcome: {
+        enabled:   { type: Boolean, default: false },
+        channelId: String,
+        message:   { type: String, default: 'Witaj na serwerze!' }
+      },
+      moderation: {
+        banType:          { type: String, default: 'discord', enum: ['discord', 'role'] },
+        banRoleId:        String,
+        appealChannelId:  String,
+        autoModEnabled:   { type: Boolean, default: false },
+        blockLinks:       { type: Boolean, default: false },
+        blockInvites:     { type: Boolean, default: false },
+        warnThreshold:    { type: Number, default: 3 },
+        muteRoleId:       String,
+      },
+      logs: {
+        modLogChannel:    String,
+        memberLogChannel: String,
+        msgLogChannel:    String,
+      },
+      updatedAt: { type: Date, default: Date.now }
+    });
+    mongoose.models[col('guildconfigs')]
+      || mongoose.model(col('guildconfigs'), GuildConfigSchema, col('guildconfigs'));
+
+    // ── 3. activities — trendy aktywności (agregowane per dzień) ───────────
+    const ActivitySchema = new mongoose.Schema({
+      guildId:       { type: String, required: true },
+      date:          { type: Date,   required: true },
+      messages:      { type: Number, default: 0 },
+      membersJoined: { type: Number, default: 0 },
+      membersLeft:   { type: Number, default: 0 },
+      topChannels:   [{ channelId: String, channelName: String, count: Number }],
+      topUsers:      [{ userId: String, username: String, avatar: String, count: Number }],
+    }, { timestamps: true });
+
+    const Activity = mongoose.models[col('activities')]
+      || mongoose.model(col('activities'), ActivitySchema, col('activities'));
+    await Activity.collection.createIndex({ guildId: 1, date: 1 });
+
+    // ── 4. moderation — historia wszystkich kar ─────────────────────────────
+    const ModerationSchema = new mongoose.Schema({
+      guildId:     { type: String, required: true },
+      userId:      { type: String, required: true },
+      moderatorId: { type: String, required: true },
+      type:        { type: String, required: true, enum: ['warn', 'mute', 'ban', 'kick', 'unmute', 'unban'] },
+      banType:     { type: String, enum: ['discord', 'role'] }, // tylko dla ban/unban
+      reason:      { type: String, default: 'Brak powodu' },
+      duration:    Number,   // minuty (tylko mute)
+      expiresAt:   Date,     // (tylko mute)
+      active:      { type: Boolean, default: true },
+    }, { timestamps: true });
+
+    const Moderation = mongoose.models[col('moderation')]
+      || mongoose.model(col('moderation'), ModerationSchema, col('moderation'));
+    await Moderation.collection.createIndex({ guildId: 1, userId: 1 });
+    await Moderation.collection.createIndex({ guildId: 1, type: 1 });
+
+    // ── 5. tickets — system ticketów (przyszły) ─────────────────────────────
+    const TicketSchema = new mongoose.Schema({
+      guildId:   { type: String, required: true },
+      userId:    { type: String, required: true },
+      channelId: String,
+      status:    { type: String, default: 'open', enum: ['open', 'closed', 'resolved'] },
+      reason:    String,
+    }, { timestamps: true });
+
+    mongoose.models[col('tickets')]
+      || mongoose.model(col('tickets'), TicketSchema, col('tickets'));
+
+    // ── 6. role_groups — hierarchia ról (parent/child) ─────────────────────
+    const RoleGroupSchema = new mongoose.Schema({
+      guildId:        { type: String, required: true },
+      parentRoleId:   { type: String, required: true },
+      parentRoleName: String,
+      mode:           { type: String, default: 'multiple', enum: ['single', 'multiple'] },
+      childRoles:     [{ roleId: String, roleName: String }],
+    }, { timestamps: true });
+
+    mongoose.models[col('role_groups')]
+      || mongoose.model(col('role_groups'), RoleGroupSchema, col('role_groups'));
+
+    logger.db('info', `Struktura bazy zainicjalizowana (środowisko: ${activeDatabase})`, 'init');
+    logger.db('info', `Kolekcje: ${['globalconfigs','guildconfigs','activities','moderation','tickets','role_groups'].map(c => col(c)).join(', ')}`, 'init');
+
   } catch (err) {
-    console.error('❌ Błąd podczas inicjalizacji struktur bazy:', err);
+    logger.db('error', `Błąd inicjalizacji struktury: ${err.message}`, 'init');
+    throw err;
   }
 }
 
