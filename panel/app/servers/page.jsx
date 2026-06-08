@@ -15,9 +15,10 @@ export default function ServersPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const sessionRaw = localStorage.getItem("session");
-    if (!sessionRaw) { router.push("/"); return; }
-    try {
+    const init = async () => {
+      const sessionRaw = localStorage.getItem("session");
+      if (!sessionRaw) { router.push("/"); return; }
+      try {
         const session = JSON.parse(sessionRaw);
         const guilds = session.guilds || [];
         setServers(guilds);
@@ -37,6 +38,8 @@ export default function ServersPage() {
       } catch {
         router.push("/");
       }
+    };
+    init();
   }, [router]);
 
   const confirmLogout = async () => {
@@ -130,7 +133,7 @@ export default function ServersPage() {
                         href={'https://discord.com/api/oauth2/authorize?client_id=1511561628733276280&permissions=8&scope=bot%20applications.commands&guild_id=' + guild.id}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn-base btn-standard"
+                        className="btn-base btn-success"
                       >
                         <FiPlusCircle /> Zaproś bota
                       </a>
