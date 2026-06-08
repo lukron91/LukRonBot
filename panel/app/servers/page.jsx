@@ -10,6 +10,7 @@ export default function ServersPage() {
   const router = useRouter();
   const [servers, setServers] = useState([]);
   const [user, setUser] = useState(null);
+  const [botStatus, setBotStatus] = useState({}); // { [guildId]: true | false | null (sprawdzanie) }
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -17,13 +18,25 @@ export default function ServersPage() {
     const sessionRaw = localStorage.getItem("session");
     if (!sessionRaw) { router.push("/"); return; }
     try {
-      const session = JSON.parse(sessionRaw);
-      setServers(session.guilds || []);
-      setUser(session);
-    } catch {
-      router.push("/");
-    }
-    setLoading(false);
+        const session = JSON.parse(sessionRaw);
+        const guilds = session.guilds || [];
+        setServers(guilds);
+        setUser(session);
+        setLoading(false);
+        // Sprawdź status bota dla każdego serwera równolegle
+        const statuses = {};
+        await Promise.all(guilds.map(async (guild) => {
+          try {
+            const res = await fetch('/api/proxy/api/guilds/' + guild.id + '/stats');
+            statuses[guild.id] = res.ok;
+          } catch {
+            statuses[guild.id] = false;
+          }
+        }));
+        setBotStatus(statuses);
+      } catch {
+        router.push("/");
+      }
   }, [router]);
 
   const confirmLogout = async () => {
@@ -99,21 +112,29 @@ export default function ServersPage() {
                     <span className="sp-server-name">{guild.name}</span>
                     <span className="sp-server-id">ID: {guild.id}</span>
                   </div>
-                  <div className="btn-row">
-                    <a
-                      href={'https://discord.com/api/oauth2/authorize?client_id=1511561628733276280&permissions=8&scope=bot%20applications.commands&guild_id=' + guild.id}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn-base btn-standard sp-btn-add"
-                    >
-                      <FiPlusCircle /> Dodaj bota
-                    </a>
-                    <button
-                      onClick={() => router.push('/dashboard?guild=' + guild.id)}
-                      className="btn-base btn-success"
-                    >
-                      <FiSettings /> Zarządzaj
-                    </button>
+                  <div className="sp-server-action">
+                    {botStatus[guild.id] === undefined ? (
+                      // Sprawdzanie statusu
+                      <div className="sp-checking">sprawdzanie...</div>
+                    ) : botStatus[guild.id] ? (
+                      // Bot jest na serwerze
+                      <button
+                        onClick={() => router.push('/dashboard?guild=' + guild.id)}
+                        className="btn-base btn-success"
+                      >
+                        <FiSettings /> Zarządzaj
+                      </button>
+                    ) : (
+                      // Bota nie ma — link zaproszenia
+                      <a
+                        href={'https://discord.com/api/oauth2/authorize?client_id=1511561628733276280&permissions=8&scope=bot%20applications.commands&guild_id=' + guild.id}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-base btn-standard"
+                      >
+                        <FiPlusCircle /> Zaproś bota
+                      </a>
+                    )}
                   </div>
                 </div>
               ))
@@ -330,8 +351,13 @@ export default function ServersPage() {
           font-size: 0.72rem;
           color: var(--text-muted);
         }
-        .sp-btn-add {
-          font-size: 0.8rem !important;
+        .sp-server-action {
+          flex-shrink: 0;
+        }
+        .sp-checking {
+          font-size: 0.75rem;
+          color: var(--text-muted);
+          padding: 0 0.5rem;
         }
 
         /* Stopka */
