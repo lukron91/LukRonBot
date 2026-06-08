@@ -520,7 +520,9 @@ export default function DashboardLayout({ children }) {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          object-position: center;
+          object-position: top center;
+          min-width: 100%;
+          min-height: 100%;
         }
 
         .top-bar-overlay {
