@@ -22,6 +22,21 @@ html, body {
   --border-radius: 12px;
   --surface-opacity: 0.9;
   --bg-intensity: 100%;
+
+  /* BUTTON SYSTEM TOKENS */
+  --btn-height: 2.4rem;
+  --btn-padding: 0 1.4rem;
+  --btn-gap: 0.5rem;
+  --btn-font-size: 0.85rem;
+  --btn-font-weight: 600;
+  --btn-border-width: 2px;
+
+  /* Button colors */
+  --btn-color-standard: var(--accent-color);
+  --btn-color-success: #10b981;
+  --btn-color-danger: #ef4444;
+  --btn-color-warning: #f59e0b;
+  --btn-color-dnd: #991b1b;
 }
 
 body {
@@ -401,24 +416,29 @@ body {
   font-size: 0.7rem;
   color: var(--text-muted);
 }
-/* BUTTON SYSTEM – 5 standardowych typów */
+/* ================================================
+   BUTTON SYSTEM – globalne tokeny, 5 typów, 2 style
+   Styl kontrolowany przez --btn-style: filled | outline
+   ustawiany przez ThemeProvider na <html>
+   ================================================ */
+
 .btn-base {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1.4rem;
-  border: none;
+  gap: var(--btn-gap);
+  height: var(--btn-height);
+  padding: var(--btn-padding);
   border-radius: var(--border-radius);
-  color: #fff;
-  font-weight: 600;
-  font-size: 0.85rem;
+  font-weight: var(--btn-font-weight);
+  font-size: var(--btn-font-size);
   cursor: pointer;
   transition: all 0.2s;
   text-decoration: none;
-  line-height: 1.4;
-  width: fit-content;
-  margin: 0 auto;
+  white-space: nowrap;
+  flex-shrink: 0;
+  /* border zawsze obecny – w filled = przezroczysty, w outline = widoczny */
+  border: var(--btn-border-width) solid transparent;
 }
 .btn-base:hover:not(:disabled) {
   transform: translateY(-2px);
@@ -426,56 +446,126 @@ body {
 }
 .btn-base:active:not(:disabled) {
   transform: translateY(0);
+  filter: brightness(0.95);
 }
 .btn-base:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
-/* 1. Standard – kolor akcentu */
+/* ---- FILLED (domyślny) ---- */
+
 .btn-standard {
-  background: var(--accent-color);
+  background: var(--btn-color-standard);
+  color: #fff;
+  border-color: transparent;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 .btn-standard:hover:not(:disabled) {
-  box-shadow: 0 6px 16px rgba(88, 101, 242, 0.45);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.25);
 }
 
-/* 2. Success – zielony (zapisz/zatwierdź) */
 .btn-success {
-  background: #10b981;
+  background: var(--btn-color-success);
+  color: #fff;
+  border-color: transparent;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 .btn-success:hover:not(:disabled) {
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.45);
+  box-shadow: 0 6px 16px rgba(16,185,129,0.4);
 }
 
-/* 3. Danger – czerwony (usuń/anuluj) */
 .btn-danger {
-  background: #ef4444;
+  background: var(--btn-color-danger);
+  color: #fff;
+  border-color: transparent;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 .btn-danger:hover:not(:disabled) {
-  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.45);
+  box-shadow: 0 6px 16px rgba(239,68,68,0.4);
 }
 
-/* 4. Warning – żółty (Away / BRB) */
 .btn-warning {
-  background: #f59e0b;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  background: var(--btn-color-warning);
   color: #111;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 .btn-warning:hover:not(:disabled) {
-  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.45);
+  box-shadow: 0 6px 16px rgba(245,158,11,0.4);
 }
 
-/* 5. DnD – czerwony (Do Not Disturb) */
 .btn-dnd {
-  background: #991b1b;
+  background: var(--btn-color-dnd);
+  color: #fff;
+  border-color: transparent;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 .btn-dnd:hover:not(:disabled) {
-  box-shadow: 0 6px 16px rgba(153, 27, 27, 0.45);
+  box-shadow: 0 6px 16px rgba(153,27,27,0.4);
+}
+
+/* ---- OUTLINE – aktywowany przez klasę .btn-outline-mode na <html> ---- */
+
+html.btn-outline-mode .btn-standard {
+  background: transparent;
+  color: var(--btn-color-standard);
+  border-color: var(--btn-color-standard);
+  box-shadow: none;
+}
+html.btn-outline-mode .btn-standard:hover:not(:disabled) {
+  background: var(--btn-color-standard);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+html.btn-outline-mode .btn-success {
+  background: transparent;
+  color: var(--btn-color-success);
+  border-color: var(--btn-color-success);
+  box-shadow: none;
+}
+html.btn-outline-mode .btn-success:hover:not(:disabled) {
+  background: var(--btn-color-success);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+}
+
+html.btn-outline-mode .btn-danger {
+  background: transparent;
+  color: var(--btn-color-danger);
+  border-color: var(--btn-color-danger);
+  box-shadow: none;
+}
+html.btn-outline-mode .btn-danger:hover:not(:disabled) {
+  background: var(--btn-color-danger);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(239,68,68,0.3);
+}
+
+html.btn-outline-mode .btn-warning {
+  background: transparent;
+  color: var(--btn-color-warning);
+  border-color: var(--btn-color-warning);
+  box-shadow: none;
+}
+html.btn-outline-mode .btn-warning:hover:not(:disabled) {
+  background: var(--btn-color-warning);
+  color: #111;
+  box-shadow: 0 4px 12px rgba(245,158,11,0.3);
+}
+
+html.btn-outline-mode .btn-dnd {
+  background: transparent;
+  color: var(--btn-color-dnd);
+  border-color: var(--btn-color-dnd);
+  box-shadow: none;
+}
+html.btn-outline-mode .btn-dnd:hover:not(:disabled) {
+  background: var(--btn-color-dnd);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(153,27,27,0.3);
 }
 
 /* Status indicator pills */

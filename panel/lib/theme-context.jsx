@@ -9,7 +9,8 @@ const DEFAULT_THEME = {
   borderRadius: '12px',
   surfaceOpacity: '0.9',
   bgIntensity: '100%',
-  bgStyle: 'gradient' // 'solid' | 'gradient' | 'aurora'
+  bgStyle: 'gradient', // 'solid' | 'gradient' | 'aurora'
+  buttonStyle: 'filled', // 'filled' | 'outline'
 };
 
 const PALETTES = {
@@ -60,6 +61,13 @@ export function ThemeProvider({ children }) {
     root.style.setProperty('--surface-opacity', theme?.surfaceOpacity || DEFAULT_THEME.surfaceOpacity);
     root.style.setProperty('--bg-intensity', theme?.bgIntensity || DEFAULT_THEME.bgIntensity);
     root.style.setProperty('--bg-style', theme?.bgStyle || DEFAULT_THEME.bgStyle);
+
+    // Button style — klasa na <html> zamiast CSS variable (działa z selektorem html.btn-outline-mode)
+    if ((theme?.buttonStyle || DEFAULT_THEME.buttonStyle) === 'outline') {
+      document.documentElement.classList.add('btn-outline-mode');
+    } else {
+      document.documentElement.classList.remove('btn-outline-mode');
+    }
 
     localStorage.setItem('theme_settings', JSON.stringify(theme));
   }, [theme]);

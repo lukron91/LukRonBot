@@ -12,6 +12,7 @@ export default function ThemeSettings() {
   const borderRadius = theme?.borderRadius || '12px';
   const surfaceOpacity = theme?.surfaceOpacity || '0.9';
   const bgIntensity = theme?.bgIntensity || '100%';
+  const buttonStyle = theme?.buttonStyle || 'filled';
 
   const applyColor = (color) => {
     updateTheme({ accentColor: color });
@@ -142,18 +143,44 @@ export default function ThemeSettings() {
       </div>
 
       <div className="theme-section">
+        <h2 style={{ color: accentColor }}>Styl przycisków</h2>
+        <p className="section-description">Wybierz czy przyciski mają być wypełnione kolorem czy tylko z ramką.</p>
+
+        <div className="btn-style-toggle">
+          <button
+            className={'btn-style-opt' + (buttonStyle === 'filled' ? ' active' : '')}
+            onClick={() => updateTheme({ buttonStyle: 'filled' })}
+          >
+            <div className="btn-style-preview">
+              <span className="preview-btn-filled" style={{ background: accentColor }}>Wypełniony</span>
+            </div>
+            <span className="btn-style-label">Wypełniony</span>
+          </button>
+          <button
+            className={'btn-style-opt' + (buttonStyle === 'outline' ? ' active' : '')}
+            onClick={() => updateTheme({ buttonStyle: 'outline' })}
+          >
+            <div className="btn-style-preview">
+              <span className="preview-btn-outline" style={{ borderColor: accentColor, color: accentColor }}>Ramka</span>
+            </div>
+            <span className="btn-style-label">Tylko ramka</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="theme-section">
         <h2 style={{ color: accentColor }}>Podgląd</h2>
         <div className="preview-card" style={{ borderColor: accentColor, borderRadius: borderRadius }}>
           <div className="preview-header" style={{ color: accentColor }}>
             Przykładowy nagłówek
           </div>
-          <p className="preview-text">To jest przykładowy tekst w nowym motywie. Zmiana trybu, koloru akcentu i zaokrągleń jest widoczna natychmiastowo w całym panelu.</p>
-          <button 
-            className="btn-base btn-standard"
-            style={{ backgroundColor: accentColor, borderRadius: borderRadius }}
-          >
-            Przycisk akcentu
-          </button>
+          <p className="preview-text">Podgląd przycisków w aktualnym stylu. Zmiany są widoczne natychmiastowo w całym panelu.</p>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button className="btn-base btn-standard">Akcja</button>
+            <button className="btn-base btn-success">Zapisz</button>
+            <button className="btn-base btn-danger">Usuń</button>
+            <button className="btn-base btn-warning">Uwaga</button>
+          </div>
         </div>
       </div>
 
@@ -295,9 +322,10 @@ export default function ThemeSettings() {
           accent-color: var(--accent-color);
         }
         .preview-card {
-          background: var(--surface-color);
+          background: rgba(var(--surface-rgb), var(--surface-opacity));
           border: 2px solid;
           padding: 1.5rem;
+          border-radius: var(--border-radius);
         }
         .preview-header {
           font-weight: 600;
@@ -305,10 +333,71 @@ export default function ThemeSettings() {
         }
         .preview-text {
           color: var(--text-muted);
-          margin-bottom: 1rem;
+          margin-bottom: 1.25rem;
         }
-        
-        
+
+        /* Styl przycisków */
+        .btn-style-toggle {
+          display: flex;
+          gap: 1rem;
+          flex-wrap: wrap;
+        }
+        .btn-style-opt {
+          flex: 1;
+          min-width: 160px;
+          background: var(--bg-color);
+          border: 2px solid var(--border-color);
+          border-radius: var(--border-radius);
+          padding: 1.25rem 1rem;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 1rem;
+          color: var(--text-color);
+        }
+        .btn-style-opt:hover {
+          border-color: var(--text-muted);
+        }
+        .btn-style-opt.active {
+          border-color: var(--accent-color);
+          background: rgba(var(--surface-rgb), var(--surface-opacity));
+          box-shadow: 0 0 0 2px var(--accent-color);
+        }
+        .btn-style-preview {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 2.4rem;
+        }
+        .preview-btn-filled {
+          display: inline-flex;
+          align-items: center;
+          height: 2.4rem;
+          padding: 0 1.4rem;
+          border-radius: var(--border-radius);
+          color: #fff;
+          font-weight: 600;
+          font-size: 0.85rem;
+          border: 2px solid transparent;
+        }
+        .preview-btn-outline {
+          display: inline-flex;
+          align-items: center;
+          height: 2.4rem;
+          padding: 0 1.4rem;
+          border-radius: var(--border-radius);
+          background: transparent;
+          font-weight: 600;
+          font-size: 0.85rem;
+          border: 2px solid;
+        }
+        .btn-style-label {
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--text-color);
+        }
       `}</style>
     </div>
   );
