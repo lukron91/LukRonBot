@@ -10,49 +10,101 @@ Ostatnia aktualizacja: 2026-06-08
 |------|-------|--------|
 | ETAP 1 | Fundamenty - architektura bazy, system logow, przebudowa bot/index.js | Czesciowo |
 | ETAP 2 | Silnik i Moduly - Dynamic Command Loader, Slash Commands | Gotowe |
-| ETAP 3 | Logika Moderacji - banowanie (Discord/Rangowy), kanal odwolan (szczegoly: [DESIGN.md](DESIGN.md)) | Zamrozony |
+| ETAP 3 | Logika Moderacji - banowanie (Discord/Rangowy), kanal odwolan (szczegoly: DESIGN.md) | Zamrozony |
 | ETAP 4 | Szlify Panelu - integracja UI z nowymi danymi | Zamrozony |
 
 ---
 
-## SPRINT UI/UX & RESTORE (aktywny)
+## SPRINT UI/UX (zakonczony)
 
 | Krok | Zadanie | Status |
 |------|---------|--------|
-| Krok 1 | System motywow - light/dark, accent, radius, glassmorphism | Gotowe |
-| Krok 2 | Standard komponentow UI - Modal, Switche, Design System | Gotowe |
-| Krok 3 | Moderacja - historia kar, API, UI | Nierozpoczety |
+| Krok 1 | System motywow - light/dark, accent, radius, glassmorphism, filled/outline | Gotowe |
+| Krok 2 | Standard komponentow UI - Modal, Switche, Design System, modal-* klasy | Gotowe |
+| Krok 3 | Ikony w sidebar i zakladkach | Gotowe |
+| Krok 4 | Baner dashboardu - wypelnienie, overlay, fade | Gotowe |
+| Krok 5 | System tokenow przyciskow (--btn-height, btn-row itp.) | Gotowe |
 
 ---
 
 ## CO DZIALA
 
 - Panel logowania przez Discord
-- Dashboard layout (sidebar, statusy, nawigacja)
-- System motywow (dark/light, accent color, border radius, surface opacity)
-- System przyciskow (5 typow: standard, success, danger, warning, dnd)
+- Dashboard layout (sidebar, baner, statusy, nawigacja)
+- System motywow (dark/light, accent, radius, opacity, filled/outline przyciski)
+- System przyciskow globalny (5 typow + btn-row/col/end + modal-* klasy)
 - Dynamiczny loader komend (Slash Commands)
-- Komponent Modal (zastepuje window.confirm)
+- Komponent Modal (zastepuje window.confirm, ze standardem zakladek)
 - Toggle switch (zastepuje checkboxy)
-- Wszystkie 8 stron uzywa useTheme() i CSS variables
+- Lista uzytkownikow moderacji (z oknem akcji, historia kar)
+- Ustawienia moderacji - error state zamiast crashu przy braku polaczenia
 
 ---
 
-## CO NIE DZIALA / NIEDOKONCZONE
+## CO NIE DZIALA / NIEDOKONCZONE — BOT
 
-- Podstawowa struktura bazy danych - initDbStructure() nie tworzy pustych kolekcji przy starcie bota (KRYTYCZNE - ETAP 1)
-- Baner dashboardu - nie wypelnia idealnie gornej ramki (kosmetyczne)
-- Modul moderacji (bot/modules/moderation.js) - placeholder, brak endpointow
-- System banowania (Discord vs Rangowy + Role Ban + kanal odwolan) - szczegoly w DESIGN.md - niezaimplementowany (ETAP 3)
-- Kanal odwolan przez ticket - niezaimplementowany (ETAP 3)
-- Historia kar - API i UI niezaimplementowane
-- Strony placeholder: tickets, automod, welcome, logs - puste
-- Optymalizacja odczytu logow (tail/streaming zamiast readFileSync)
+Ponizsze endpointy sa UZYWANE przez panel ale NIE ISTNIEJA w bocie.
+Agent robiacy bota musi je zaimplementowac.
+
+### Brakujace endpointy (bot/modules/)
+
+| Endpoint | Uzywa | Opis |
+|----------|-------|------|
+| `GET /api/guilds/:id/channels` | settings/page.jsx | Lista kanalow tekstowych serwera |
+| `POST /api/guilds/:id/config/moderation` | settings/page.jsx | Zapis konfiguracji moderacji |
+| `GET /api/guilds/:id/punishments/:userId/active` | users/page.jsx | Aktywne kary uzytkownika (mute/ban) |
+| `DELETE /api/guilds/:id/punishments/warn/:warnId` | users/page.jsx | Usuniecie konkretnego warna |
+| `POST /api/guilds/:id/moderation/warn` | users/page.jsx | Nadanie warna |
+| `POST /api/guilds/:id/moderation/mute` | users/page.jsx | Wyciszenie uzytkownika |
+| `POST /api/guilds/:id/moderation/ban` | users/page.jsx | Zbanowanie uzytkownika |
+| `POST /api/guilds/:id/moderation/unmute` | users/page.jsx | Odciszenie uzytkownika |
+| `POST /api/guilds/:id/moderation/unban` | users/page.jsx | Odbanowanie uzytkownika |
+
+### Istniejace endpointy (dzialajace)
+
+| Endpoint | Modul |
+|----------|-------|
+| `GET /api/guilds/:id/config` | config.js |
+| `GET /api/guilds/:id/roles` | moderation.js |
+| `GET /api/guilds/:id/members` | moderation.js |
+| `GET /api/guilds/:id/punishments/:userId` | moderation.js — historia kar |
+| `DELETE /api/guilds/:id/punishments/:punishmentId` | moderation.js |
+| `POST /api/guilds/:id/punishments` | moderation.js — ogolne dodanie kary |
+
+### Schema kary w MongoDB (moderation.js)
+
+```js
+{
+  guildId: String,
+  userId: String,
+  moderatorId: String,
+  type: String, // enum: ['warn', 'mute', 'ban', 'kick']
+  reason: String,
+  duration: Number,   // minuty (tylko mute)
+  expiresAt: Date,    // (tylko mute)
+  createdAt: Date     // automatyczne (timestamps: true)
+}
+```
+
+Zeby unmute/unban pojawily sie w historii kar — zapisuj jako osobny dokument z `type: 'unmute'` lub `type: 'unban'`. Panel automatycznie wyswietli je przez PUNISHMENT_STYLE.
+
+### Inne braki w bocie
+
+- `initDbStructure()` nie tworzy pustych kolekcji MongoDB przy starcie (KRYTYCZNE)
+- System banowania rangowego (Role Ban) — niezaimplementowany
+- Kanal odwolan przez ticket — niezaimplementowany
 
 ---
 
-## PRIORYTETY NA NASTEPNA SESJE
+## CO NIE DZIALA / NIEDOKONCZONE — PANEL
 
-1. dokonczyc ETAP 1: initDbStructure() tworzy puste kolekcje MongoDB przy starcie
-2. ETAP 3: System banowania + kanal odwolan
-3. Baner: naprawic wypelnienie gornej ramki
+- Strony placeholder: tickets, automod, welcome, logs — puste
+- Ustawienia moderacji: dziala ale wymaga brakujacych endpointow bota
+
+---
+
+## PRIORYTETY NA NASTEPNA SESJE (BOT)
+
+1. Zaimplementowac brakujace endpointy moderacji (tabela powyzej)
+2. initDbStructure() — tworzy puste kolekcje przy starcie
+3. System banowania + kanal odwolan (ETAP 3, szczegoly w DESIGN.md)
