@@ -91,9 +91,12 @@ export default function DashboardLayout({ children }) {
     setShowLogoutModal(true);
   };
 
-  const confirmLogout = () => {
-    localStorage.removeItem("session");
-    router.push("/");
+  const confirmLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {}
+    localStorage.removeItem('session');
+    window.location.href = '/';
   };
 
   const selectGuild = (guildId) => {
