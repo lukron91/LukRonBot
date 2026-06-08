@@ -7,7 +7,7 @@ import Modal from '@/components/Modal';
 import {
   FiArrowLeft, FiGrid, FiSettings, FiMessageSquare, FiShield,
   FiUserPlus, FiFileText, FiActivity, FiLogOut, FiServer,
-  FiDatabase, FiCheckCircle, FiXCircle, FiSun, FiChevronDown
+  FiDatabase, FiCheckCircle, FiXCircle, FiSun, FiMoon, FiChevronDown
 } from 'react-icons/fi';
 
 export default function DashboardLayout({ children }) {
