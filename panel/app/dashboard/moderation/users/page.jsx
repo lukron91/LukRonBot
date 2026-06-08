@@ -401,7 +401,7 @@ export default function UsersPage() {
                             Do: {new Date(activePunishments.mute.expiresAt).toLocaleString()}
                           </div>
                         </div>
-                        <button onClick={unmuteUser} className="action-button-small unmute">
+                        <button onClick={unmuteUser} className="btn-base btn-success" style="padding:0.4rem 0.8rem;min-width:auto;font-size:0.8rem">
                           <FiBell /> Odcisz
                         </button>
                       </div>
@@ -415,7 +415,7 @@ export default function UsersPage() {
                             Od: {new Date(activePunishments.ban.date).toLocaleString()}
                           </div>
                         </div>
-                        <button onClick={unbanUser} className="action-button-small unban">
+                        <button onClick={unbanUser} className="btn-base btn-standard" style="padding:0.4rem 0.8rem;min-width:auto;font-size:0.8rem">
                           <FiUnlock /> Odbanuj
                         </button>
                       </div>
@@ -504,7 +504,7 @@ export default function UsersPage() {
         .punishment-type { font-weight: 600; color: #fff; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem; }
         .punishment-reason { color: #9c9ca7; font-size: 0.9rem; margin-bottom: 0.25rem; }
         .punishment-meta { font-size: 0.8rem; color: #6b6b76; }
-        .action-button-small { padding: 0.5rem 1rem; border: none; border-radius: var(--border-radius); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
+        
         .action-button-small.unmute { background: #3b82f6; color: #fff; }
         .action-button-small.unban { background: #10b981; color: #fff; }
         .punishment-item { background: #1e1e26; border-radius: var(--border-radius); padding: 0.75rem; margin-bottom: 0.5rem; }

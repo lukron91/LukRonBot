@@ -40,7 +40,7 @@ export default function Home() {
         </div>
         <h1 className="login-title">Luk<span>Ron</span> Bot</h1>
         <p className="login-sub">Zaawansowany panel zarządzania botem Discord</p>
-        <button onClick={handleLogin} className="login-btn">
+        <button onClick={handleLogin} className="btn-base btn-standard">
           Zaloguj przez Discord
         </button>
         <p className="login-footer">Kliknięcie przeniesie Cię na stronę autoryzacji Discord</p>

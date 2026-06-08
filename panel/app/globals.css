@@ -771,24 +771,6 @@ input:checked + .toggle-slider-modern:before {
   color: var(--text-muted);
   margin-bottom: 2rem;
 }
-.login-btn {
-  background: linear-gradient(135deg, var(--accent-color), #4752c4);
-  border: none;
-  border-radius: var(--border-radius);
-  padding: 0.8rem;
-  width: 100%;
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-.login-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(88,101,242,0.4);
-}
 .login-footer {
   margin-top: 1.5rem;
   font-size: 0.7rem;

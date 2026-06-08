@@ -158,7 +158,7 @@ export default function BotSettingsPage() {
     try {
       const [memRes, localRes, globalRes] = await Promise.all([
         fetch("/api/proxy/api/commands").then(r => r.json()),
-        guildId ? fetch(`/api/proxy/api/commands/registered-guild/${guildId}`).then(r => r.json()) : Promise.resolve({ commands: [] }),
+        guildId ? fetch('/api/proxy/api/commands/registered-guild/' + guildId).then(r => r.json()) : Promise.resolve({ commands: [] }),
         fetch("/api/proxy/api/commands/registered-global").then(r => r.json()),
       ]);
       setMemoryCommands(memRes.commands || []);

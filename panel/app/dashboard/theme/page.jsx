@@ -149,7 +149,7 @@ export default function ThemeSettings() {
           </div>
           <p className="preview-text">To jest przykładowy tekst w nowym motywie. Zmiana trybu, koloru akcentu i zaokrągleń jest widoczna natychmiastowo w całym panelu.</p>
           <button 
-            className="preview-button"
+            className="btn-base btn-standard"
             style={{ backgroundColor: accentColor, borderRadius: borderRadius }}
           >
             Przycisk akcentu
@@ -307,17 +307,8 @@ export default function ThemeSettings() {
           color: var(--text-muted);
           margin-bottom: 1rem;
         }
-        .preview-button {
-          color: #fff;
-          border: none;
-          padding: 0.75rem 1.5rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: opacity 0.2s;
-        }
-        .preview-button:hover {
-          opacity: 0.9;
-        }
+        
+        
       `}</style>
     </div>
   );

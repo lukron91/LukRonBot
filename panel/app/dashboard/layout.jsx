@@ -324,6 +324,8 @@ export default function DashboardLayout({ children }) {
           background: var(--bg-color, #0a0a0f);
           color: var(--text-color, #ffffff);
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          margin: 0;
+          padding: 0;
         }
 
         .sidebar {
@@ -503,14 +505,17 @@ export default function DashboardLayout({ children }) {
           display: flex;
           flex-direction: column;
           overflow: hidden;
+          min-width: 0;
         }
 
         .top-bar {
           position: relative;
-          height: 250px;
+          height: 220px;
           overflow: hidden;
           flex-shrink: 0;
           border-bottom: 1px solid var(--border-color, #1e1e26);
+          margin: 0;
+          padding: 0;
         }
 
         .top-bar-bg {
