@@ -187,7 +187,7 @@ export default function BotSettingsPage() {
     const finalNames = commandNames || (action === 'register' ? Array.from(selectedCmds) : null);
 
     try {
-      const res = await fetch(`/api/proxy${endpoint}`, {
+      const res = await fetch('/api/proxy' + endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -570,7 +570,8 @@ export default function BotSettingsPage() {
 
       <style jsx>{`
         .bot-settings-page {
-          margin: 100px 200px 2rem 200px;
+          margin: 0;
+          max-width: 1100px;
           padding: 1.5rem;
           border: 1px solid var(--border-color);
           border-radius: var(--border-radius);

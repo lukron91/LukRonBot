@@ -2,7 +2,7 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTheme } from '@/lib/theme-context';
-import { FiSettings, FiSave } from 'react-icons/fi';
+import { FiSettings, FiSave, FiAlertTriangle, FiRefreshCw } from 'react-icons/fi';
 
 export default function ConfigPage() {
   const searchParams = useSearchParams();
@@ -10,16 +10,40 @@ export default function ConfigPage() {
   const { accentColor } = useTheme();
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [mongoStatus, setMongoStatus] = useState(null);
 
-  useEffect(() => {
-    fetch("/api/proxy/api/status").then(res => res.json()).then(data => setMongoStatus(data.mongo)).catch(() => setMongoStatus(false));
-    if (guildId) {
-      fetch(`/api/proxy/api/guilds/${guildId}/config`).then(res => res.json()).then(data => { setConfig(data); setLoading(false); }).catch(() => { setConfig({ error: true }); setLoading(false); });
-    } else setLoading(false);
-  }, [guildId]);
+  const loadConfig = async () => {
+    if (!guildId) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
+    try {
+      const [statusRes, configRes] = await Promise.all([
+        fetch("/api/proxy/api/status"),
+        fetch('/api/proxy/api/guilds/' + guildId + '/config'),
+      ]);
+      // status mongo
+      if (statusRes.ok) {
+        const s = await statusRes.json().catch(() => ({}));
+        setMongoStatus(s.mongo ?? false);
+      } else {
+        setMongoStatus(false);
+      }
+      // config
+      if (!configRes.ok) throw new Error('HTTP ' + configRes.status);
+      const text = await configRes.text();
+      try { setConfig(JSON.parse(text)); }
+      catch { throw new Error('Nieprawidłowa odpowiedź serwera'); }
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadConfig(); }, [guildId]);
 
   const handleChange = (field, value) => setConfig(prev => ({ ...prev, [field]: value }));
 
@@ -27,16 +51,50 @@ export default function ConfigPage() {
     e.preventDefault();
     if (!mongoStatus) return setMessage("❌ Brak połączenia z bazą danych");
     setSaving(true);
+    setMessage("");
     try {
-      const res = await fetch(`/api/proxy/api/guilds/${guildId}/config`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(config) });
-      if (!res.ok) throw new Error();
-      setMessage("✅ Zapisano pomyślnie");
-    } catch { setMessage("❌ Błąd zapisu"); } finally { setSaving(false); }
+      const res = await fetch('/api/proxy/api/guilds/' + guildId + '/config', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(config),
+      });
+      const text = await res.text();
+      let data = {};
+      try { data = JSON.parse(text); } catch {}
+      if (res.ok) setMessage("✅ Zapisano pomyślnie");
+      else setMessage("❌ Błąd: " + (data.error || 'Brak połączenia z serwerem'));
+    } catch (e) {
+      setMessage("❌ Błąd połączenia: " + e.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (!guildId) return <div className="empty-state">Wybierz serwer z lewego menu.</div>;
-  if (loading) return <div className="empty-state">Ładowanie konfiguracji...</div>;
-  if (config?.error) return <div className="empty-state" style={{ color: '#ef4444' }}>Błąd ładowania konfiguracji</div>;
+  if (!guildId) return (
+    <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+      Wybierz serwer z lewego menu.
+    </div>
+  );
+
+  if (loading) return (
+    <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+      Ładowanie konfiguracji...
+    </div>
+  );
+
+  if (error || !config) return (
+    <div style={{ padding: '2rem', maxWidth: '560px', margin: '2rem auto' }}>
+      <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 'var(--border-radius)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ef4444', fontWeight: 600 }}>
+          <FiAlertTriangle /> Brak połączenia z serwerem
+        </div>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>{error}</p>
+        <button className="btn-base btn-standard" style={{ alignSelf: 'flex-start' }} onClick={loadConfig}>
+          <FiRefreshCw /> Spróbuj ponownie
+        </button>
+      </div>
+    </div>
+  );
 
   const disabled = !mongoStatus;
 
@@ -47,7 +105,11 @@ export default function ConfigPage() {
         <p>Zarządzaj ustawieniami swojego serwera</p>
       </div>
 
-      {disabled && <div className="warning-box">⚠️ Brak połączenia z bazą danych – zmiany nie zostaną zapisane.</div>}
+      {disabled && (
+        <div className="warning-box">
+          ⚠️ Brak połączenia z bazą danych — zmiany nie zostaną zapisane.
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="config-form">
         <div className="section">
@@ -82,24 +144,26 @@ export default function ConfigPage() {
           <div className="config-item">
             <label>Limit komend (na minutę)</label>
             <input type="number" value={config.commandLimit ?? 10} onChange={(e) => handleChange("commandLimit", parseInt(e.target.value) || 10)} min={1} max={100} disabled={disabled} className="config-input" />
-            <span className="config-description">Ile komend na minutę może użyć jeden użytkownik (rate limiting)</span>
+            <span className="config-description">Ile komend na minutę może użyć jeden użytkownik</span>
           </div>
 
           <div className="config-item toggle">
             <div className="toggle-header">
-              <span>Auto-delete komend</span>
+              <div>
+                <span>Auto-delete komend</span>
+                <span className="config-description">Bot automatycznie usuwa komendy po ich wykonaniu</span>
+              </div>
               <label className="toggle-switch">
                 <input type="checkbox" checked={config.autoDeleteCommands || false} onChange={(e) => handleChange("autoDeleteCommands", e.target.checked)} disabled={disabled} />
                 <span className="slider"></span>
               </label>
             </div>
-            <span className="config-description">Bot automatycznie usuwa komendy po ich wykonaniu</span>
           </div>
 
           <div className="config-item">
             <label>Czas odpowiedzi (ms)</label>
             <input type="number" value={config.responseDelay ?? 500} onChange={(e) => handleChange("responseDelay", parseInt(e.target.value) || 0)} min={0} max={5000} step={100} disabled={disabled} className="config-input" />
-            <span className="config-description">Opóźnienie przed odpowiedzią bota w milisekundach (symulacja pisania). 0 = brak opóźnienia</span>
+            <span className="config-description">Opóźnienie przed odpowiedzią bota. 0 = brak opóźnienia</span>
           </div>
         </div>
 
@@ -109,43 +173,127 @@ export default function ConfigPage() {
           </button>
         )}
 
-        {message && <div className={`message ${message.startsWith('✅') ? 'success' : 'error'}`}>{message}</div>}
+        {message && (
+          <div className={'message ' + (message.startsWith('✅') ? 'success' : 'error')}>
+            {message}
+          </div>
+        )}
       </form>
 
       <style jsx>{`
-        .empty-state { text-align: center; padding: 3rem; color: #6b6b76; }
         .config-page {
-          margin: 100px 200px 2rem 200px;
+          max-width: 800px;
+          margin: 0 auto;
           padding: 1.5rem;
-          border: 1px solid ${accentColor};
-          border-radius: var(--border-radius);
-          background: #0a0a0f;
         }
-        .page-header h1 { display: flex; align-items: center; gap: 0.75rem; font-size: 1.5rem; margin-bottom: 0.5rem; }
-        .page-header p { color: #6b6b76; margin-bottom: 1.5rem; }
-        .warning-box { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: var(--border-radius); padding: 1rem; margin-bottom: 1.5rem; color: #ef4444; }
-        .config-form { display: flex; flex-direction: column; gap: 1.5rem; }
+        .page-header h1 {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          font-size: 1.5rem;
+          margin-bottom: 0.5rem;
+          color: var(--text-color);
+        }
+        .page-header p {
+          color: var(--text-muted);
+          margin-bottom: 1.5rem;
+        }
+        .warning-box {
+          background: rgba(239,68,68,0.08);
+          border: 1px solid rgba(239,68,68,0.4);
+          border-radius: var(--border-radius);
+          padding: 1rem;
+          margin-bottom: 1.5rem;
+          color: #ef4444;
+          font-size: 0.9rem;
+        }
+        .config-form {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
         .section {
-          background: #14141c;
-          border: 1px solid #1e1e26;
+          background: rgba(var(--surface-rgb), var(--surface-opacity));
+          border: 1px solid var(--border-color);
           border-radius: var(--border-radius);
           padding: 1.5rem;
+          backdrop-filter: blur(12px);
         }
-        .section h2 { font-size: 1.1rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
-        .config-item { margin-bottom: 1.5rem; }
-        .config-item:last-child { margin-bottom: 0; }
-        .config-item label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: #fff; }
-        .config-input, .config-select { width: 100%; padding: 0.75rem; border: 1px solid #1e1e26; border-radius: var(--border-radius); background: #1e1e26; color: #fff; font-size: 0.9rem; }
-        .config-input:focus, .config-select:focus { outline: none; border-color: ${accentColor}; }
-        .config-description { display: block; font-size: 0.8rem; color: #6b6b76; margin-top: 0.25rem; }
-        .toggle { padding: 1rem; background: #1e1e26; border-radius: var(--border-radius); }
-        .toggle-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
-        .toggle-header span { font-weight: 600; color: #fff; }
-        .toggle-input { width: 40px; height: 20px; }
-.save-button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .message { padding: 1rem; border-radius: var(--border-radius); text-align: center; font-weight: 600; }
-        .message.success { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; color: #10b981; }
-        .message.error { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; }
+        .section h2 {
+          font-size: 1.1rem;
+          margin-bottom: 1.5rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        .config-item {
+          margin-bottom: 1.5rem;
+        }
+        .config-item:last-child {
+          margin-bottom: 0;
+        }
+        .config-item label {
+          display: block;
+          font-weight: 600;
+          margin-bottom: 0.5rem;
+          color: var(--text-color);
+        }
+        .config-input, .config-select {
+          width: 100%;
+          padding: 0.75rem;
+          border: 1px solid var(--border-color);
+          border-radius: var(--border-radius);
+          background: var(--bg-color);
+          color: var(--text-color);
+          font-size: 0.9rem;
+          font-family: inherit;
+          transition: border-color 0.2s;
+        }
+        .config-input:focus, .config-select:focus {
+          outline: none;
+          border-color: var(--accent-color);
+        }
+        .config-input:disabled, .config-select:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        .config-description {
+          display: block;
+          font-size: 0.8rem;
+          color: var(--text-muted);
+          margin-top: 0.25rem;
+        }
+        .toggle {
+          background: rgba(var(--surface-rgb), 0.5);
+          border-radius: var(--border-radius);
+          border: 1px solid var(--border-color);
+        }
+        .toggle-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 1rem;
+        }
+        .toggle-header span {
+          font-weight: 600;
+          color: var(--text-color);
+        }
+        .message {
+          padding: 1rem;
+          border-radius: var(--border-radius);
+          text-align: center;
+          font-weight: 600;
+        }
+        .message.success {
+          background: rgba(16,185,129,0.1);
+          border: 1px solid #10b981;
+          color: #10b981;
+        }
+        .message.error {
+          background: rgba(239,68,68,0.1);
+          border: 1px solid #ef4444;
+          color: #ef4444;
+        }
       `}</style>
     </div>
   );
