@@ -7,7 +7,7 @@ import Modal from '@/components/Modal';
 import {
   FiArrowLeft, FiGrid, FiSettings, FiMessageSquare, FiShield,
   FiUserPlus, FiFileText, FiActivity, FiLogOut, FiServer,
-  FiDatabase, FiCheckCircle, FiXCircle, FiChevronDown
+  FiDatabase, FiCheckCircle, FiXCircle, FiSun, FiChevronDown
 } from 'react-icons/fi';
 
 export default function DashboardLayout({ children }) {
@@ -563,12 +563,8 @@ export default function DashboardLayout({ children }) {
           font-size: 1.4rem;
           overflow: hidden;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-        }
-
-        .server-avatar img {
-          width: 100%;
-          height: 100%;
           object-fit: cover;
+          color: #fff;
         }
 
         .server-details h2 {

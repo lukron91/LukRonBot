@@ -1,10 +1,12 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useTheme } from '@/lib/theme-context';
 import Modal from '@/components/Modal';
 import { FiLogOut, FiPlusCircle, FiRefreshCw } from 'react-icons/fi';
 
 export default function ServersPage() {
+  const { accentColor } = useTheme();
   const router = useRouter();
   const [servers, setServers] = useState([]);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -169,7 +171,7 @@ export default function ServersPage() {
         .server-icon-placeholder {
           width: 100%;
           height: 100%;
-          background: linear-gradient(135deg, var(--accent-color, #5865f2), #4752c4);
+          background: var(--accent-color, #5865f2);
           display: flex;
           align-items: center;
           justify-content: center;

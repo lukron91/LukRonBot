@@ -229,12 +229,12 @@ export default function BotSettingsPage() {
           <div className="toast-content">
             <span>{toast.message}</span>
             {toast.type === 'error' && (
-              <button onClick={() => copyToClipboard(toast.message)} className="toast-copy-btn" title="Kopiuj błąd">
+              <button onClick={() => copyToClipboard(toast.message)} className="btn-base btn-standard" style={{ padding: "0.3rem 0.6rem", minWidth: "auto" }} title="Kopiuj błąd">
                 <FiCopy />
               </button>
             )}
           </div>
-          <button onClick={() => setToast(null)} className="toast-close-btn"><FiX /></button>
+          <button onClick={() => setToast(null)} className="btn-base btn-dnd" style={{ padding: "0.2rem 0.4rem", minWidth: "auto" }}><FiX /></button>
         </div>
       )}
 
@@ -549,7 +549,7 @@ export default function BotSettingsPage() {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header" style={{ borderBottomColor: accentColor }}>
               <h3 style={{ color: accentColor }}>{selectedModule.name}</h3>
-              <button onClick={() => setShowModal(false)} className="close-btn">✕</button>
+              <button onClick={() => setShowModal(false)} className="btn-base btn-dnd" style={{ padding: "0.25rem 0.5rem", minWidth: "auto" }}>✕</button>
             </div>
             <div className="modal-body">
               <p>{selectedModule.description || "Brak szczegółowego opisu."}</p>
@@ -768,14 +768,7 @@ export default function BotSettingsPage() {
         .modal-header h3 {
           margin: 0;
         }
-        .close-btn {
-          background: none;
-          border: none;
-          color: var(--text-muted);
-          font-size: 1.5rem;
-          cursor: pointer;
-        }
-        .modal-body {
+.modal-body {
           padding: 1rem;
           color: var(--text-color);
         }
@@ -837,30 +830,10 @@ export default function BotSettingsPage() {
           align-items: center;
           gap: 0.75rem;
         }
-        .toast-copy-btn {
-          background: rgba(255,255,255,0.2);
-          border: none;
-          color: white;
-          padding: 0.3rem;
-          border-radius: 4px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: background 0.2s;
-        }
-        .toast-copy-btn:hover {
+.toast-copy-btn:hover {
           background: rgba(255,255,255,0.3);
         }
-        .toast-close-btn {
-          background: none;
-          border: none;
-          color: white;
-          cursor: pointer;
-          opacity: 0.7;
-          transition: opacity 0.2s;
-        }
-        .toast-close-btn:hover {
+.toast-close-btn:hover {
           opacity: 1;
         }
         @keyframes slideIn {

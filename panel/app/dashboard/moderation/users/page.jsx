@@ -475,7 +475,7 @@ export default function UsersPage() {
         .user-card:hover { border-color: #5865f2; transform: translateY(-2px); }
         .user-avatar { width: 48px; height: 48px; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
         .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .avatar-placeholder { width: 100%; height: 100%; background: linear-gradient(135deg, #5865f2, #4752c4); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold; color: white; }
+        .avatar-placeholder { width: 100%; height: 100%; background: var(--accent-color); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold; color: white; }
         .user-info { flex: 1; min-width: 0; }
         .user-name { font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .user-username { font-size: 0.85rem; color: #9c9ca7; }

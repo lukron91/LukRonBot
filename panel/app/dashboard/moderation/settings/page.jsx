@@ -1,9 +1,11 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useTheme } from '@/lib/theme-context';
 import { FiSave, FiShield, FiLock, FiBell, FiHash, FiAlertTriangle, FiList, FiEye, FiEyeOff, FiUserCheck, FiLink, FiUserX, FiSettings } from 'react-icons/fi';
 
 export default function ModerationSettings() {
+  const { accentColor } = useTheme();
   const searchParams = useSearchParams();
   const guildId = searchParams.get("guild");
   const [config, setConfig] = useState(null);
