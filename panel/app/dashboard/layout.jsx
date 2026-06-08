@@ -538,8 +538,8 @@ export default function DashboardLayout({ children }) {
           bottom: 0;
           background: linear-gradient(
             to bottom,
-            rgba(10, 10, 15, 0.3) 0%,
-            rgba(10, 10, 15, 0.7) 100%
+            rgba(0, 0, 0, 0.15) 0%,
+            rgba(0, 0, 0, 0.4) 100%
           );
         }
 

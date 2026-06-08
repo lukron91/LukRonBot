@@ -9,7 +9,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="pl">
-      <body>
+      <body style={{ margin: 0, padding: 0 }}>
         <Providers>
           {children}
         </Providers>

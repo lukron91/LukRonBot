@@ -1,8 +1,15 @@
 /* RESET */
-* {
+*, *::before, *::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  width: 100%;
+  height: 100%;
 }
 
 :root {
@@ -229,7 +236,7 @@ body {
 .guild-icon {
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, var(--accent-color), #4752c4);
+  background: var(--accent-color);
   border-radius: var(--border-radius);
   display: flex;
   align-items: center;
@@ -319,10 +326,7 @@ body {
 .config-header h1 {
   font-size: 1.8rem;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--text-color), var(--accent-color));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--accent-color);
 }
 .config-sub {
   color: var(--text-muted);
@@ -430,8 +434,8 @@ body {
 
 /* 1. Standard – kolor akcentu */
 .btn-standard {
-  background: linear-gradient(135deg, var(--accent-color), #4752c4);
-  box-shadow: 0 4px 10px rgba(88, 101, 242, 0.3);
+  background: var(--accent-color);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 .btn-standard:hover:not(:disabled) {
   box-shadow: 0 6px 16px rgba(88, 101, 242, 0.45);
@@ -439,8 +443,8 @@ body {
 
 /* 2. Success – zielony (zapisz/zatwierdź) */
 .btn-success {
-  background: linear-gradient(135deg, #10b981, #059669);
-  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+  background: #10b981;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 .btn-success:hover:not(:disabled) {
   box-shadow: 0 6px 16px rgba(16, 185, 129, 0.45);
@@ -448,8 +452,8 @@ body {
 
 /* 3. Danger – czerwony (usuń/anuluj) */
 .btn-danger {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+  background: #ef4444;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 .btn-danger:hover:not(:disabled) {
   box-shadow: 0 6px 16px rgba(239, 68, 68, 0.45);
@@ -457,8 +461,8 @@ body {
 
 /* 4. Warning – żółty (Away / BRB) */
 .btn-warning {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+  background: #f59e0b;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   color: #111;
 }
 .btn-warning:hover:not(:disabled) {
@@ -467,8 +471,8 @@ body {
 
 /* 5. DnD – czerwony (Do Not Disturb) */
 .btn-dnd {
-  background: linear-gradient(135deg, #991b1b, #7f1d1d);
-  box-shadow: 0 4px 10px rgba(153, 27, 27, 0.3);
+  background: #991b1b;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 .btn-dnd:hover:not(:disabled) {
   box-shadow: 0 6px 16px rgba(153, 27, 27, 0.45);
@@ -708,7 +712,7 @@ input:checked + .toggle-slider-modern:before {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: linear-gradient(135deg, var(--accent-color), #4752c4);
+  background: var(--accent-color);
   padding: 0.7rem 1.2rem;
   border-radius: var(--border-radius);
   color: white;
@@ -747,7 +751,7 @@ input:checked + .toggle-slider-modern:before {
 .login-logo {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, var(--accent-color), #4752c4);
+  background: var(--accent-color);
   border-radius: 50%;
   display: flex;
   align-items: center;
