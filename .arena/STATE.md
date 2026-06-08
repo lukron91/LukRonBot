@@ -40,6 +40,23 @@ Ostatnia aktualizacja: 2026-06-08
 - Ustawienia moderacji - error state zamiast crashu przy braku polaczenia
 - Panel zarządzania rolami (CRUD, kopiowanie, nadawanie, real-time WS + polling fallback)
 
+## ARCHITEKTURA BAZY — prefiks BOT_ENV
+
+Kolekcje MongoDB mają prefiks środowiska: `${BOT_ENV}_`
+- `test_global_config`, `main_global_config`
+- `test_guild_config`, `main_guild_config`
+- `test_moderation_settings`, `main_moderation_settings`
+- `test_punishments`, `main_punishments`
+- `test_activities`, `main_activities`
+- `test_welcome_settings`, `main_welcome_settings`
+- `test_role_groups`, `main_role_groups`
+- `test_tickets`, `main_tickets`
+
+Modele Mongoose rejestrowane przez `makeModel(name, schema)`:
+- nazwa modelu: `name` (bez prefiksu)
+- collection: `${BOT_ENV}_${name}` (z prefiksem)
+- Plugin `dbLoggingPlugin` automatycznie loguje wszystkie operacje DB
+
 ## ARCHITEKTURA — WebSocket
 
 - Bot: `http.createServer(app)` + `WebSocketServer` na `/ws` (ten sam port co REST)
@@ -52,22 +69,34 @@ Ostatnia aktualizacja: 2026-06-08
 
 ## CO NIE DZIALA / NIEDOKONCZONE — BOT
 
-Ponizsze endpointy sa UZYWANE przez panel ale NIE ISTNIEJA w bocie.
-Agent robiacy bota musi je zaimplementowac.
+### Zaimplementowane endpointy (od 2026-06-08, refactor makeModel)
 
-### Brakujace endpointy (bot/modules/)
+Wszystkie ponizsze endpointy sa **dzialajace** po refactorze modułów:
+
+| Endpoint | Modul | Opis |
+|----------|-------|------|
+| `GET /api/guilds/:id/config` | config.js | Konfiguracja serwera |
+| `POST /api/guilds/:id/config` | config.js | Zapis konfiguracji |
+| `POST /api/guilds/:id/config/moderation` | config.js | Zapis ustawien moderacji |
+| `GET /api/guilds/:id/channels` | moderation.js | Lista kanalow tekstowych |
+| `GET /api/guilds/:id/members` | moderation.js | Lista czlonkow z cache |
+| `GET /api/guilds/:id/roles` | moderation.js | Lista ról |
+| `GET /api/guilds/:id/punishments/:userId` | moderation.js | Historia kar |
+| `GET /api/guilds/:id/punishments/:userId/active` | moderation.js | Aktywne mute/ban |
+| `DELETE /api/guilds/:id/punishments/warn/:warnId` | moderation.js | Usun warna |
+| `POST /api/guilds/:id/moderation/warn` | moderation.js | Nadanie warna |
+| `POST /api/guilds/:id/moderation/mute` | moderation.js | Wyciszenie |
+| `POST /api/guilds/:id/moderation/ban` | moderation.js | Ban (discord lub role) |
+| `POST /api/guilds/:id/moderation/unmute` | moderation.js | Odciszenie |
+| `POST /api/guilds/:id/moderation/unban` | moderation.js | Odbanowanie |
+
+### Brakujace endpointy
+
+(Wszystkie powyzsze sa juz zaimplementowane — ta sekcja jest archiwum)
 
 | Endpoint | Uzywa | Opis |
 |----------|-------|------|
-| `GET /api/guilds/:id/channels` | settings/page.jsx | Lista kanalow tekstowych serwera |
-| `POST /api/guilds/:id/config/moderation` | settings/page.jsx | Zapis konfiguracji moderacji |
-| `GET /api/guilds/:id/punishments/:userId/active` | users/page.jsx | Aktywne kary uzytkownika (mute/ban) |
-| `DELETE /api/guilds/:id/punishments/warn/:warnId` | users/page.jsx | Usuniecie konkretnego warna |
-| `POST /api/guilds/:id/moderation/warn` | users/page.jsx | Nadanie warna |
-| `POST /api/guilds/:id/moderation/mute` | users/page.jsx | Wyciszenie uzytkownika |
-| `POST /api/guilds/:id/moderation/ban` | users/page.jsx | Zbanowanie uzytkownika |
-| `POST /api/guilds/:id/moderation/unmute` | users/page.jsx | Odciszenie uzytkownika |
-| `POST /api/guilds/:id/moderation/unban` | users/page.jsx | Odbanowanie uzytkownika |
+| (brak) | - | Wszystkie wymagane endpointy zostaly zaimplementowane |
 
 ### Istniejace endpointy (dzialajace)
 
