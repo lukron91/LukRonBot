@@ -2,7 +2,7 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTheme } from '@/lib/theme-context';
-import { FiSave, FiShield, FiLock, FiBell, FiHash, FiAlertTriangle, FiList, FiEye, FiEyeOff, FiUserCheck, FiLink, FiUserX, FiSettings } from 'react-icons/fi';
+import { FiSave, FiShield, FiLock, FiBell, FiHash, FiAlertTriangle, FiList, FiEye, FiEyeOff, FiUserCheck, FiLink, FiUserX, FiSettings, FiRefreshCw } from 'react-icons/fi';
 
 export default function ModerationSettings() {
   const { accentColor } = useTheme();
@@ -10,6 +10,7 @@ export default function ModerationSettings() {
   const guildId = searchParams.get("guild");
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [roles, setRoles] = useState([]);
@@ -24,43 +25,31 @@ export default function ModerationSettings() {
 
   useEffect(() => {
     if (!guildId) return;
+    const safeFetch = async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' dla ' + url);
+      const text = await res.text();
+      try { return JSON.parse(text); }
+      catch { throw new Error('Nieprawidłowa odpowiedź JSON z ' + url); }
+    };
+
     Promise.all([
-      fetch(`/api/proxy/api/guilds/${guildId}/config`).then(r => r.json()),
-      fetch(`/api/proxy/api/guilds/${guildId}/roles`).then(r => r.json()),
-      fetch(`/api/proxy/api/guilds/${guildId}/channels`).then(r => r.json())
+      safeFetch('/api/proxy/api/guilds/' + guildId + '/config'),
+      safeFetch('/api/proxy/api/guilds/' + guildId + '/roles'),
+      safeFetch('/api/proxy/api/guilds/' + guildId + '/channels'),
     ]).then(([configData, rolesData, channelsData]) => {
       setConfig({
-        // Auto-moderacja
         autoModEnabled: configData.autoModEnabled ?? false,
         blockLinks: configData.blockLinks ?? false,
         blockInvites: configData.blockInvites ?? false,
         warnThreshold: configData.warnThreshold || 3,
-        // Ban
         banMethod: configData.banMethod || 'discord',
         banRoleId: configData.banRoleId || null,
-        // Ogólne
         publicInfoEnabled: configData.publicInfoEnabled ?? false,
         publicInfoChannel: configData.publicInfoChannel || null,
         protectedRoles: configData.protectedRoles || [],
-        // Uprawnienia do komend
-        commandPermissions: configData.commandPermissions || {
-          warn: [],
-          mute: [],
-          ban: [],
-          kick: [],
-          clear: [],
-          unban: [],
-          unmute: [],
-        },
-        // Włączniki komand
-        commandEnabled: configData.commandEnabled || {
-          ban: true,
-          mute: true,
-          warn: true,
-          kick: true,
-          clear: true,
-        },
-        // Pozostałe
+        commandPermissions: configData.commandPermissions || { warn: [], mute: [], ban: [], kick: [], clear: [], unban: [], unmute: [] },
+        commandEnabled: configData.commandEnabled || { ban: true, mute: true, warn: true, kick: true, clear: true },
         modLogChannel: configData.modLogChannel || null,
         autoWarnThreshold: configData.autoWarnThreshold || 3,
         autoMuteThreshold: configData.autoMuteThreshold || 5,
@@ -69,10 +58,15 @@ export default function ModerationSettings() {
         autoActionEnabled: configData.autoActionEnabled ?? false,
         ignoredChannels: configData.ignoredChannels || [],
       });
-      setRoles(rolesData);
-      setChannels(channelsData);
+      setRoles(Array.isArray(rolesData) ? rolesData : []);
+      setChannels(Array.isArray(channelsData) ? channelsData : []);
+      setError(null);
+    }).catch(err => {
+      console.error('Błąd ładowania ustawień moderacji:', err);
+      setError(err.message);
+    }).finally(() => {
       setLoading(false);
-    }).catch(err => { console.error(err); setLoading(false); });
+    });
   }, [guildId]);
 
   const handleChange = (field, value) => {
@@ -103,25 +97,21 @@ export default function ModerationSettings() {
     setSaving(true);
     setMessage("");
     try {
-      const res = await fetch(`/api/proxy/api/guilds/${guildId}/config/moderation`, {
+      const res = await fetch('/api/proxy/api/guilds/' + guildId + '/config/moderation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          // Auto-moderacja
           autoModEnabled: config.autoModEnabled,
           blockLinks: config.blockLinks,
           blockInvites: config.blockInvites,
           warnThreshold: config.warnThreshold,
-          // Ban
           banMethod: config.banMethod,
           banRoleId: config.banRoleId,
-          // Ogólne
           publicInfoEnabled: config.publicInfoEnabled,
           publicInfoChannel: config.publicInfoChannel,
           protectedRoles: config.protectedRoles,
           commandPermissions: config.commandPermissions,
           commandEnabled: config.commandEnabled,
-          // Pozostałe
           modLogChannel: config.modLogChannel,
           autoWarnThreshold: config.autoWarnThreshold,
           autoMuteThreshold: config.autoMuteThreshold,
@@ -131,11 +121,13 @@ export default function ModerationSettings() {
           ignoredChannels: config.ignoredChannels,
         })
       });
-      const data = await res.json();
-      if (res.ok) setMessage("✅ Ustawienia zapisane");
-      else setMessage(`❌ Błąd: ${data.error}`);
+      const text = await res.text();
+      let data = {};
+      try { data = JSON.parse(text); } catch { /* non-JSON response */ }
+      if (res.ok) setMessage('✅ Ustawienia zapisane');
+      else setMessage('❌ Błąd: ' + (data.error || 'Brak połączenia z serwerem'));
     } catch (err) {
-      setMessage(`❌ Błąd: ${err.message}`);
+      setMessage('❌ Błąd połączenia: ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -143,8 +135,47 @@ export default function ModerationSettings() {
 
   const textChannels = channels.filter(c => c.type === 0);
 
-  if (!guildId) return <div className="text-center" style={{ marginTop: "3rem", color: "#6b6b76" }}>Wybierz serwer z lewego menu.</div>;
-  if (loading) return <div className="text-center" style={{ marginTop: "3rem", color: "#6b6b76" }}>Ładowanie ustawień...</div>;
+  if (!guildId) return (
+    <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+      Wybierz serwer z lewego menu.
+    </div>
+  );
+
+  if (loading) return (
+    <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+      Ładowanie ustawień...
+    </div>
+  );
+
+  if (error || !config) return (
+    <div style={{ padding: '2rem', maxWidth: '600px', margin: '2rem auto' }}>
+      <div style={{
+        background: 'rgba(239,68,68,0.08)',
+        border: '1px solid rgba(239,68,68,0.4)',
+        borderRadius: 'var(--border-radius)',
+        padding: '1.5rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.75rem',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#ef4444', fontWeight: 600, fontSize: '1rem' }}>
+          <FiAlertTriangle size={20} />
+          Brak połączenia z serwerem
+        </div>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
+          Nie udało się załadować ustawień moderacji. Upewnij się że bot jest uruchomiony i połączony z bazą danych.
+        </p>
+        {error && (
+          <code style={{ fontSize: '0.8rem', color: 'var(--text-muted)', background: 'rgba(0,0,0,0.2)', padding: '0.5rem 0.75rem', borderRadius: '6px' }}>
+            {error}
+          </code>
+        )}
+        <button className="btn-base btn-standard" style={{ alignSelf: 'flex-start' }} onClick={() => { setLoading(true); setError(null); }}>
+          <FiRefreshCw /> Spróbuj ponownie
+        </button>
+      </div>
+    </div>
+  );
 
   const commandsList = [
     { id: 'warn', label: 'Ostrzeżenia (warn)' },
