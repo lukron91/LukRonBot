@@ -220,8 +220,6 @@ export default function ServersPage() {
               <button onClick={confirmLogout} className="btn-base btn-danger">Wyloguj się</button>
             </div>
           </Modal>
-        </div>
-      )}
     </div>
   );
 }
