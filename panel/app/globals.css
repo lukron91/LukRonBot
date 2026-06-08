@@ -406,7 +406,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.6rem 1.2rem;
+  padding: 0.6rem 1.4rem;
   border: none;
   border-radius: var(--border-radius);
   color: #fff;
@@ -416,6 +416,8 @@ body {
   transition: all 0.2s;
   text-decoration: none;
   line-height: 1.4;
+  min-width: 140px;
+  width: auto;
 }
 .btn-base:hover:not(:disabled) {
   transform: translateY(-2px);
@@ -584,9 +586,10 @@ input:checked + .toggle-slider-modern:before {
   width: 18px;
   left: 3px;
   bottom: 3px;
-  background: var(--text-color);
+  background: #fff;
   border-radius: 50%;
   transition: 0.3s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 .toggle-switch input:checked + .slider {
   background: var(--accent-color);

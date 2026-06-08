@@ -28,10 +28,12 @@ export default function ServersPage() {
   }, [router]);
 
   const handleLogout = () => {
-    if (window.confirm("Czy na pewno chcesz się wylogować?")) {
-      localStorage.removeItem("session");
-      router.push("/");
-    }
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = () => {
+    localStorage.removeItem("session");
+    router.push("/");
   };
 
   const handleManage = (guildId) => {
@@ -209,6 +211,17 @@ export default function ServersPage() {
           color: #e1e1e6;
         }
       `}</style>
+              <Modal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} title="Potwierdź wylogowanie">
+            <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              Czy na pewno chcesz się wylogować?
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowLogoutModal(false)} className="btn-base btn-standard" style={{ background: 'var(--border-color)', boxShadow: 'none' }}>Anuluj</button>
+              <button onClick={confirmLogout} className="btn-base btn-danger">Wyloguj się</button>
+            </div>
+          </Modal>
+        </div>
+      )}
     </div>
   );
 }

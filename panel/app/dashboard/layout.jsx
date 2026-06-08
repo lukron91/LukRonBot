@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from '@/lib/theme-context';
+import Modal from '@/components/Modal';
 import {
   FiArrowLeft, FiGrid, FiSettings, FiMessageSquare, FiShield,
   FiUserPlus, FiFileText, FiActivity, FiLogOut, FiServer,
@@ -19,6 +20,7 @@ export default function DashboardLayout({ children }) {
   const [clientActive, setClientActive] = useState(false);
   const [serverActive, setServerActive] = useState(false);
   const [serverDropdownOpen, setServerDropdownOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const { theme, accentColor, updateTheme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
@@ -85,10 +87,12 @@ export default function DashboardLayout({ children }) {
   }, [selectedGuildId]);
 
   const handleLogout = () => {
-    if (window.confirm("Czy na pewno chcesz się wylogować?")) {
-      localStorage.removeItem("session");
-      router.push("/");
-    }
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = () => {
+    localStorage.removeItem("session");
+    router.push("/");
   };
 
   const selectGuild = (guildId) => {
@@ -309,6 +313,16 @@ export default function DashboardLayout({ children }) {
         ) : (
           children
         )}
+      <Modal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} title="Potwierdź wylogowanie">
+        <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+          Czy na pewno chcesz się wylogować? Będziesz musiał ponownie zalogować się przez Discord, aby uzyskać dostęp do panelu.
+        </p>
+        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+          <button onClick={() => setShowLogoutModal(false)} className="btn-base btn-standard" style={{ background: 'var(--border-color)', boxShadow: 'none' }}>Anuluj</button>
+          <button onClick={confirmLogout} className="btn-base btn-danger">Wyloguj się</button>
+        </div>
+      </Modal>
+
       </main>
 
       <style jsx>{`
@@ -529,10 +543,9 @@ export default function DashboardLayout({ children }) {
           top: 0;
           left: 0;
           width: 100%;
-          height: auto;
-          min-height: 100%;
+          height: 100%;
           object-fit: cover;
-          object-position: top;
+          object-position: center;
         }
 
         .top-bar-overlay {

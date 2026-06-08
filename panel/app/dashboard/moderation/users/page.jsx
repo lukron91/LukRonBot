@@ -2,8 +2,11 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { FiSearch, FiX, FiRefreshCw, FiTrash2, FiUnlock, FiBell, FiAlertTriangle } from 'react-icons/fi';
+import { useTheme } from '@/lib/theme-context';
+import Modal from '@/components/Modal';
 
 export default function UsersPage() {
+  const { theme, accentColor } = useTheme();
   const searchParams = useSearchParams();
   const guildId = searchParams.get("guild");
   const [users, setUsers] = useState([]);
@@ -256,7 +259,7 @@ export default function UsersPage() {
             className="search-input"
           />
           {searchTerm && <FiX className="clear-search" onClick={() => setSearchTerm("")} />}
-          <button onClick={() => fetchMembers(true)} disabled={loading || refreshing} className="refresh-btn">
+          <button onClick={() => fetchMembers(true)} disabled={loading || refreshing} className="btn-base btn-standard">
             <FiRefreshCw className={refreshing ? 'spinning' : ''} />
             Odśwież
           </button>
@@ -284,7 +287,7 @@ export default function UsersPage() {
                   <div className="user-username">@{user.username}</div>
                   <div className="user-id">ID: {user.id}</div>
                 </div>
-                <button onClick={() => openActionMenu(user)} className="action-btn">Akcje</button>
+                <button onClick={() => openActionMenu(user)} className="btn-base btn-standard">Akcje</button>
               </div>
             ))
           )}
@@ -292,17 +295,17 @@ export default function UsersPage() {
       )}
 
       {actionMenu && selectedUser && (
-        <div className="modal-overlay" onClick={closeActionMenu}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Akcje dla {selectedUser.displayName || selectedUser.username}</h3>
-              <button onClick={closeActionMenu} className="close-btn"><FiX /></button>
-            </div>
+        <Modal isOpen={!!actionMenu} onClose={closeActionMenu} title={`Akcje dla ${selectedUser?.displayName || selectedUser?.username || ""}`} width="650px">
+        
+
 
             {/* Zakładki */}
             <div className="tabs">
               <button
                 className={`tab ${activeTab === 'apply' ? 'active' : ''}`}
+                onClick={() => setActiveTab('apply')}
+                style={{ borderColor: activeTab === 'apply' ? accentColor : 'transparent' }}
+              >
                 onClick={() => setActiveTab('apply')}
               >
                 Nałóż karę
@@ -310,11 +313,17 @@ export default function UsersPage() {
               <button
                 className={`tab ${activeTab === 'active' ? 'active' : ''}`}
                 onClick={() => setActiveTab('active')}
+                style={{ borderColor: activeTab === 'active' ? accentColor : 'transparent' }}
+              >
+                onClick={() => setActiveTab('active')}
               >
                 Aktywne kary
               </button>
               <button
                 className={`tab ${activeTab === 'warns' ? 'active' : ''}`}
+                onClick={() => setActiveTab('warns')}
+                style={{ borderColor: activeTab === 'warns' ? accentColor : 'transparent' }}
+              >
                 onClick={() => setActiveTab('warns')}
               >
                 Warny
@@ -430,7 +439,7 @@ export default function UsersPage() {
                           <div className="punishment-reason">{w.reason}</div>
                           <div className="punishment-meta">
                             <span>{new Date(w.date).toLocaleString()}</span>
-                            <button onClick={() => deleteWarn(w.id)} className="delete-btn">
+                            <button onClick={() => deleteWarn(w.id)} className="btn-base btn-danger" style={{ padding: "0.3rem 0.6rem", minWidth: "auto" }}>
                               <FiTrash2 />
                             </button>
                           </div>
@@ -447,8 +456,7 @@ export default function UsersPage() {
                 {actionMessage}
               </div>
             )}
-          </div>
-        </div>
+      </Modal>
       )}
 
       <style jsx>{`
