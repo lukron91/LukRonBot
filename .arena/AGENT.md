@@ -8,7 +8,7 @@ Wystarczy link do repo. Agent powinien natychmiast:
 2. Przeczytac ten plik (`.arena/AGENT.md`)
 3. Przeczytac `.arena/STATE.md` - biezacy stan projektu
 4. Przeczytac `.arena/SESSION.md` - historia zmian z ostatniej sesji
-5. Zapytac uzytkownika od czego kontynuowac
+6. Zapytac uzytkownika od czego kontynuowac
 
 ---
 

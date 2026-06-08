@@ -10,7 +10,7 @@ Ostatnia aktualizacja: 2026-06-08
 |------|-------|--------|
 | ETAP 1 | Fundamenty - architektura bazy, system logow, przebudowa bot/index.js | Czesciowo |
 | ETAP 2 | Silnik i Moduly - Dynamic Command Loader, Slash Commands | Gotowe |
-| ETAP 3 | Logika Moderacji - banowanie (Discord/Rangowy), kanal odwolan | Zamrozony |
+| ETAP 3 | Logika Moderacji - banowanie (Discord/Rangowy), kanal odwolan (szczegoly: [DESIGN.md](DESIGN.md)) | Zamrozony |
 | ETAP 4 | Szlify Panelu - integracja UI z nowymi danymi | Zamrozony |
 
 ---
@@ -43,7 +43,7 @@ Ostatnia aktualizacja: 2026-06-08
 - Podstawowa struktura bazy danych - initDbStructure() nie tworzy pustych kolekcji przy starcie bota (KRYTYCZNE - ETAP 1)
 - Baner dashboardu - nie wypelnia idealnie gornej ramki (kosmetyczne)
 - Modul moderacji (bot/modules/moderation.js) - placeholder, brak endpointow
-- System banowania (Discord vs Rangowy) - niezaimplementowany (ETAP 3)
+- System banowania (Discord vs Rangowy + Role Ban + kanal odwolan) - szczegoly w DESIGN.md - niezaimplementowany (ETAP 3)
 - Kanal odwolan przez ticket - niezaimplementowany (ETAP 3)
 - Historia kar - API i UI niezaimplementowane
 - Strony placeholder: tickets, automod, welcome, logs - puste
