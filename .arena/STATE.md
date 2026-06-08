@@ -40,23 +40,6 @@ Ostatnia aktualizacja: 2026-06-08
 - Ustawienia moderacji - error state zamiast crashu przy braku polaczenia
 - Panel zarządzania rolami (CRUD, kopiowanie, nadawanie, real-time WS + polling fallback)
 
-## ARCHITEKTURA BAZY — prefiks BOT_ENV
-
-Kolekcje MongoDB mają prefiks środowiska: `${BOT_ENV}_`
-- `test_global_config`, `main_global_config`
-- `test_guild_config`, `main_guild_config`
-- `test_moderation_settings`, `main_moderation_settings`
-- `test_punishments`, `main_punishments`
-- `test_activities`, `main_activities`
-- `test_welcome_settings`, `main_welcome_settings`
-- `test_role_groups`, `main_role_groups`
-- `test_tickets`, `main_tickets`
-
-Modele Mongoose rejestrowane przez `makeModel(name, schema)`:
-- nazwa modelu: `name` (bez prefiksu)
-- collection: `${BOT_ENV}_${name}` (z prefiksem)
-- Plugin `dbLoggingPlugin` automatycznie loguje wszystkie operacje DB
-
 ## ARCHITEKTURA — WebSocket
 
 - Bot: `http.createServer(app)` + `WebSocketServer` na `/ws` (ten sam port co REST)
