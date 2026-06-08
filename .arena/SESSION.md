@@ -1,6 +1,6 @@
 # Historia sesji agenta
 
-## Sesja 2026-06-08 (lukaszronda@gmail.com)
+## Sesja 2026-06-08 — agent 003 (lukaszronda@gmail.com)
 
 ### Agent
 Model Arena.ai — 12 commitów, gałąź `dev`
@@ -23,14 +23,31 @@ Model Arena.ai — 12 commitów, gałąź `dev`
 | `c93eaf3` | system ciaglosci agentow (.arena/) + README + logi |
 
 ### Szczegolowe logi
-
-Zobacz `.arena/logs/` — szczegolowy opis kazdej zmiany:
-- `001-claude-qwen.md` — co Claude i Qwen zrobili na poczatku
+- `001-claude-qwen.md` — wczesna faza
 - `002-agent-019e9f72.md` — poprzedni agent (sesja sprzed zamrozenia)
-- `003-agent-current.md` — biezaca sesja (222 linii, kazdy commit opisany)
+- `003-agent-019e9f72-cont.md` — kontynuacja (sprint UI/UX, 222 linii)
+
+---
+
+## Sesja 2026-06-08 — agent 004 (arena-agent)
+
+### Agent
+Arena.ai Agent — 5 commitów + porządki w logach, gałąź `dev`
+
+### Commity
+
+| Hash | Opis |
+|------|------|
+| `730c3e5` | Fix: guildId w bot-settings, zduplikowane onClick w users, window.confirm → Modal |
+| `68e818d` | Feat: system tokenów przycisków + styl filled/outline w ustawieniach motywu |
+| `5093f4e` | Fix: odstępy między przyciskami w modułach, globalne klasy btn-row/btn-col/btn-row-end |
+| `5c68a9d` | Fix: baner — poprawne object-fit, overlay fade do tła, content przy dolnej krawędzi |
+| `bd2e156` | Fix: baner — usunięty padding z .main-content w globals.css (powodował wcięcia) |
+
+### Szczegolowe logi
+- `004-arena-agent.md` — szczegółowy opis wszystkich 5 commitów
 
 ### Znane problemy (niezrobione)
 - initDbStructure() nie tworzy pustych kolekcji MongoDB
-- Baner dashboardu nie wypelnia idealnie gornej ramki
-- Modul moderacji — placeholder
+- Moduł moderacji — placeholder
 - System banowania — niezaimplementowany

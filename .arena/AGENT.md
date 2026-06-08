@@ -99,13 +99,40 @@ ZAKAZ: inline style={{background: ...}} na przyciskach, gradienty - tylko jednol
 
 ---
 
+## Srodowisko Arena.ai — WAZNE
+
+Agent dziala w sandboxie ktory RESETUJE SIE miedzy wywolaniami basha.
+Oznacza to ze po kazdym restarcie sesji lub po dluzszej przerwie:
+- `git remote` jest pusty — trzeba ustawic ponownie
+- `git config user.name/email` jest pusty — trzeba ustawic ponownie
+- katalog `/home/user/LukRonBot` moze nie istniec — trzeba sklonowac ponownie
+
+### Startup checklist (rób to na początku każdej sesji bash):
+```bash
+# 1. Klonuj jesli brak repo
+[ -d /home/user/LukRonBot ] || git clone https://TOKEN@github.com/lukron91/LukRonBot.git --branch dev /home/user/LukRonBot
+
+# 2. Ustaw tożsamość
+cd /home/user/LukRonBot
+git config user.email "arena-agent@arena.ai"
+git config user.name "Arena Agent"
+
+# 3. Ustaw remote z tokenem (token przechowywany w historii wiadomosci od uzytkownika)
+git remote set-url origin https://TOKEN@github.com/lukron91/LukRonBot.git
+```
+
+TOKEN: uzytkownik podaje go na poczatku sesji — zapisz go i uzywaj przez cala sesje.
+Nie usuwaj tokena z remote po uzyciu — ma byc dostepny przez cala sesje.
+
+---
+
 ## Proces pracy (KAZDY COMMIT)
 
 1. git pull origin dev
 2. Praca nad kodem
 3. git add -A
 4. git commit -m "krotki opis po polsku"
-5. **DOPISZ do swojego pliku logow** (`.arena/logs/NNN-twoja-nazwa.md`) - szczegolowy wpis co zmieniono
+5. **DOPISZ do swojego pliku logow** (`.arena/logs/NNN-twoj-identyfikator.md`) - szczegolowy wpis co zmieniono
 6. Aktualizacja .arena/STATE.md (jesli zmienil sie stan)
 7. Aktualizacja .arena/SESSION.md (dodaj wpis o commicie)
 8. git push origin dev
@@ -135,8 +162,9 @@ Format logu:
 Agent tworzy NOWY plik logu dla swojej sesji.
 Numer: kolejny wolny (sprawdz ls .arena/logs/ i wez nastepny).
 Nazwa: NNN-[twoj-identyfikator].md
-Przyklady: 004-gemini.md, 005-claude-sonnet.md, 006-gpt4o.md
+Przyklady: 004-gemini.md, 005-claude-sonnet.md, 006-gpt4o.md, 007-arena-agent.md
 Identyfikator: nazwa modelu lub ID agenta (cokolwiek jednoznacznego).
+ZAKAZ nazwy "current" lub "agent" bez identyfikatora - zawsze unikalna nazwa z ID.
 Na koniec sesji aktualizuje `.arena/STATE.md` i `.arena/SESSION.md`.
 
 ### Dlaczego to wazne
@@ -147,5 +175,6 @@ Na koniec sesji aktualizuje `.arena/STATE.md` i `.arena/SESSION.md`.
 ## Pliki logow
 
 - `.arena/logs/001-claude-qwen.md` — wczesna faza (Claude + Qwen)
-- `.arena/logs/002-agent-019e9f72.md` — poprzedni agent
-- `.arena/logs/003-agent-current.md` — biezaca sesja
+- `.arena/logs/002-agent-019e9f72.md` — poprzedni agent (sesja sprzed zamrozenia)
+- `.arena/logs/003-agent-019e9f72-cont.md` — kontynuacja poprzedniego agenta (sprint UI/UX)
+- `.arena/logs/004-arena-agent.md` — bieżąca sesja (fix guildId, system przycisków, baner)
