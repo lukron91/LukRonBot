@@ -34,7 +34,7 @@ function dbLog(type, message) {
 // Moduły nie muszą nic robić.
 
 function dbLoggingPlugin(schema, options) {
-  const collectionName = options?.collection || 'unknown';
+  const collectionName = options?.collection || `${BOT_ENV}_unknown`;
 
   // Przed zapytaniem — loguj co jest odpytywane
   schema.pre(['find', 'findOne', 'findOneAndUpdate', 'findOneAndDelete', 'countDocuments'], function() {
@@ -110,9 +110,9 @@ async function connectDB() {
 // Bezpieczne: wywołanie wielokrotne nic nie nadpisuje.
 
 function makeModel(name, schema) {
-  // Podepnij plugin logowania z nazwą kolekcji
-  schema.plugin(dbLoggingPlugin, { collection: name });
-  return mongoose.models[name] || mongoose.model(name, schema, name);
+  const collectionName = `${BOT_ENV}_${name}`;
+  schema.plugin(dbLoggingPlugin, { collection: collectionName });
+  return mongoose.models[name] || mongoose.model(name, schema, collectionName);
 }
 
 async function initDbStructure() {
