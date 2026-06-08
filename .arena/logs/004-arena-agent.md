@@ -77,3 +77,29 @@
 - `panel/app/globals.css`:
   - `.main-content`: `padding: 2rem` → `padding: 0` — globalna reguła nadpisywała lokalny `margin: 0; padding: 0` w layout.jsx i wciskała baner o 2rem z lewej i prawej
   - Dodano `.page-content { padding: 2rem }` jako opcjonalna klasa dla stron które jej potrzebują (żadna aktualnie nie korzysta — każda ma własny padding w root div)
+
+---
+
+## Commit 6: `862d188` — Feat: globalne klasy modal-* w globals.css, users/page przepięty na system motywu
+
+### Co zmieniono
+- `panel/app/globals.css`:
+  - Nowa sekcja MODAL STANDARDS — gotowe klasy do użycia w każdym przyszłym oknie:
+    - `.modal-tabs` / `.modal-tab` / `.modal-tab.active` — zakładki używające `var(--accent-color)`
+    - `.modal-tab-content` — padding treści zakładki
+    - `.modal-section` / `.modal-section-title` — sekcja z tytułem w accent-color
+    - `.modal-input` / `.modal-select` / `.modal-textarea` — inputy z focus border accent
+    - `.modal-info-row` + `.danger` / `.warning` / `.success` — wiersz z info (aktywna kara)
+    - `.modal-message.success` / `.modal-message.error` — komunikaty z rgba tłem
+    - `.modal-empty` — komunikat pustej listy
+
+- `panel/components/Modal.jsx`:
+  - `modal-close-custom`: dodano `height/width: var(--btn-height)` — X respektuje token rozmiaru
+
+- `panel/app/dashboard/moderation/users/page.jsx`:
+  - Zakładki: lokalny `tabs/tab` → globalne `modal-tabs/modal-tab`
+  - Inputy: lokalne `action-input/select` → globalne `modal-input/select/textarea`
+  - Wiersze kar: `active-punishment-item` → `modal-info-row warning/danger`
+  - Przyciski: `action-button warn/mute/ban` → `btn-base btn-warning/standard/danger`
+  - Komunikat: `action-message` → `modal-message`
+  - Usunięto ~60 linii lokalnego CSS zastąpionego globalnym
