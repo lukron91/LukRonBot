@@ -177,12 +177,10 @@ export default function ModerationSettings() {
             <div className="config-item toggle">
               <div className="toggle-header">
                 <span>Auto-moderacja</span>
-                <input
-                  type="checkbox"
-                  checked={config.autoModEnabled}
-                  onChange={(e) => handleChange('autoModEnabled', e.target.checked)}
-                  className="toggle-input"
-                />
+<label className="toggle-switch">
+                  <input type="checkbox" checked={config.autoModEnabled} onChange={(e) => handleChange('autoModEnabled', e.target.checked)} />
+                  <span className="slider"></span>
+                </label>
               </div>
               <span className="config-description">Włącz/wyłącz automatyczne ostrzeżenia</span>
             </div>
@@ -190,12 +188,10 @@ export default function ModerationSettings() {
             <div className="config-item toggle">
               <div className="toggle-header">
                 <span>Blokuj linki</span>
-                <input
-                  type="checkbox"
-                  checked={config.blockLinks}
-                  onChange={(e) => handleChange('blockLinks', e.target.checked)}
-                  className="toggle-input"
-                />
+<label className="toggle-switch">
+                  <input type="checkbox" checked={config.blockLinks} onChange={(e) => handleChange('blockLinks', e.target.checked)} />
+                  <span className="slider"></span>
+                </label>
               </div>
               <span className="config-description">Usuwanie wiadomości z linkami</span>
             </div>
@@ -203,12 +199,10 @@ export default function ModerationSettings() {
             <div className="config-item toggle">
               <div className="toggle-header">
                 <span>Blokuj zaproszenia</span>
-                <input
-                  type="checkbox"
-                  checked={config.blockInvites}
-                  onChange={(e) => handleChange('blockInvites', e.target.checked)}
-                  className="toggle-input"
-                />
+<label className="toggle-switch">
+                  <input type="checkbox" checked={config.blockInvites} onChange={(e) => handleChange('blockInvites', e.target.checked)} />
+                  <span className="slider"></span>
+                </label>
               </div>
               <span className="config-description">Zakaz wysyłania invite linków</span>
             </div>
@@ -303,12 +297,10 @@ export default function ModerationSettings() {
             <div className="config-item toggle">
               <div className="toggle-header">
                 <span>Kanał informacji o karach (publiczny)</span>
-                <input
-                  type="checkbox"
-                  checked={config.publicInfoEnabled}
-                  onChange={(e) => handleChange('publicInfoEnabled', e.target.checked)}
-                  className="toggle-input"
-                />
+<label className="toggle-switch">
+                  <input type="checkbox" checked={config.publicInfoEnabled} onChange={(e) => handleChange('publicInfoEnabled', e.target.checked)} />
+                  <span className="slider"></span>
+                </label>
               </div>
               <span className="config-description">Włącz wysyłanie ogólnych informacji o karach</span>
             </div>
@@ -337,11 +329,10 @@ export default function ModerationSettings() {
               <div className="roles-grid">
                 {roles.map(role => (
                   <label key={role.id} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={(config.protectedRoles || []).includes(role.id)}
-                      onChange={(e) => handleProtectedRolesChange(role.id, e.target.checked)}
-                    />
+                    <label className="toggle-switch" style={{ marginRight: '0.5rem' }}>
+                      <input type="checkbox" checked={(config.protectedRoles || []).includes(role.id)} onChange={(e) => handleProtectedRolesChange(role.id, e.target.checked)} />
+                      <span className="slider"></span>
+                    </label>
                     <span>{role.name}</span>
                   </label>
                 ))}
@@ -367,11 +358,10 @@ export default function ModerationSettings() {
                 <div className="roles-grid">
                   {roles.map(role => (
                     <label key={role.id} className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={(config.commandPermissions[cmd.id] || []).includes(role.id)}
-                        onChange={(e) => handlePermissionChange(cmd.id, role.id, e.target.checked)}
-                      />
+                      <label className="toggle-switch" style={{ marginRight: '0.5rem' }}>
+                        <input type="checkbox" checked={(config.commandPermissions[cmd.id] || []).includes(role.id)} onChange={(e) => handlePermissionChange(cmd.id, role.id, e.target.checked)} />
+                        <span className="slider"></span>
+                      </label>
                       <span>{role.name}</span>
                     </label>
                   ))}
@@ -398,12 +388,10 @@ export default function ModerationSettings() {
                 {['ban', 'mute', 'warn', 'kick', 'clear'].map(cmd => (
                   <label key={cmd} className="toggle-label">
                     <span>/{cmd}</span>
-                    <input
-                      type="checkbox"
-                      checked={config.commandEnabled[cmd]}
-                      onChange={(e) => handleCommandToggle(cmd, e.target.checked)}
-                      className="toggle-input"
-                    />
+                    <label className="toggle-switch">
+                      <input type="checkbox" checked={config.commandEnabled[cmd]} onChange={(e) => handleCommandToggle(cmd, e.target.checked)} />
+                      <span className="slider"></span>
+                    </label>
                   </label>
                 ))}
               </div>
@@ -548,24 +536,11 @@ export default function ModerationSettings() {
           gap: 0.75rem;
           margin-top: 0.75rem;
         }
-        .checkbox-label {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.5rem;
-          background: #1e1e26;
-          border-radius: var(--border-radius);
-          cursor: pointer;
-          transition: all 0.2s;
-        }
+
         .checkbox-label:hover {
           background: #25252d;
         }
-        .checkbox-label input[type="checkbox"] {
-          width: 18px;
-          height: 18px;
-          accent-color: #5865f2;
-        }
+
         .command-permissions {
           margin-bottom: 1.5rem;
           padding: 1rem;

@@ -50,14 +50,20 @@ export default function ThemeSettings() {
         <h2 style={{ color: accentColor }}>Tryb kolorystyczny</h2>
         <p className="section-description">Wybierz między ciemnym a jasnym trybem pracy.</p>
         
-        <div className="mode-toggle">
+        <div className="mode-toggle-dual">
           <button 
-            onClick={toggleMode} 
-            className={`mode-btn ${mode === 'dark' ? 'active' : ''}`}
-            style={{ borderColor: mode === 'dark' ? accentColor : 'transparent' }}
+            onClick={() => updateTheme({ mode: 'dark' })} 
+            className={`mode-btn-dual ${mode === 'dark' ? 'active' : ''}`}
           >
-            {mode === 'dark' ? <FiMoon /> : <FiSun />}
-            <span>{mode === 'dark' ? 'Tryb Ciemny' : 'Tryb Jasny'}</span>
+            <FiMoon />
+            <span>Tryb Ciemny</span>
+          </button>
+          <button 
+            onClick={() => updateTheme({ mode: 'light' })} 
+            className={`mode-btn-dual ${mode === 'light' ? 'active' : ''}`}
+          >
+            <FiSun />
+            <span>Tryb Jasny</span>
           </button>
         </div>
       </div>
@@ -184,27 +190,33 @@ export default function ThemeSettings() {
           color: var(--text-muted);
           margin-bottom: 1.5rem;
         }
-        .mode-toggle {
+        .mode-toggle-dual {
           display: flex;
           gap: 1rem;
           margin-bottom: 1.5rem;
         }
-        .mode-btn {
+        .mode-btn-dual {
           display: flex;
           align-items: center;
           gap: 0.75rem;
           padding: 0.75rem 1.5rem;
-          background: var(--backgroundColor);
+          background: var(--bg-color);
           border: 2px solid var(--border-color);
           border-radius: var(--border-radius);
           color: var(--text-color);
           cursor: pointer;
           transition: all 0.2s;
           font-weight: 600;
+          font-size: 0.9rem;
         }
-        .mode-btn.active {
-          background: var(--surface-color);
-          box-shadow: 0 0 0 1px var(--accent-color);
+        .mode-btn-dual:hover {
+          border-color: var(--text-muted);
+        }
+        .mode-btn-dual.active {
+          border-color: var(--accent-color);
+          background: rgba(var(--surface-rgb), var(--surface-opacity));
+          box-shadow: 0 0 0 2px var(--accent-color);
+          color: var(--accent-color);
         }
         .preset-colors {
           display: flex;

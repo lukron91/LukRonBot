@@ -88,7 +88,10 @@ export default function ConfigPage() {
           <div className="config-item toggle">
             <div className="toggle-header">
               <span>Auto-delete komend</span>
-              <input type="checkbox" checked={config.autoDeleteCommands || false} onChange={(e) => handleChange("autoDeleteCommands", e.target.checked)} disabled={disabled} className="toggle-input" style={{ accentColor: accentColor }} />
+              <label className="toggle-switch">
+                <input type="checkbox" checked={config.autoDeleteCommands || false} onChange={(e) => handleChange("autoDeleteCommands", e.target.checked)} disabled={disabled} />
+                <span className="slider"></span>
+              </label>
             </div>
             <span className="config-description">Bot automatycznie usuwa komendy po ich wykonaniu</span>
           </div>

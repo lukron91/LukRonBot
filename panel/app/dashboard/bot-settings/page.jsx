@@ -332,7 +332,7 @@ export default function BotSettingsPage() {
                   <div className="module-info">
                     <div className="module-name">{mod.name}</div>
                     <div className="module-status">{mod.status === 'active' ? '✅ aktywny' : '❌ uszkodzony'}</div>
-                    {mod.error && <div className, a="module-error">{mod.error}</div>}
+                    {mod.error && <div className="module-error">{mod.error}</div>}
                   </div>
                   <div className="module-hint">Kliknij po opis</div>
                 </div>
@@ -470,7 +470,7 @@ export default function BotSettingsPage() {
                  <div className="commands-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
                    {registeredGlobalCommands.map((cmd, idx) => (
                      <div key={idx} className="module-card" style={{ borderLeftColor: '#ef4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                       <div className, a="module-info">
+                       <div className="module-info">
                          <div className="module-name">/{cmd.name}</div>
                          <div className="module-status" style={{ fontSize: '0.75rem' }}>{cmd.description}</div>
                        </div>

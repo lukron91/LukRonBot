@@ -19,7 +19,7 @@ export default function DashboardLayout({ children }) {
   const [clientActive, setClientActive] = useState(false);
   const [serverActive, setServerActive] = useState(false);
   const [serverDropdownOpen, setServerDropdownOpen] = useState(false);
-  const { accentColor } = useTheme();
+  const { theme, accentColor, updateTheme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -229,6 +229,14 @@ export default function DashboardLayout({ children }) {
         </nav>
 
         <div className="sidebar-footer">
+          <button 
+            onClick={() => updateTheme({ mode: theme?.mode === 'dark' ? 'light' : 'dark' })}
+            className="theme-quick-toggle"
+            title={theme?.mode === 'dark' ? 'Przełącz na jasny' : 'Przełącz na ciemny'}
+          >
+            {theme?.mode === 'dark' ? <FiSun /> : <FiMoon />}
+            <span>{theme?.mode === 'dark' ? 'Tryb jasny' : 'Tryb ciemny'}</span>
+          </button>
           <button onClick={handleLogout} className="logout-btn">
             <FiLogOut />
             <span>Wyloguj</span>
@@ -463,6 +471,25 @@ export default function DashboardLayout({ children }) {
           border-top: 1px solid #1e1e26;
         }
 
+        .theme-quick-toggle {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.6rem 0.75rem;
+          background: none;
+          border: 1px solid #1e1e26;
+          border-radius: var(--border-radius);
+          color: var(--accent-color);
+          cursor: pointer;
+          font-size: 0.85rem;
+          transition: all 0.2s;
+          margin-bottom: 0.5rem;
+        }
+        .theme-quick-toggle:hover {
+          background: rgba(var(--surface-rgb), 0.5);
+          border-color: var(--accent-color);
+        }
         .logout-btn {
           width: 100%;
           display: flex;
@@ -477,7 +504,6 @@ export default function DashboardLayout({ children }) {
           font-size: 0.85rem;
           transition: all 0.2s;
         }
-
         .logout-btn:hover {
           background: #0a0a0f;
           color: #ffffff;
