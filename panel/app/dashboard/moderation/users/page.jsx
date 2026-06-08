@@ -275,42 +275,24 @@ export default function UsersPage() {
           title={'Akcje dla ' + (selectedUser?.displayName || selectedUser?.username || '')}
           width="650px"
         >
-          <div className="tabs">
-            <button
-              className={'tab' + (activeTab === 'apply' ? ' active' : '')}
-              onClick={() => setActiveTab('apply')}
-              style={{ borderBottomColor: activeTab === 'apply' ? accentColor : 'transparent' }}
-            >
-              Nałóż karę
-            </button>
-            <button
-              className={'tab' + (activeTab === 'active' ? ' active' : '')}
-              onClick={() => setActiveTab('active')}
-              style={{ borderBottomColor: activeTab === 'active' ? accentColor : 'transparent' }}
-            >
-              Aktywne kary
-            </button>
-            <button
-              className={'tab' + (activeTab === 'warns' ? ' active' : '')}
-              onClick={() => setActiveTab('warns')}
-              style={{ borderBottomColor: activeTab === 'warns' ? accentColor : 'transparent' }}
-            >
-              Warny
-            </button>
+          <div className="modal-tabs">
+            <button className={'modal-tab' + (activeTab === 'apply' ? ' active' : '')} onClick={() => setActiveTab('apply')}>Nałóż karę</button>
+            <button className={'modal-tab' + (activeTab === 'active' ? ' active' : '')} onClick={() => setActiveTab('active')}>Aktywne kary</button>
+            <button className={'modal-tab' + (activeTab === 'warns' ? ' active' : '')} onClick={() => setActiveTab('warns')}>Warny</button>
           </div>
 
           {activeTab === 'apply' && (
-            <div className="tab-content">
-              <div className="action-section">
-                <div className="section-title"><FiAlertTriangle /> Dodaj warn</div>
-                <textarea placeholder="Powód warnu..." value={warnReason} onChange={(e) => setWarnReason(e.target.value)} className="action-input" rows={2} />
-                <button onClick={() => executeAction('warn')} disabled={actionLoading || !warnReason.trim()} className="action-button warn">
+            <div className="modal-tab-content">
+              <div className="modal-section">
+                <div className="modal-section-title"><FiAlertTriangle /> Dodaj warn</div>
+                <textarea placeholder="Powód warnu..." value={warnReason} onChange={(e) => setWarnReason(e.target.value)} className="modal-textarea" rows={2} />
+                <button onClick={() => executeAction('warn')} disabled={actionLoading || !warnReason.trim()} className="btn-base btn-warning" style={{ width: '100%' }}>
                   {actionLoading ? 'Dodawanie...' : 'Dodaj warn'}
                 </button>
               </div>
-              <div className="action-section">
-                <div className="section-title"><FiBell /> Wycisz</div>
-                <select value={muteDuration} onChange={(e) => setMuteDuration(Number(e.target.value))} className="action-select">
+              <div className="modal-section">
+                <div className="modal-section-title"><FiBell /> Wycisz</div>
+                <select value={muteDuration} onChange={(e) => setMuteDuration(Number(e.target.value))} className="modal-select">
                   <option value={1}>1 minuta</option>
                   <option value={5}>5 minut</option>
                   <option value={10}>10 minut</option>
@@ -318,15 +300,15 @@ export default function UsersPage() {
                   <option value={60}>1 godzina</option>
                   <option value={1440}>24 godziny</option>
                 </select>
-                <textarea placeholder="Powód wyciszenia..." value={muteReason} onChange={(e) => setMuteReason(e.target.value)} className="action-input" rows={2} />
-                <button onClick={() => executeAction('mute')} disabled={actionLoading || !muteReason.trim()} className="action-button mute">
+                <textarea placeholder="Powód wyciszenia..." value={muteReason} onChange={(e) => setMuteReason(e.target.value)} className="modal-textarea" rows={2} />
+                <button onClick={() => executeAction('mute')} disabled={actionLoading || !muteReason.trim()} className="btn-base btn-standard" style={{ width: '100%' }}>
                   {actionLoading ? 'Wyciszanie...' : 'Wycisz'}
                 </button>
               </div>
-              <div className="action-section">
-                <div className="section-title"><FiAlertTriangle /> Zbanuj</div>
-                <textarea placeholder="Powód bana..." value={banReason} onChange={(e) => setBanReason(e.target.value)} className="action-input" rows={2} />
-                <button onClick={() => executeAction('ban')} disabled={actionLoading || !banReason.trim()} className="action-button ban">
+              <div className="modal-section">
+                <div className="modal-section-title"><FiAlertTriangle /> Zbanuj</div>
+                <textarea placeholder="Powód bana..." value={banReason} onChange={(e) => setBanReason(e.target.value)} className="modal-textarea" rows={2} />
+                <button onClick={() => executeAction('ban')} disabled={actionLoading || !banReason.trim()} className="btn-base btn-danger" style={{ width: '100%' }}>
                   {actionLoading ? 'Banowanie...' : 'Zbanuj'}
                 </button>
               </div>
@@ -334,31 +316,31 @@ export default function UsersPage() {
           )}
 
           {activeTab === 'active' && (
-            <div className="tab-content">
+            <div className="modal-tab-content">
               {!activePunishments.mute && !activePunishments.ban ? (
-                <div className="no-warnings">Brak aktywnych kar</div>
+                <div className="modal-empty">Brak aktywnych kar</div>
               ) : (
                 <>
                   {activePunishments.mute && (
-                    <div className="active-punishment-item mute">
+                    <div className="modal-info-row warning">
                       <div className="punishment-info">
                         <div className="punishment-type"><FiBell /> Wyciszenie</div>
                         <div className="punishment-reason">{activePunishments.mute.reason}</div>
                         <div className="punishment-meta">Do: {new Date(activePunishments.mute.expiresAt).toLocaleString()}</div>
                       </div>
-                      <button onClick={unmuteUser} className="btn-base btn-success" style={{ padding: '0.4rem 0.8rem', minWidth: 'auto', fontSize: '0.8rem' }}>
+                      <button onClick={unmuteUser} className="btn-base btn-success" style={{ minWidth: 'auto', fontSize: '0.8rem' }}>
                         <FiBell /> Odcisz
                       </button>
                     </div>
                   )}
                   {activePunishments.ban && (
-                    <div className="active-punishment-item ban">
+                    <div className="modal-info-row danger">
                       <div className="punishment-info">
                         <div className="punishment-type"><FiAlertTriangle /> Ban</div>
                         <div className="punishment-reason">{activePunishments.ban.reason}</div>
                         <div className="punishment-meta">Od: {new Date(activePunishments.ban.date).toLocaleString()}</div>
                       </div>
-                      <button onClick={unbanUser} className="btn-base btn-standard" style={{ padding: '0.4rem 0.8rem', minWidth: 'auto', fontSize: '0.8rem' }}>
+                      <button onClick={unbanUser} className="btn-base btn-standard" style={{ minWidth: 'auto', fontSize: '0.8rem' }}>
                         <FiUnlock /> Odbanuj
                       </button>
                     </div>
@@ -369,33 +351,33 @@ export default function UsersPage() {
           )}
 
           {activeTab === 'warns' && (
-            <div className="tab-content">
-              <div className="punishments-list">
-                {punishments.warnings.length === 0 ? (
-                  <div className="no-warnings">Brak warnów</div>
-                ) : (
-                  <>
-                    <div className="subsection-title"><FiAlertTriangle /> Warny ({punishments.warnings.length})</div>
-                    {punishments.warnings.map((w, idx) => (
-                      <div key={idx} className="punishment-item">
+            <div className="modal-tab-content">
+              {punishments.warnings.length === 0 ? (
+                <div className="modal-empty">Brak warnów</div>
+              ) : (
+                <>
+                  <div className="modal-section-title"><FiAlertTriangle /> Warny ({punishments.warnings.length})</div>
+                  {punishments.warnings.map((w, idx) => (
+                    <div key={idx} className="modal-info-row warning">
+                      <div className="punishment-info">
                         <div className="punishment-reason">{w.reason}</div>
-                        <div className="punishment-meta">
-                          <span>{new Date(w.date).toLocaleString()}</span>
-                          <button onClick={() => deleteWarn(w.id)} className="btn-base btn-danger" style={{ padding: '0.3rem 0.6rem', minWidth: 'auto' }}>
-                            <FiTrash2 />
-                          </button>
-                        </div>
+                        <div className="punishment-meta">{new Date(w.date).toLocaleString()}</div>
                       </div>
-                    ))}
-                  </>
-                )}
-              </div>
+                      <button onClick={() => deleteWarn(w.id)} className="btn-base btn-danger" style={{ minWidth: 'auto' }}>
+                        <FiTrash2 />
+                      </button>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           )}
 
           {actionMessage && (
-            <div className={'action-message ' + (actionMessage.startsWith('✅') ? 'success' : 'error')}>
-              {actionMessage}
+            <div style={{ padding: '0 1.25rem 0.5rem' }}>
+              <div className={'modal-message ' + (actionMessage.startsWith('✅') ? 'success' : 'error')}>
+                {actionMessage}
+              </div>
             </div>
           )}
         </Modal>
@@ -421,33 +403,11 @@ export default function UsersPage() {
         .user-username { font-size: 0.85rem; color: var(--text-muted); }
         .user-id { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
         .loading, .empty-state { text-align: center; padding: 3rem; color: var(--text-muted); grid-column: 1 / -1; }
-        .tabs { display: flex; border-bottom: 1px solid var(--border-color); }
-        .tab { flex: 1; padding: 1rem; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); cursor: pointer; font-weight: 600; transition: all 0.2s; }
-        .tab:hover { color: var(--text-color); }
-        .tab.active { color: var(--text-color); }
-        .tab-content { padding: 1.2rem; }
-        .punishments-list { max-height: 300px; overflow-y: auto; }
-        .section-title { font-weight: 600; color: var(--accent-color); margin-bottom: 1rem; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem; }
-        .subsection-title { font-weight: 600; color: var(--text-muted); margin: 1rem 0 0.5rem; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; }
-        .no-warnings { color: var(--text-muted); text-align: center; padding: 2rem; }
-        .active-punishment-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(var(--surface-rgb), 0.5); border-radius: var(--border-radius); margin-bottom: 0.75rem; }
-        .active-punishment-item.mute { border-left: 3px solid #3b82f6; }
-        .active-punishment-item.ban { border-left: 3px solid #ef4444; }
-        .punishment-info { flex: 1; }
+        /* Lokalne style - reszta przeniesiona do globals.css jako modal-* */
+        .punishment-info { flex: 1; margin-right: 1rem; }
         .punishment-type { font-weight: 600; color: var(--text-color); margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem; }
-        .punishment-reason { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.25rem; }
-        .punishment-meta { font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; }
-        .punishment-item { background: rgba(var(--surface-rgb), 0.5); border-radius: var(--border-radius); padding: 0.75rem; margin-bottom: 0.5rem; }
-        .action-section { margin-bottom: 1.5rem; }
-        .action-input, .action-select { width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: var(--border-radius); background: var(--bg-color); color: var(--text-color); margin-bottom: 0.75rem; font-family: inherit; }
-        .action-button { width: 100%; padding: 0.75rem; border: none; border-radius: var(--border-radius); font-weight: 600; cursor: pointer; margin-bottom: 0.5rem; }
-        .action-button.warn { background: #f59e0b; color: #000; }
-        .action-button.mute { background: #3b82f6; color: #fff; }
-        .action-button.ban { background: #ef4444; color: #fff; }
-        .action-button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .action-message { padding: 1rem; text-align: center; font-weight: 600; margin: 1rem; border-radius: var(--border-radius); }
-        .action-message.success { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid #10b981; }
-        .action-message.error { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid #ef4444; }
+        .punishment-reason { color: var(--text-color); font-size: 0.9rem; margin-bottom: 0.2rem; }
+        .punishment-meta { font-size: 0.75rem; color: var(--text-muted); }
       `}</style>
     </div>
   );

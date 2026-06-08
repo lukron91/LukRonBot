@@ -574,6 +574,126 @@ html.btn-outline-mode .btn-dnd:hover:not(:disabled) {
 }
 
 /* ================================================
+   MODAL STANDARDS — gotowe klasy do użycia w każdym oknie
+   Wystarczy użyć tych klas w children Modalu
+   ================================================ */
+
+/* Zakładki wewnątrz Modalu */
+.modal-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+}
+.modal-tab {
+  flex: 1;
+  padding: 0.85rem 1rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+.modal-tab:hover {
+  color: var(--text-color);
+  background: rgba(var(--surface-rgb), 0.3);
+}
+.modal-tab.active {
+  color: var(--accent-color);
+  border-bottom-color: var(--accent-color);
+}
+
+/* Treść zakładki */
+.modal-tab-content {
+  padding: 1.25rem;
+}
+
+/* Sekcja wewnątrz Modalu */
+.modal-section {
+  margin-bottom: 1.5rem;
+}
+.modal-section-title {
+  font-weight: 600;
+  color: var(--accent-color);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Input / textarea / select wewnątrz Modalu */
+.modal-input,
+.modal-select,
+.modal-textarea {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: border-color 0.2s;
+  margin-bottom: 0.75rem;
+  display: block;
+}
+.modal-input:focus,
+.modal-select:focus,
+.modal-textarea:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+.modal-textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+/* Wiersz z info (np. aktywna kara) */
+.modal-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  background: rgba(var(--surface-rgb), 0.5);
+  border-radius: var(--border-radius);
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--border-color);
+}
+.modal-info-row.danger { border-left: 3px solid var(--btn-color-danger, #ef4444); }
+.modal-info-row.warning { border-left: 3px solid var(--btn-color-warning, #f59e0b); }
+.modal-info-row.success { border-left: 3px solid var(--btn-color-success, #10b981); }
+
+/* Komunikat sukcesu / błędu */
+.modal-message {
+  padding: 0.85rem 1rem;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+  text-align: center;
+}
+.modal-message.success {
+  background: rgba(16,185,129,0.12);
+  color: #10b981;
+  border: 1px solid rgba(16,185,129,0.3);
+}
+.modal-message.error {
+  background: rgba(239,68,68,0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239,68,68,0.3);
+}
+
+/* Pusta lista */
+.modal-empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* ================================================
    BUTTON GROUPS — globalne klasy dla kontenerów przycisków
    Używaj zamiast inline style={{ display:'flex', gap:... }}
    ================================================ */

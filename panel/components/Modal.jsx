@@ -88,7 +88,7 @@ export default function Modal({ isOpen, onClose, title, children, width = '440px
         }
         .modal-close-custom {
           background: none;
-          border: none;
+          border: 1px solid transparent;
           color: var(--text-muted);
           cursor: pointer;
           padding: 0.35rem;
@@ -98,10 +98,13 @@ export default function Modal({ isOpen, onClose, title, children, width = '440px
           justify-content: center;
           transition: all 0.2s;
           font-size: 1.1rem;
+          height: var(--btn-height, 2.4rem);
+          width: var(--btn-height, 2.4rem);
         }
         .modal-close-custom:hover {
           color: var(--text-color);
           background: rgba(128,128,128,0.15);
+          border-color: var(--border-color);
         }
         .modal-body-custom {
           padding: 1.5rem;
