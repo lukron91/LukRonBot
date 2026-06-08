@@ -1,7 +1,7 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
-import { FiSearch, FiX, FiRefreshCw, FiTrash2, FiUnlock, FiBell, FiAlertTriangle } from 'react-icons/fi';
+import { FiX, FiRefreshCw, FiTrash2, FiUnlock, FiBell, FiAlertTriangle } from 'react-icons/fi';
 import { useTheme } from '@/lib/theme-context';
 import Modal from '@/components/Modal';
 
@@ -9,6 +9,7 @@ export default function UsersPage() {
   const { theme, accentColor } = useTheme();
   const searchParams = useSearchParams();
   const guildId = searchParams.get("guild");
+
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +26,7 @@ export default function UsersPage() {
   const [warnReason, setWarnReason] = useState("");
   const [muteReason, setMuteReason] = useState("");
   const [banReason, setBanReason] = useState("");
+  const [confirmModal, setConfirmModal] = useState(null);
   const fetchAbortRef = useRef(null);
 
   const fetchMembers = async (showRefresh = false) => {
@@ -35,7 +37,7 @@ export default function UsersPage() {
     const controller = new AbortController();
     fetchAbortRef.current = controller;
     try {
-      const res = await fetch(`/api/proxy/api/guilds/${guildId}/members`, { signal: controller.signal });
+      const res = await fetch('/api/proxy/api/guilds/' + guildId + '/members', { signal: controller.signal });
       const data = await res.json();
       let usersArray = [];
       if (Array.isArray(data)) usersArray = data;
@@ -62,17 +64,16 @@ export default function UsersPage() {
       setFilteredUsers(usersArray);
     } else {
       const term = searchTerm.toLowerCase();
-      const filtered = usersArray.filter(user =>
-        (user.username?.toLowerCase().includes(term) ||
-        user.displayName?.toLowerCase().includes(term))
-      );
-      setFilteredUsers(filtered);
+      setFilteredUsers(usersArray.filter(user =>
+        user.username?.toLowerCase().includes(term) ||
+        user.displayName?.toLowerCase().includes(term)
+      ));
     }
   }, [searchTerm, users]);
 
   const fetchPunishments = async (userId) => {
     try {
-      const res = await fetch(`/api/proxy/api/guilds/${guildId}/punishments/${userId}`);
+      const res = await fetch('/api/proxy/api/guilds/' + guildId + '/punishments/' + userId);
       const data = await res.json();
       setPunishments({
         warnings: Array.isArray(data?.warnings) ? data.warnings : [],
@@ -87,12 +88,9 @@ export default function UsersPage() {
 
   const fetchActivePunishments = async (userId) => {
     try {
-      const res = await fetch(`/api/proxy/api/guilds/${guildId}/punishments/${userId}/active`);
+      const res = await fetch('/api/proxy/api/guilds/' + guildId + '/punishments/' + userId + '/active');
       const data = await res.json();
-      setActivePunishments({
-        mute: data.mute || null,
-        ban: data.ban || null
-      });
+      setActivePunishments({ mute: data.mute || null, ban: data.ban || null });
     } catch (err) {
       console.error('Błąd pobierania aktywnych kar:', err);
       setActivePunishments({ mute: null, ban: null });
@@ -102,10 +100,7 @@ export default function UsersPage() {
   const openActionMenu = async (user) => {
     setSelectedUser(user);
     setActionMenu(user.id);
-    await Promise.all([
-      fetchPunishments(user.id),
-      fetchActivePunishments(user.id)
-    ]);
+    await Promise.all([fetchPunishments(user.id), fetchActivePunishments(user.id)]);
     setActionMessage("");
     setWarnReason("");
     setMuteReason("");
@@ -127,127 +122,108 @@ export default function UsersPage() {
     let body = {};
     switch (action) {
       case 'warn':
-        if (!warnReason.trim()) {
-          setActionMessage("❌ Podaj powód warnu");
-          setActionLoading(false);
-          return;
-        }
+        if (!warnReason.trim()) { setActionMessage("❌ Podaj powód warnu"); setActionLoading(false); return; }
         body = { userId: selectedUser.id, reason: warnReason, moderatorId: 'panel' };
         break;
       case 'mute':
-        if (!muteReason.trim()) {
-          setActionMessage("❌ Podaj powód wyciszenia");
-          setActionLoading(false);
-          return;
-        }
+        if (!muteReason.trim()) { setActionMessage("❌ Podaj powód wyciszenia"); setActionLoading(false); return; }
         body = { userId: selectedUser.id, duration: muteDuration, reason: muteReason, moderatorId: 'panel' };
         break;
       case 'ban':
-        if (!banReason.trim()) {
-          setActionMessage("❌ Podaj powód bana");
-          setActionLoading(false);
-          return;
-        }
+        if (!banReason.trim()) { setActionMessage("❌ Podaj powód bana"); setActionLoading(false); return; }
         body = { userId: selectedUser.id, reason: banReason, moderatorId: 'panel' };
         break;
       default: return;
     }
     try {
-      const res = await fetch(`/api/proxy/api/guilds/${guildId}/moderation/${action}`, {
+      const res = await fetch('/api/proxy/api/guilds/' + guildId + '/moderation/' + action, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
       const data = await res.json();
       if (data.success) {
-        setActionMessage(`✅ ${action === 'mute' ? 'Wyciszono' : action === 'ban' ? 'Zbanowano' : 'Dodano warn'} pomyślnie`);
-        await Promise.all([
-          fetchPunishments(selectedUser.id),
-          fetchActivePunishments(selectedUser.id)
-        ]);
+        setActionMessage('✅ ' + (action === 'mute' ? 'Wyciszono' : action === 'ban' ? 'Zbanowano' : 'Dodano warn') + ' pomyślnie');
+        await Promise.all([fetchPunishments(selectedUser.id), fetchActivePunishments(selectedUser.id)]);
         if (action === 'warn') setWarnReason("");
         if (action === 'mute') setMuteReason("");
         if (action === 'ban') setBanReason("");
       } else {
-        setActionMessage(`❌ Błąd: ${data.error}`);
+        setActionMessage('❌ Błąd: ' + data.error);
       }
     } catch (err) {
-      setActionMessage(`❌ Błąd połączenia: ${err.message}`);
+      setActionMessage('❌ Błąd połączenia: ' + err.message);
     } finally {
       setActionLoading(false);
     }
   };
 
-  const deleteWarn = async (warnId) => {
-    if (!confirm('Czy na pewno chcesz usunąć tego warnu?')) return;
-    try {
-      const res = await fetch(`/api/proxy/api/guilds/${guildId}/punishments/warn/${warnId}`, {
-        method: 'DELETE'
-      });
-      const data = await res.json();
-      if (data.success) {
-        setActionMessage("✅ Warn usunięty");
-        await fetchPunishments(selectedUser.id);
-      } else {
-        setActionMessage(`❌ Błąd: ${data.error}`);
+  const deleteWarn = (warnId) => {
+    setConfirmModal({
+      label: 'Czy na pewno chcesz usunąć tego warna?',
+      onConfirm: async () => {
+        try {
+          const res = await fetch('/api/proxy/api/guilds/' + guildId + '/punishments/warn/' + warnId, { method: 'DELETE' });
+          const data = await res.json();
+          if (data.success) { setActionMessage("✅ Warn usunięty"); await fetchPunishments(selectedUser.id); }
+          else setActionMessage('❌ Błąd: ' + data.error);
+        } catch (err) { setActionMessage('❌ Błąd: ' + err.message); }
       }
-    } catch (err) {
-      setActionMessage(`❌ Błąd: ${err.message}`);
-    }
+    });
   };
 
-  const unmuteUser = async () => {
-    if (!confirm('Czy na pewno chcesz odciszyć użytkownika?')) return;
-    try {
-      const res = await fetch(`/api/proxy/api/guilds/${guildId}/moderation/unmute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: selectedUser.id })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setActionMessage("✅ Użytkownik odciszony");
-        await Promise.all([
-          fetchPunishments(selectedUser.id),
-          fetchActivePunishments(selectedUser.id)
-        ]);
-      } else {
-        setActionMessage(`❌ Błąd: ${data.error}`);
+  const unmuteUser = () => {
+    setConfirmModal({
+      label: 'Czy na pewno chcesz odciszyć użytkownika?',
+      onConfirm: async () => {
+        try {
+          const res = await fetch('/api/proxy/api/guilds/' + guildId + '/moderation/unmute', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: selectedUser.id })
+          });
+          const data = await res.json();
+          if (data.success) { setActionMessage("✅ Użytkownik odciszony"); await Promise.all([fetchPunishments(selectedUser.id), fetchActivePunishments(selectedUser.id)]); }
+          else setActionMessage('❌ Błąd: ' + data.error);
+        } catch (err) { setActionMessage('❌ Błąd: ' + err.message); }
       }
-    } catch (err) {
-      setActionMessage(`❌ Błąd: ${err.message}`);
-    }
+    });
   };
 
-  const unbanUser = async () => {
-    if (!confirm('Czy na pewno chcesz odbanować użytkownika?')) return;
-    try {
-      const res = await fetch(`/api/proxy/api/guilds/${guildId}/moderation/unban`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: selectedUser.id })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setActionMessage("✅ Użytkownik odbanowany");
-        await Promise.all([
-          fetchPunishments(selectedUser.id),
-          fetchActivePunishments(selectedUser.id)
-        ]);
-      } else {
-        setActionMessage(`❌ Błąd: ${data.error}`);
+  const unbanUser = () => {
+    setConfirmModal({
+      label: 'Czy na pewno chcesz odbanować użytkownika?',
+      onConfirm: async () => {
+        try {
+          const res = await fetch('/api/proxy/api/guilds/' + guildId + '/moderation/unban', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: selectedUser.id })
+          });
+          const data = await res.json();
+          if (data.success) { setActionMessage("✅ Użytkownik odbanowany"); await Promise.all([fetchPunishments(selectedUser.id), fetchActivePunishments(selectedUser.id)]); }
+          else setActionMessage('❌ Błąd: ' + data.error);
+        } catch (err) { setActionMessage('❌ Błąd: ' + err.message); }
       }
-    } catch (err) {
-      setActionMessage(`❌ Błąd: ${err.message}`);
-    }
+    });
   };
 
   if (!guildId) {
-    return <div className="text-center" style={{ marginTop: "3rem", color: "#6b6b76" }}>Wybierz serwer z lewego menu.</div>;
+    return <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>Wybierz serwer z lewego menu.</div>;
   }
 
   return (
     <div className="users-page">
+
+      {/* Modal potwierdzenia — zamiast window.confirm */}
+      {confirmModal && (
+        <Modal isOpen={true} onClose={() => setConfirmModal(null)} title="Potwierdzenie" width="400px">
+          <p style={{ marginBottom: '1.5rem', color: 'var(--text-color)' }}>{confirmModal.label}</p>
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+            <button className="btn-base btn-standard" onClick={() => setConfirmModal(null)}>Anuluj</button>
+            <button className="btn-base btn-danger" onClick={() => { confirmModal.onConfirm(); setConfirmModal(null); }}>Potwierdź</button>
+          </div>
+        </Modal>
+      )}
+
       <div className="page-header">
         <h1>Lista użytkowników</h1>
         <div className="header-actions">
@@ -260,8 +236,7 @@ export default function UsersPage() {
           />
           {searchTerm && <FiX className="clear-search" onClick={() => setSearchTerm("")} />}
           <button onClick={() => fetchMembers(true)} disabled={loading || refreshing} className="btn-base btn-standard">
-            <FiRefreshCw className={refreshing ? 'spinning' : ''} />
-            Odśwież
+            <FiRefreshCw className={refreshing ? 'spinning' : ''} /> Odśwież
           </button>
         </div>
       </div>
@@ -276,11 +251,10 @@ export default function UsersPage() {
             filteredUsers.map(user => (
               <div key={user.id} className="user-card">
                 <div className="user-avatar">
-                  {user.avatar ? (
-                    <img src={`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`} alt="" />
-                  ) : (
-                    <div className="avatar-placeholder">{user.username?.charAt(0).toUpperCase()}</div>
-                  )}
+                  {user.avatar
+                    ? <img src={'https://cdn.discordapp.com/avatars/' + user.id + '/' + user.avatar + '.png'} alt="" />
+                    : <div className="avatar-placeholder">{user.username?.charAt(0).toUpperCase()}</div>
+                  }
                 </div>
                 <div className="user-info">
                   <div className="user-name">{user.displayName || user.username}</div>
@@ -295,232 +269,185 @@ export default function UsersPage() {
       )}
 
       {actionMenu && selectedUser && (
-        <Modal isOpen={!!actionMenu} onClose={closeActionMenu} title={`Akcje dla ${selectedUser?.displayName || selectedUser?.username || ""}`} width="650px">
-        
+        <Modal
+          isOpen={!!actionMenu}
+          onClose={closeActionMenu}
+          title={'Akcje dla ' + (selectedUser?.displayName || selectedUser?.username || '')}
+          width="650px"
+        >
+          <div className="tabs">
+            <button
+              className={'tab' + (activeTab === 'apply' ? ' active' : '')}
+              onClick={() => setActiveTab('apply')}
+              style={{ borderBottomColor: activeTab === 'apply' ? accentColor : 'transparent' }}
+            >
+              Nałóż karę
+            </button>
+            <button
+              className={'tab' + (activeTab === 'active' ? ' active' : '')}
+              onClick={() => setActiveTab('active')}
+              style={{ borderBottomColor: activeTab === 'active' ? accentColor : 'transparent' }}
+            >
+              Aktywne kary
+            </button>
+            <button
+              className={'tab' + (activeTab === 'warns' ? ' active' : '')}
+              onClick={() => setActiveTab('warns')}
+              style={{ borderBottomColor: activeTab === 'warns' ? accentColor : 'transparent' }}
+            >
+              Warny
+            </button>
+          </div>
 
-
-            {/* Zakładki */}
-            <div className="tabs">
-              <button
-                className={`tab ${activeTab === 'apply' ? 'active' : ''}`}
-                onClick={() => setActiveTab('apply')}
-                style={{ borderColor: activeTab === 'apply' ? accentColor : 'transparent' }}
-              >
-                onClick={() => setActiveTab('apply')}
-              >
-                Nałóż karę
-              </button>
-              <button
-                className={`tab ${activeTab === 'active' ? 'active' : ''}`}
-                onClick={() => setActiveTab('active')}
-                style={{ borderColor: activeTab === 'active' ? accentColor : 'transparent' }}
-              >
-                onClick={() => setActiveTab('active')}
-              >
-                Aktywne kary
-              </button>
-              <button
-                className={`tab ${activeTab === 'warns' ? 'active' : ''}`}
-                onClick={() => setActiveTab('warns')}
-                style={{ borderColor: activeTab === 'warns' ? accentColor : 'transparent' }}
-              >
-                onClick={() => setActiveTab('warns')}
-              >
-                Warny
-              </button>
-            </div>
-
-            {/* Zakładka: Nałóż karę */}
-            {activeTab === 'apply' && (
-              <div className="tab-content">
-                <div className="action-section">
-                  <div className="section-title"><FiAlertTriangle className="icon" /> Dodaj warn</div>
-                  <textarea
-                    placeholder="Powód warnu..."
-                    value={warnReason}
-                    onChange={(e) => setWarnReason(e.target.value)}
-                    className="action-input"
-                    rows={2}
-                  />
-                  <button onClick={() => executeAction('warn')} disabled={actionLoading || !warnReason.trim()} className="action-button warn">
-                    {actionLoading ? 'Dodawanie...' : 'Dodaj warn'}
-                  </button>
-                </div>
-
-                <div className="action-section">
-                  <div className="section-title"><FiBell className="icon" /> Wycisz</div>
-                  <select value={muteDuration} onChange={(e) => setMuteDuration(Number(e.target.value))} className="action-select">
-                    <option value={1}>1 minuta</option>
-                    <option value={5}>5 minut</option>
-                    <option value={10}>10 minut</option>
-                    <option value={30}>30 minut</option>
-                    <option value={60}>1 godzina</option>
-                    <option value={1440}>24 godziny</option>
-                  </select>
-                  <textarea
-                    placeholder="Powód wyciszenia..."
-                    value={muteReason}
-                    onChange={(e) => setMuteReason(e.target.value)}
-                    className="action-input"
-                    rows={2}
-                  />
-                  <button onClick={() => executeAction('mute')} disabled={actionLoading || !muteReason.trim()} className="action-button mute">
-                    {actionLoading ? 'Wyciszanie...' : 'Wycisz'}
-                  </button>
-                </div>
-
-                <div className="action-section">
-                  <div className="section-title"><FiAlertTriangle className="icon" /> Zbanuj</div>
-                  <textarea
-                    placeholder="Powód bana..."
-                    value={banReason}
-                    onChange={(e) => setBanReason(e.target.value)}
-                    className="action-input"
-                    rows={2}
-                  />
-                  <button onClick={() => executeAction('ban')} disabled={actionLoading || !banReason.trim()} className="action-button ban">
-                    {actionLoading ? 'Banowanie...' : 'Zbanuj'}
-                  </button>
-                </div>
+          {activeTab === 'apply' && (
+            <div className="tab-content">
+              <div className="action-section">
+                <div className="section-title"><FiAlertTriangle /> Dodaj warn</div>
+                <textarea placeholder="Powód warnu..." value={warnReason} onChange={(e) => setWarnReason(e.target.value)} className="action-input" rows={2} />
+                <button onClick={() => executeAction('warn')} disabled={actionLoading || !warnReason.trim()} className="action-button warn">
+                  {actionLoading ? 'Dodawanie...' : 'Dodaj warn'}
+                </button>
               </div>
-            )}
+              <div className="action-section">
+                <div className="section-title"><FiBell /> Wycisz</div>
+                <select value={muteDuration} onChange={(e) => setMuteDuration(Number(e.target.value))} className="action-select">
+                  <option value={1}>1 minuta</option>
+                  <option value={5}>5 minut</option>
+                  <option value={10}>10 minut</option>
+                  <option value={30}>30 minut</option>
+                  <option value={60}>1 godzina</option>
+                  <option value={1440}>24 godziny</option>
+                </select>
+                <textarea placeholder="Powód wyciszenia..." value={muteReason} onChange={(e) => setMuteReason(e.target.value)} className="action-input" rows={2} />
+                <button onClick={() => executeAction('mute')} disabled={actionLoading || !muteReason.trim()} className="action-button mute">
+                  {actionLoading ? 'Wyciszanie...' : 'Wycisz'}
+                </button>
+              </div>
+              <div className="action-section">
+                <div className="section-title"><FiAlertTriangle /> Zbanuj</div>
+                <textarea placeholder="Powód bana..." value={banReason} onChange={(e) => setBanReason(e.target.value)} className="action-input" rows={2} />
+                <button onClick={() => executeAction('ban')} disabled={actionLoading || !banReason.trim()} className="action-button ban">
+                  {actionLoading ? 'Banowanie...' : 'Zbanuj'}
+                </button>
+              </div>
+            </div>
+          )}
 
-            {/* Zakładka: Aktywne kary */}
-            {activeTab === 'active' && (
-              <div className="tab-content">
-                {!activePunishments.mute && !activePunishments.ban ? (
-                  <div className="no-warnings">Brak aktywnych kar</div>
+          {activeTab === 'active' && (
+            <div className="tab-content">
+              {!activePunishments.mute && !activePunishments.ban ? (
+                <div className="no-warnings">Brak aktywnych kar</div>
+              ) : (
+                <>
+                  {activePunishments.mute && (
+                    <div className="active-punishment-item mute">
+                      <div className="punishment-info">
+                        <div className="punishment-type"><FiBell /> Wyciszenie</div>
+                        <div className="punishment-reason">{activePunishments.mute.reason}</div>
+                        <div className="punishment-meta">Do: {new Date(activePunishments.mute.expiresAt).toLocaleString()}</div>
+                      </div>
+                      <button onClick={unmuteUser} className="btn-base btn-success" style={{ padding: '0.4rem 0.8rem', minWidth: 'auto', fontSize: '0.8rem' }}>
+                        <FiBell /> Odcisz
+                      </button>
+                    </div>
+                  )}
+                  {activePunishments.ban && (
+                    <div className="active-punishment-item ban">
+                      <div className="punishment-info">
+                        <div className="punishment-type"><FiAlertTriangle /> Ban</div>
+                        <div className="punishment-reason">{activePunishments.ban.reason}</div>
+                        <div className="punishment-meta">Od: {new Date(activePunishments.ban.date).toLocaleString()}</div>
+                      </div>
+                      <button onClick={unbanUser} className="btn-base btn-standard" style={{ padding: '0.4rem 0.8rem', minWidth: 'auto', fontSize: '0.8rem' }}>
+                        <FiUnlock /> Odbanuj
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'warns' && (
+            <div className="tab-content">
+              <div className="punishments-list">
+                {punishments.warnings.length === 0 ? (
+                  <div className="no-warnings">Brak warnów</div>
                 ) : (
                   <>
-                    {activePunishments.mute && (
-                      <div className="active-punishment-item mute">
-                        <div className="punishment-info">
-                          <div className="punishment-type"><FiBell className="icon" /> Wyciszenie</div>
-                          <div className="punishment-reason">{activePunishments.mute.reason}</div>
-                          <div className="punishment-meta">
-                            Do: {new Date(activePunishments.mute.expiresAt).toLocaleString()}
-                          </div>
+                    <div className="subsection-title"><FiAlertTriangle /> Warny ({punishments.warnings.length})</div>
+                    {punishments.warnings.map((w, idx) => (
+                      <div key={idx} className="punishment-item">
+                        <div className="punishment-reason">{w.reason}</div>
+                        <div className="punishment-meta">
+                          <span>{new Date(w.date).toLocaleString()}</span>
+                          <button onClick={() => deleteWarn(w.id)} className="btn-base btn-danger" style={{ padding: '0.3rem 0.6rem', minWidth: 'auto' }}>
+                            <FiTrash2 />
+                          </button>
                         </div>
-                        <button onClick={unmuteUser} className="btn-base btn-success" style="padding:0.4rem 0.8rem;min-width:auto;font-size:0.8rem">
-                          <FiBell /> Odcisz
-                        </button>
                       </div>
-                    )}
-                    {activePunishments.ban && (
-                      <div className="active-punishment-item ban">
-                        <div className="punishment-info">
-                          <div className="punishment-type"><FiAlertTriangle className="icon" /> Ban</div>
-                          <div className="punishment-reason">{activePunishments.ban.reason}</div>
-                          <div className="punishment-meta">
-                            Od: {new Date(activePunishments.ban.date).toLocaleString()}
-                          </div>
-                        </div>
-                        <button onClick={unbanUser} className="btn-base btn-standard" style="padding:0.4rem 0.8rem;min-width:auto;font-size:0.8rem">
-                          <FiUnlock /> Odbanuj
-                        </button>
-                      </div>
-                    )}
+                    ))}
                   </>
                 )}
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Zakładka: Warny */}
-            {activeTab === 'warns' && (
-              <div className="tab-content">
-                <div className="punishments-list">
-                  {punishments.warnings.length === 0 ? (
-                    <div className="no-warnings">Brak warnów</div>
-                  ) : (
-                    <>
-                      <div className="subsection-title"><FiAlertTriangle className="icon" /> Warny ({punishments.warnings.length})</div>
-                      {punishments.warnings.map((w, idx) => (
-                        <div key={idx} className="punishment-item">
-                          <div className="punishment-reason">{w.reason}</div>
-                          <div className="punishment-meta">
-                            <span>{new Date(w.date).toLocaleString()}</span>
-                            <button onClick={() => deleteWarn(w.id)} className="btn-base btn-danger" style={{ padding: "0.3rem 0.6rem", minWidth: "auto" }}>
-                              <FiTrash2 />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {actionMessage && (
-              <div className={`action-message ${actionMessage.startsWith('✅') ? 'success' : 'error'}`}>
-                {actionMessage}
-              </div>
-            )}
-      </Modal>
+          {actionMessage && (
+            <div className={'action-message ' + (actionMessage.startsWith('✅') ? 'success' : 'error')}>
+              {actionMessage}
+            </div>
+          )}
+        </Modal>
       )}
 
       <style jsx>{`
         .users-page { padding: 1.5rem; }
         .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
-        .page-header h1 { font-size: 1.5rem; color: #fff; margin: 0; }
+        .page-header h1 { font-size: 1.5rem; color: var(--text-color); margin: 0; }
         .header-actions { display: flex; align-items: center; gap: 0.5rem; }
-        .search-input { padding: 0.5rem 1rem; border: 1px solid #25252d; border-radius: var(--border-radius); background: #14141c; color: #fff; width: 250px; }
-        .clear-search { cursor: pointer; color: #6b6b76; }
-        .refresh-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: #5865f2; color: #fff; border: none; border-radius: var(--border-radius); cursor: pointer; }
-        .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .search-input { padding: 0.5rem 1rem; border: 1px solid var(--border-color); border-radius: var(--border-radius); background: var(--bg-color); color: var(--text-color); width: 250px; }
+        .clear-search { cursor: pointer; color: var(--text-muted); }
         .spinning { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .users-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
-        .user-card { background: #14141c; border: 1px solid #25252d; border-radius: var(--border-radius); padding: 1rem; display: flex; align-items: center; gap: 1rem; transition: all 0.2s; }
-        .user-card:hover { border-color: #5865f2; transform: translateY(-2px); }
+        .user-card { background: rgba(var(--surface-rgb), var(--surface-opacity)); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 1rem; display: flex; align-items: center; gap: 1rem; transition: all 0.2s; }
+        .user-card:hover { border-color: var(--accent-color); transform: translateY(-2px); }
         .user-avatar { width: 48px; height: 48px; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
         .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .avatar-placeholder { width: 100%; height: 100%; background: var(--accent-color); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold; color: white; }
         .user-info { flex: 1; min-width: 0; }
-        .user-name { font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .user-username { font-size: 0.85rem; color: #9c9ca7; }
-        .user-id { font-size: 0.75rem; color: #6b6b76; margin-top: 0.25rem; }
-        .action-btn { padding: 0.5rem 1rem; background: #5865f2; color: #fff; border: none; border-radius: var(--border-radius); cursor: pointer; flex-shrink: 0; }
-        .loading, .empty-state { text-align: center; padding: 3rem; color: #6b6b76; grid-column: 1 / -1; }
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
-        .modal-content { background: #14141c; border: 1px solid #25252d; border-radius: var(--border-radius); max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1.2rem; border-bottom: 1px solid #25252d; }
-        .modal-header h3 { margin: 0; color: #fff; }
-        .close-btn { background: none; border: none; color: #6b6b76; font-size: 1.5rem; cursor: pointer; }
-        .tabs { display: flex; border-bottom: 1px solid #25252d; }
-        .tab { flex: 1; padding: 1rem; background: none; border: none; color: #6b6b76; cursor: pointer; font-weight: 600; transition: all 0.2s; }
-        .tab:hover { color: #fff; background: rgba(88, 101, 242, 0.1); }
-        .tab.active { color: #5865f2; border-bottom: 2px solid #5865f2; }
+        .user-name { font-weight: 600; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .user-username { font-size: 0.85rem; color: var(--text-muted); }
+        .user-id { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+        .loading, .empty-state { text-align: center; padding: 3rem; color: var(--text-muted); grid-column: 1 / -1; }
+        .tabs { display: flex; border-bottom: 1px solid var(--border-color); }
+        .tab { flex: 1; padding: 1rem; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .tab:hover { color: var(--text-color); }
+        .tab.active { color: var(--text-color); }
         .tab-content { padding: 1.2rem; }
         .punishments-list { max-height: 300px; overflow-y: auto; }
-        .section-title { font-weight: 600; color: #a5b4fc; margin-bottom: 1rem; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem; }
-        .subsection-title { font-weight: 600; color: #9c9ca7; margin: 1rem 0 0.5rem; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; }
-        .icon { width: 1.2rem; height: 1.2rem; }
-        .no-warnings { color: #6b6b76; text-align: center; padding: 2rem; }
-        .active-punishment-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #1e1e26; border-radius: var(--border-radius); margin-bottom: 0.75rem; }
+        .section-title { font-weight: 600; color: var(--accent-color); margin-bottom: 1rem; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .subsection-title { font-weight: 600; color: var(--text-muted); margin: 1rem 0 0.5rem; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; }
+        .no-warnings { color: var(--text-muted); text-align: center; padding: 2rem; }
+        .active-punishment-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(var(--surface-rgb), 0.5); border-radius: var(--border-radius); margin-bottom: 0.75rem; }
         .active-punishment-item.mute { border-left: 3px solid #3b82f6; }
         .active-punishment-item.ban { border-left: 3px solid #ef4444; }
         .punishment-info { flex: 1; }
-        .punishment-type { font-weight: 600; color: #fff; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem; }
-        .punishment-reason { color: #9c9ca7; font-size: 0.9rem; margin-bottom: 0.25rem; }
-        .punishment-meta { font-size: 0.8rem; color: #6b6b76; }
-        
-        .action-button-small.unmute { background: #3b82f6; color: #fff; }
-        .action-button-small.unban { background: #10b981; color: #fff; }
-        .punishment-item { background: #1e1e26; border-radius: var(--border-radius); padding: 0.75rem; margin-bottom: 0.5rem; }
-        .punishment-reason { color: #fff; margin-bottom: 0.25rem; }
-        .punishment-meta { font-size: 0.8rem; color: #6b6b76; display: flex; justify-content: space-between; align-items: center; }
-        .delete-btn { background: #ef4444; color: #fff; border: none; border-radius: 0.25rem; padding: 0.25rem 0.5rem; cursor: pointer; display: flex; align-items: center; }
+        .punishment-type { font-weight: 600; color: var(--text-color); margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem; }
+        .punishment-reason { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.25rem; }
+        .punishment-meta { font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; }
+        .punishment-item { background: rgba(var(--surface-rgb), 0.5); border-radius: var(--border-radius); padding: 0.75rem; margin-bottom: 0.5rem; }
         .action-section { margin-bottom: 1.5rem; }
-        .action-input, .action-select { width: 100%; padding: 0.75rem; border: 1px solid #25252d; border-radius: var(--border-radius); background: #1e1e26; color: #fff; margin-bottom: 0.75rem; font-family: inherit; }
+        .action-input, .action-select { width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: var(--border-radius); background: var(--bg-color); color: var(--text-color); margin-bottom: 0.75rem; font-family: inherit; }
         .action-button { width: 100%; padding: 0.75rem; border: none; border-radius: var(--border-radius); font-weight: 600; cursor: pointer; margin-bottom: 0.5rem; }
         .action-button.warn { background: #f59e0b; color: #000; }
         .action-button.mute { background: #3b82f6; color: #fff; }
         .action-button.ban { background: #ef4444; color: #fff; }
         .action-button:disabled { opacity: 0.5; cursor: not-allowed; }
         .action-message { padding: 1rem; text-align: center; font-weight: 600; margin: 1rem; border-radius: var(--border-radius); }
-        .action-message.success { background: #10b981; color: #fff; }
-        .action-message.error { background: #ef4444; color: #fff; }
+        .action-message.success { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid #10b981; }
+        .action-message.error { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid #ef4444; }
       `}</style>
     </div>
   );

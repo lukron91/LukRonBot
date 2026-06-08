@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTheme } from '@/lib/theme-context';
 import { FiWifi, FiClock, FiCpu, FiHardDrive, FiServer, FiActivity, FiPower, FiPackage, FiList, FiInfo, FiDatabase, FiRefreshCw, FiTerminal, FiPlus, FiTrash2, FiCheckSquare, FiSquare, FiGlobe, FiCopy, FiX } from 'react-icons/fi';
 
@@ -7,6 +8,8 @@ export default function BotSettingsPage() {
   const { theme, updateTheme } = useTheme();
   const accentColor = theme?.accentColor || '#3b82f6';
   const mode = theme?.mode || 'dark';
+  const searchParams = useSearchParams();
+  const guildId = searchParams.get("guild");
 
   const [health, setHealth] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,7 +26,9 @@ export default function BotSettingsPage() {
 
   const [toast, setToast] = useState(null);
 
-  const [cmdSubTab, setCmdSubTab] = useState("registration"); 
+  const [cmdSubTab, setCmdSubTab] = useState("registration");
+  const [cmdRegType, setCmdRegType] = useState("guild");
+  const [cmdMessage, setCmdMessage] = useState("");
   const [memoryCommands, setMemoryCommands] = useState([]);
   const [registeredLocalCommands, setRegisteredLocalCommands] = useState([]);
   const [registeredGlobalCommands, setRegisteredGlobalCommands] = useState([]);
@@ -186,19 +191,22 @@ export default function BotSettingsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          type: cmdSubTab === 'global' ? 'global' : 'guild', 
+          type: cmdRegType,
           guildId: guildId, 
           commandNames: finalNames 
         }),
       });
       const data = await res.json();
       if (res.ok) {
+        setCmdMessage(`✅ ${action === 'register' ? 'Zarejestrowano' : 'Usunięto'} komendy`);
         showToast(`${action === 'register' ? 'Zarejestrowano' : 'Usunięto'} komendy`, "success");
         await refreshAllCommands();
       } else {
+        setCmdMessage(`❌ Błąd: ${data.error}`);
         showToast(`Błąd: ${data.error}`, "error");
       }
     } catch (err) {
+      setCmdMessage(`❌ Błąd: ${err.message}`);
       showToast(`Błąd: ${err.message}`, "error");
     } finally {
       setCmdUpdating(false);
