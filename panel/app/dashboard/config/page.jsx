@@ -43,7 +43,7 @@ export default function ConfigPage() {
   return (
     <div className="config-page">
       <div className="page-header">
-        <h1 style={{ color: accentColor }}><FiSettings /> Konfiguracja bota</h1>
+        <h1 style={{ color: accentColor }}><FiSettings /> Konfiguracja ogólna</h1>
         <p>Zarządzaj ustawieniami swojego serwera</p>
       </div>
 

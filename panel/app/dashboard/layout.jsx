@@ -153,7 +153,7 @@ export default function DashboardLayout({ children }) {
 
         <nav className="sidebar-nav">
           <div className="nav-section">
-            <div className="nav-section-title">SERWER</div>
+            <div className="nav-section-title">NAWIGACJA</div>
             <Link href="/servers" className={`nav-link ${isActive("/servers") ? 'active' : ''}`} style={{ color: isActive("/servers") ? accentColor : '', borderLeftColor: isActive("/servers") ? accentColor : 'transparent' }}>
               <FiGrid />
               <span>Wszystkie serwery</span>
@@ -168,13 +168,21 @@ export default function DashboardLayout({ children }) {
                   <FiHome />
                   <span>Przegląd</span>
                 </Link>
-                <Link href={getLink("/dashboard/config")} className={`nav-link ${pathname.includes("/dashboard/config") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/config") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/config") ? accentColor : 'transparent' }}>
-                  <FiSettings />
-                  <span>Konfiguracja</span>
-                </Link>
+              </div>
+
+              <div className="nav-section">
+                <div className="nav-section-title">PANEL</div>
                 <Link href={getLink("/dashboard/theme")} className={`nav-link ${pathname.includes("/dashboard/theme") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/theme") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/theme") ? accentColor : 'transparent' }}>
                   <FiSun />
                   <span>Motyw</span>
+                </Link>
+              </div>
+
+              <div className="nav-section">
+                <div className="nav-section-title">SERWER</div>
+                <Link href={getLink("/dashboard/config")} className={`nav-link ${pathname.includes("/dashboard/config") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/config") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/config") ? accentColor : 'transparent' }}>
+                  <FiSettings />
+                  <span>Konfiguracja ogólna</span>
                 </Link>
               </div>
 
