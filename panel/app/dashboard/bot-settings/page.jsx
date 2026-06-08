@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTheme } from '@/lib/theme-context';
-import { FiWifi, FiClock, FiCpu, FiHardDrive, FiServer, FiActivity, FiPower, FiPackage, FiList, FiInfo, FiDatabase, FiRefreshCw, FiTerminal, FiPlus, FiTrash2, FiCheckSquare, FiSquare, FiGlobe, FiCopy, FiX } from 'react-icons/fi';
+import { FiWifi, FiClock, FiCpu, FiHardDrive, FiServer, FiActivity, FiPower, FiPackage, FiList, FiInfo, FiDatabase, FiRefreshCw, FiTerminal, FiPlus, FiTrash2, FiCheckSquare, FiSquare, FiGlobe, FiCopy, FiX, FiZap, FiAlertCircle } from 'react-icons/fi';
 
 export default function BotSettingsPage() {
   const { theme, updateTheme } = useTheme();
@@ -262,10 +262,10 @@ export default function BotSettingsPage() {
           <FiTerminal /> Komendy
         </button>
         <button className={`tab ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')} style={activeTab === 'logs' ? { borderBottomColor: accentColor, color: accentColor } : {}}>
-          <FiList /> Logi systemowe
+          <FiAlertCircle /> Logi systemowe
         </button>
         <button className={`tab ${activeTab === 'activity' ? 'active' : ''}`} onClick={() => setActiveTab('activity')} style={activeTab === 'activity' ? { borderBottomColor: accentColor, color: accentColor } : {}}>
-          <FiList /> Logi aktywności
+          <FiZap /> Logi aktywności
         </button>
         <button className={`tab ${activeTab === 'db' ? 'active' : ''}`} onClick={() => setActiveTab('db')} style={activeTab === 'db' ? { borderBottomColor: accentColor, color: accentColor } : {}}>
           <FiDatabase /> Logi bazy

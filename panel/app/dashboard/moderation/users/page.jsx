@@ -1,7 +1,7 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
-import { FiX, FiRefreshCw, FiTrash2, FiUnlock, FiBell, FiAlertTriangle, FiClock, FiList } from 'react-icons/fi';
+import { FiX, FiRefreshCw, FiTrash2, FiUnlock, FiBell, FiAlertTriangle, FiClock, FiList, FiSlash, FiAlertCircle } from 'react-icons/fi';
 import { useTheme } from '@/lib/theme-context';
 import Modal from '@/components/Modal';
 
@@ -307,12 +307,10 @@ export default function UsersPage() {
           width="650px"
         >
           <div className="modal-tabs">
-            <button className={'modal-tab' + (activeTab === 'apply' ? ' active' : '')} onClick={() => setActiveTab('apply')}>Nałóż karę</button>
-            <button className={'modal-tab' + (activeTab === 'active' ? ' active' : '')} onClick={() => setActiveTab('active')}>Aktywne kary</button>
-            <button className={'modal-tab' + (activeTab === 'warns' ? ' active' : '')} onClick={() => setActiveTab('warns')}>Warny</button>
-            <button className={'modal-tab' + (activeTab === 'history' ? ' active' : '')} onClick={() => setActiveTab('history')}>
-              <FiList /> Historia
-            </button>
+            <button className={'modal-tab' + (activeTab === 'apply' ? ' active' : '')} onClick={() => setActiveTab('apply')}><FiSlash /> Nałóż karę</button>
+            <button className={'modal-tab' + (activeTab === 'active' ? ' active' : '')} onClick={() => setActiveTab('active')}><FiAlertCircle /> Aktywne kary</button>
+            <button className={'modal-tab' + (activeTab === 'warns' ? ' active' : '')} onClick={() => setActiveTab('warns')}><FiAlertTriangle /> Warny</button>
+            <button className={'modal-tab' + (activeTab === 'history' ? ' active' : '')} onClick={() => setActiveTab('history')}><FiList /> Historia</button>
           </div>
 
           {activeTab === 'apply' && (

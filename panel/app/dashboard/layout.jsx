@@ -5,9 +5,10 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from '@/lib/theme-context';
 import Modal from '@/components/Modal';
 import {
-  FiArrowLeft, FiGrid, FiSettings, FiMessageSquare, FiShield,
-  FiUserPlus, FiFileText, FiActivity, FiLogOut, FiServer,
-  FiDatabase, FiCheckCircle, FiXCircle, FiSun, FiChevronDown
+  FiHome, FiGrid, FiSettings, FiMessageSquare, FiShield,
+  FiUsers, FiClipboard, FiActivity, FiLogOut, FiServer,
+  FiDatabase, FiCheckCircle, FiXCircle, FiSun, FiChevronDown,
+  FiZap, FiSmile
 } from 'react-icons/fi';
 
 export default function DashboardLayout({ children }) {
@@ -164,7 +165,7 @@ export default function DashboardLayout({ children }) {
               <div className="nav-section">
                 <div className="nav-section-title">OGÓLNE</div>
                 <Link href={getLink("/dashboard")} className={`nav-link ${isActive("/dashboard") ? 'active' : ''}`} style={{ color: isActive("/dashboard") ? accentColor : '', borderLeftColor: isActive("/dashboard") ? accentColor : 'transparent' }}>
-                  <FiArrowLeft />
+                  <FiHome />
                   <span>Przegląd</span>
                 </Link>
                 <Link href={getLink("/dashboard/config")} className={`nav-link ${pathname.includes("/dashboard/config") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/config") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/config") ? accentColor : 'transparent' }}>
@@ -180,7 +181,7 @@ export default function DashboardLayout({ children }) {
               <div className="nav-section">
                 <div className="nav-section-title">MODERACJA</div>
                 <Link href={getLink("/dashboard/moderation/users")} className={`nav-link ${pathname.includes("/dashboard/moderation/users") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/moderation/users") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/moderation/users") ? accentColor : 'transparent' }}>
-                  <FiUserPlus />
+                  <FiUsers />
                   <span>Lista użytkowników</span>
                 </Link>
                 <Link href={getLink("/dashboard/moderation/settings")} className={`nav-link ${pathname.includes("/dashboard/moderation/settings") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/moderation/settings") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/moderation/settings") ? accentColor : 'transparent' }}>
@@ -200,7 +201,7 @@ export default function DashboardLayout({ children }) {
               <div className="nav-section">
                 <div className="nav-section-title">AUTO-MOD</div>
                 <Link href={getLink("/dashboard/automod")} className={`nav-link ${pathname.includes("/dashboard/automod") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/automod") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/automod") ? accentColor : 'transparent' }}>
-                  <FiShield />
+                  <FiZap />
                   <span>Automod</span>
                 </Link>
               </div>
@@ -208,7 +209,7 @@ export default function DashboardLayout({ children }) {
               <div className="nav-section">
                 <div className="nav-section-title">POWITANIA</div>
                 <Link href={getLink("/dashboard/welcome")} className={`nav-link ${pathname.includes("/dashboard/welcome") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/welcome") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/welcome") ? accentColor : 'transparent' }}>
-                  <FiFileText />
+                  <FiSmile />
                   <span>Powitania</span>
                 </Link>
               </div>
@@ -216,7 +217,7 @@ export default function DashboardLayout({ children }) {
               <div className="nav-section">
                 <div className="nav-section-title">LOGI</div>
                 <Link href={getLink("/dashboard/logs")} className={`nav-link ${pathname.includes("/dashboard/logs") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/logs") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/logs") ? accentColor : 'transparent' }}>
-                  <FiFileText />
+                  <FiClipboard />
                   <span>Logi</span>
                 </Link>
               </div>
