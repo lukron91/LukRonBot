@@ -237,12 +237,12 @@ export default function BotSettingsPage() {
           <div className="toast-content">
             <span>{toast.message}</span>
             {toast.type === 'error' && (
-              <button onClick={() => copyToClipboard(toast.message)} className="btn-base btn-standard" style={{ padding: "0.3rem 0.6rem", minWidth: "auto" }} title="Kopiuj błąd">
+              <button onClick={() => copyToClipboard(toast.message)} className="btn-base btn-standard" style={{ height: 'auto', padding: "0.3rem 0.6rem", minWidth: "auto" }} title="Kopiuj błąd">
                 <FiCopy />
               </button>
             )}
           </div>
-          <button onClick={() => setToast(null)} className="btn-base btn-dnd" style={{ padding: "0.2rem 0.4rem", minWidth: "auto" }}><FiX /></button>
+          <button onClick={() => setToast(null)} className="btn-base btn-dnd" style={{ height: 'auto', padding: "0.2rem 0.4rem", minWidth: "auto" }}><FiX /></button>
         </div>
       )}
 
@@ -328,7 +328,7 @@ export default function BotSettingsPage() {
       {activeTab === 'modules' && (
         <div className="section">
           <h2 style={{ color: accentColor }}>Moduły bota</h2>
-          <div className="module-actions">
+          <div className="btn-row" style={{ marginBottom: '1rem' }}>
             <button onClick={testDebugModule} className="btn-base btn-standard">🧪 Test modułu debug</button>
             <button onClick={reloadModules} className="btn-base btn-standard"><FiRefreshCw /> Przeładuj moduły</button>
           </div>
@@ -380,11 +380,11 @@ export default function BotSettingsPage() {
 
           {cmdSubTab === 'registration' && (
             <>
-              <div className="command-setup" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div className="btn-row" style={{ marginBottom: '1.5rem' }}>
                 <button onClick={refreshAllCommands} className="btn-base btn-standard"><FiRefreshCw /> Odśwież listę z pamięci</button>
               </div>
 
-              <div className="command-bulk-actions" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+              <div className="btn-row" style={{ marginBottom: '1.5rem' }}>
                 <button 
                   onClick={() => { setCmdRegType('global'); manageCommands('register'); }} 
                   className="btn-base btn-standard">

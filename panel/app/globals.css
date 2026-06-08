@@ -568,6 +568,43 @@ html.btn-outline-mode .btn-dnd:hover:not(:disabled) {
   box-shadow: 0 4px 12px rgba(153,27,27,0.3);
 }
 
+/* ================================================
+   BUTTON GROUPS — globalne klasy dla kontenerów przycisków
+   Używaj zamiast inline style={{ display:'flex', gap:... }}
+   ================================================ */
+
+/* Poziomy rząd przycisków */
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Pionowy stos przycisków */
+.btn-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Wersja z większym odstępem (np. główne akcje sekcji) */
+.btn-row-lg {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Przyciski wyrównane do prawej */
+.btn-row-end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
 /* Status indicator pills */
 .btn-status {
   display: inline-flex;
