@@ -241,9 +241,14 @@ curl -H "Authorization: token GH_TOKEN" \
 - ✅ System logowania przez Discord OAuth
 - ✅ Dashboard layout (sidebar, baner, statusy, nawigacja)
 - ✅ System motywów (dark/light, accent, radius, opacity, filled/outline)
+  - ✅ Opacity: bezpośrednie wartości (0.0-1.0), brak inwersji
+  - ✅ `--tab-opacity` steruje przezroczystością kart sekcji
+  - ✅ `--panel-opacity` steruje przezroczystością wrappera strony
+  - ✅ `--window-opacity` steruje przezroczystością modali
+  - ✅ Accent-color border na sekcjach i kartach
 - ✅ System przycisków globalny (5 typów + kontenery)
 - ✅ Dynamiczny loader komend (Slash Commands)
-- ✅ Komponent Modal
+- ✅ Komponent Modal (z-index 9999, overlay blur)
 - ✅ Toggle switch
 - ✅ Lista użytkowników moderacji + historia kar
 - ✅ Ustawienia moderacji (z error state)
