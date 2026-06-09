@@ -7,23 +7,11 @@ export default function Home() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const init = async () => {
-      if (localStorage.getItem("session")) {
-        window.location.href = "/servers";
-        return;
-      }
-      try {
-        const res = await fetch("/api/auth/me");
-        if (res.ok) {
-          const data = await res.json();
-          localStorage.setItem("session", JSON.stringify(data));
-          window.location.href = "/servers";
-          return;
-        }
-      } catch {}
-      setChecking(false);
-    };
-    init();
+    if (localStorage.getItem("session")) {
+      window.location.href = "/servers";
+      return;
+    }
+    setChecking(false);
   }, []);
 
   const handleLogin = () => {

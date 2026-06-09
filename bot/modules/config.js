@@ -64,18 +64,48 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
   app.post('/api/guilds/:guildId/config/moderation', async (req, res) => {
     try {
       const db = getDb(req.params.guildId);
-      const allowed = ['ban_type', 'ban_role_id', 'appeal_channel_id', 'mod_log_channel',
-        'auto_mod_enabled', 'block_links', 'block_invites', 'warn_threshold', 'mute_role_id',
-        'command_permissions', 'command_enabled'];
+      // Mapa pól z camelCase (frontend) na snake_case (baza danych)
+      const FIELD_MAP = {
+        autoModEnabled: 'auto_mod_enabled',
+        blockLinks: 'block_links',
+        blockInvites: 'block_invites',
+        warnThreshold: 'warn_threshold',
+        banMethod: 'ban_type',
+        banRoleId: 'ban_role_id',
+        modLogChannel: 'mod_log_channel',
+        commandPermissions: 'command_permissions',
+        commandEnabled: 'command_enabled',
+        autoWarnThreshold: 'auto_warn_threshold',
+        autoMuteThreshold: 'auto_mute_threshold',
+        autoKickThreshold: 'auto_kick_threshold',
+        autoBanThreshold: 'auto_ban_threshold',
+        autoActionEnabled: 'auto_action_enabled',
+        protectedRoles: 'protected_roles',
+        ignoredChannels: 'ignored_channels',
+        publicInfoEnabled: 'public_info_enabled',
+        publicInfoChannel: 'public_info_channel',
+        muteRoleId: 'mute_role_id',
+        appealChannelId: 'appeal_channel_id',
+      };
+
       const sets = [];
       const vals = [];
+
       for (const [key, val] of Object.entries(req.body)) {
-        const dbKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-        if (allowed.includes(dbKey)) {
-          sets.push(`"${dbKey}" = ?`);
-          vals.push(typeof val === 'object' ? JSON.stringify(val) : val);
+        const dbKey = FIELD_MAP[key];
+        if (!dbKey) continue; // pomijamy nieznane pola
+        if (val === null) continue; // null pomijamy — DB ma DEFAULT
+        sets.push(`"${dbKey}" = ?`);
+        // Konwertuj typy do formatu akceptowanego przez SQLite
+        if (typeof val === 'boolean') {
+          vals.push(val ? 1 : 0); // boolean → INTEGER
+        } else if (typeof val === 'object' && !(val instanceof String) && !(val instanceof Buffer)) {
+          vals.push(JSON.stringify(val)); // obiekty/tablice → TEXT
+        } else {
+          vals.push(val); // number, string, bigint, Buffer — wprost
         }
       }
+
       if (sets.length === 0) return res.status(400).json({ error: 'Brak poprawnych pól' });
       sets.push('updated_at = datetime(\'now\')');
       vals.push(req.params.guildId);

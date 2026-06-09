@@ -13,6 +13,10 @@ export default function ThemeSettings() {
   const surfaceOpacity = theme?.surfaceOpacity || '0.9';
   const bgIntensity = theme?.bgIntensity || '100%';
   const buttonStyle = theme?.buttonStyle || 'filled';
+  const panelOpacity = theme?.panelOpacity || '0.85';
+  const tabOpacity = theme?.tabOpacity || '0.85';
+  const windowOpacity = theme?.windowOpacity || '0.92';
+  const bgPattern = theme?.bgPattern || 'none';
 
   const applyColor = (color) => {
     updateTheme({ accentColor: color });
@@ -102,7 +106,7 @@ export default function ThemeSettings() {
 
       <div className="theme-section">
         <h2 style={{ color: accentColor }}>Personalizacja Formy</h2>
-        <p className="section-description">Dostosuj zaokrąglenia i przejrzystość elementów.</p>
+        <p className="section-description">Dostosuj zaokrąglenia, intensywność tła i przezroczystość elementów.</p>
 
         <div className="custom-setting">
           <label>Zaokrąglenia rogów</label>
@@ -120,25 +124,80 @@ export default function ThemeSettings() {
         </div>
 
         <div className="custom-setting">
-          <label>Przezroczystość paneli: {Math.round(surfaceOpacity * 100)}%</label>
-          <input 
-            type="range" 
-            min="0.1" max="1" step="0.05" 
-            value={surfaceOpacity} 
-            onChange={(e) => updateTheme({ surfaceOpacity: e.target.value })}
-            className="theme-slider"
-          />
-        </div>
-
-        <div className="custom-setting">
           <label>Intensywność tła: {bgIntensity}</label>
           <input 
             type="range" 
-            min="50" max="150" step="1" 
+            min="0" max="100" step="5" 
             value={parseInt(bgIntensity)} 
             onChange={(e) => updateTheme({ bgIntensity: `${e.target.value}%` })}
             className="theme-slider"
           />
+          <span className="setting-hint">Kontroluje jasność/ciemność tła strony (0% = czarne, 100% = pełny kolor)</span>
+        </div>
+
+        <div className="custom-setting">
+          <label>Krycie paneli: {Math.round(panelOpacity * 100)}%</label>
+          <input 
+            type="range" 
+            min="0" max="0.9" step="0.05" 
+            value={panelOpacity} 
+            onChange={(e) => updateTheme({ panelOpacity: e.target.value })}
+            className="theme-slider"
+          />
+          <span className="setting-hint">Wpływa na sidebar, karty, statystyki i sekcje ustawień</span>
+        </div>
+
+        <div className="custom-setting">
+          <label>Krycie zakładek: {Math.round(tabOpacity * 100)}%</label>
+          <input 
+            type="range" 
+            min="0" max="0.9" step="0.05" 
+            value={tabOpacity} 
+            onChange={(e) => updateTheme({ tabOpacity: e.target.value })}
+            className="theme-slider"
+          />
+          <span className="setting-hint">Wpływa na kontener z konkretną sekcją ustawień</span>
+        </div>
+      </div>
+
+      <div className="theme-section">
+        <h2 style={{ color: accentColor }}>Przezroczystość okien</h2>
+        <p className="section-description">Ustaw poziom przezroczystości dla okien modalnych i nakładek.</p>
+
+        <div className="custom-setting">
+          <label>Krycie okien: {Math.round(windowOpacity * 100)}%</label>
+          <input 
+            type="range" 
+            min="0" max="0.9" step="0.05" 
+            value={windowOpacity} 
+            onChange={(e) => updateTheme({ windowOpacity: e.target.value })}
+            className="theme-slider"
+          />
+          <span className="setting-hint">Wpływa na modale, okna logowania i nakładki</span>
+        </div>
+      </div>
+
+      <div className="theme-section">
+        <h2 style={{ color: accentColor }}>Wzór tła</h2>
+        <p className="section-description">Dodaj delikatny wzór na tle panelu.</p>
+
+        <div className="pattern-grid">
+          {[
+            { value: 'none', label: 'Brak', icon: '⊡' },
+            { value: 'dots', label: 'Kropki', icon: '⋯' },
+            { value: 'grid', label: 'Siatka', icon: '⊞' },
+            { value: 'waves', label: 'Fale', icon: '∿' },
+            { value: 'hexagons', label: 'Heksagony', icon: '⬡' },
+          ].map(pattern => (
+            <button
+              key={pattern.value}
+              className={`pattern-btn ${bgPattern === pattern.value ? 'active' : ''}`}
+              onClick={() => updateTheme({ bgPattern: pattern.value })}
+            >
+              <span className="pattern-icon">{pattern.icon}</span>
+              <span className="pattern-label">{pattern.label}</span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -203,11 +262,12 @@ export default function ThemeSettings() {
           margin-bottom: 2rem;
         }
         .theme-section {
-          background: var(--surface-color);
-          border: 1px solid var(--border-color);
+          background: rgba(var(--surface-rgb), var(--tab-opacity));
+          border: 1px solid var(--accent-color);
           border-radius: var(--border-radius);
           padding: 1.5rem;
           margin-bottom: 1.5rem;
+          backdrop-filter: blur(12px);
         }
         .theme-section h2 {
           font-size: 1.1rem;
@@ -320,6 +380,48 @@ export default function ThemeSettings() {
           width: 100%;
           cursor: pointer;
           accent-color: var(--accent-color);
+        }
+        .setting-hint {
+          display: block;
+          margin-top: 0.3rem;
+          font-size: 0.75rem;
+          color: var(--text-muted);
+          font-style: italic;
+        }
+        .pattern-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+          gap: 0.75rem;
+        }
+        .pattern-btn {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 1rem 0.75rem;
+          background: var(--bg-color);
+          border: 2px solid var(--border-color);
+          border-radius: var(--border-radius);
+          color: var(--text-color);
+          cursor: pointer;
+          transition: all 0.2s;
+          font-family: inherit;
+        }
+        .pattern-btn:hover {
+          border-color: var(--text-muted);
+        }
+        .pattern-btn.active {
+          border-color: var(--accent-color);
+          background: rgba(var(--surface-rgb), var(--surface-opacity));
+          box-shadow: 0 0 0 2px var(--accent-color);
+        }
+        .pattern-icon {
+          font-size: 1.5rem;
+          line-height: 1;
+        }
+        .pattern-label {
+          font-size: 0.8rem;
+          font-weight: 600;
         }
         .preview-card {
           background: rgba(var(--surface-rgb), var(--surface-opacity));

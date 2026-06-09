@@ -74,6 +74,15 @@ const SCHEMAS = {
       mute_role_id        TEXT,
       command_permissions TEXT DEFAULT '{}',
       command_enabled     TEXT DEFAULT '{}',
+      protected_roles     TEXT DEFAULT '[]',
+      ignored_channels    TEXT DEFAULT '[]',
+      auto_action_enabled INTEGER DEFAULT 0,
+      auto_warn_threshold INTEGER DEFAULT 3,
+      auto_mute_threshold INTEGER DEFAULT 5,
+      auto_kick_threshold INTEGER DEFAULT 7,
+      auto_ban_threshold  INTEGER DEFAULT 10,
+      public_info_enabled INTEGER DEFAULT 0,
+      public_info_channel TEXT,
       updated_at          TEXT DEFAULT (datetime('now'))
     );
   `,
@@ -169,6 +178,30 @@ function getDb(guildId) {
       dbLog('debug', `[${guildId}] tabela '${name}' gotowa`);
     } catch (err) {
       dbLog('error', `[${guildId}] błąd tworzenia tabeli '${name}': ${err.message}`);
+    }
+  }
+
+  // Migracja — dodaj brakujące kolumny do moderation_settings
+  const migrationColumns = [
+    'protected_roles TEXT DEFAULT \'[]\'',
+    'ignored_channels TEXT DEFAULT \'[]\'',
+    'auto_action_enabled INTEGER DEFAULT 0',
+    'auto_warn_threshold INTEGER DEFAULT 3',
+    'auto_mute_threshold INTEGER DEFAULT 5',
+    'auto_kick_threshold INTEGER DEFAULT 7',
+    'auto_ban_threshold INTEGER DEFAULT 10',
+    'public_info_enabled INTEGER DEFAULT 0',
+    'public_info_channel TEXT',
+  ];
+  for (const colDef of migrationColumns) {
+    try {
+      db.exec(`ALTER TABLE moderation_settings ADD COLUMN ${colDef}`);
+      dbLog('info', `[${guildId}] dodano kolumnę: ${colDef.split(' ')[0]}`);
+    } catch (err) {
+      // Błąd "duplicate column" jest OK — kolumna już istnieje
+      if (!err.message.includes('duplicate column')) {
+        dbLog('warn', `[${guildId}] migracja '${colDef.split(' ')[0]}': ${err.message}`);
+      }
     }
   }
 

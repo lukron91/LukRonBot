@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -23,7 +22,10 @@ export async function GET(request) {
   });
 
   const tokenData = await tokenRes.json();
+  console.log('[CALLBACK] token response status:', tokenRes.status);
+  console.log('[CALLBACK] token data:', JSON.stringify(tokenData));
   if (!tokenData.access_token) {
+    console.log('[CALLBACK] BRAK access_token, redirecting to error');
     return NextResponse.redirect(new URL('/?error=token', request.url));
   }
 
@@ -40,31 +42,30 @@ export async function GET(request) {
   const user = await userRes.json();
   let guilds = await guildsRes.json();
 
-  if (Array.isArray(guilds)) {
-    guilds = guilds.filter(g => {
-      const perms = BigInt(g.permissions);
-      return (perms & 0x8n) !== 0n || (perms & 0x20n) !== 0n;
-    });
-  }
-
+  // Zachowaj wszystkie gildie — filtrowanie będzie po stronie panelu
   const sessionData = {
     userId: user.id,
     username: user.username,
+    global_name: user.global_name,
     avatar: user.avatar,
     email: user.email,
-    guilds,
+    guilds: Array.isArray(guilds) ? guilds : [],
   };
 
-  // Ustawiamy httpOnly cookie - dane NIE są widoczne w JS ani w URL
-  const cookieStore = await cookies();
-  cookieStore.set('session', JSON.stringify(sessionData), {
-    httpOnly: true,        // NIE dostępny przez document.cookie
-    secure: process.env.NODE_ENV === 'production', // HTTPS w produkcji
-    sameSite: 'lax',       // Ochrona przed CSRF
-    maxAge: 60 * 60 * 24 * 7, // 7 dni
-    path: '/',             // Dostępny na całej stronie
-  });
+  // Zwracamy HTML który zapisze sesję w localStorage i przekieruje
+  const sessionJson = JSON.stringify(sessionData);
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Logowanie...</title></head>
+<body>
+<script>
+  localStorage.setItem('session', '${sessionJson.replace(/'/g, "\\'")}');
+  window.location.href = '/';
+</script>
+</body>
+</html>`;
 
-  // Czyste przekierowanie - zero danych w URL
-  return NextResponse.redirect(new URL('/', request.url));
+  return new NextResponse(html, {
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+  });
 }

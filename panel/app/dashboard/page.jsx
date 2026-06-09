@@ -153,7 +153,7 @@ export default function DashboardHome() {
           margin-bottom: 1.5rem;
         }
         .stat-card {
-          background: rgba(var(--surface-rgb), var(--surface-opacity));
+          background: rgba(var(--surface-rgb), var(--tab-opacity));
           border-radius: var(--border-radius);
           padding: 1.25rem;
           border: 1px solid var(--border-color);
@@ -191,7 +191,7 @@ export default function DashboardHome() {
           color: var(--text-color);
         }
         .trend-section {
-          background: rgba(var(--surface-rgb), var(--surface-opacity));
+          background: rgba(var(--surface-rgb), var(--tab-opacity));
           border-radius: var(--border-radius);
           padding: 1.2rem;
           margin-bottom: 1.5rem;
@@ -224,7 +224,7 @@ export default function DashboardHome() {
           gap: 1rem;
         }
         .card-list {
-          background: rgba(var(--surface-rgb), var(--surface-opacity));
+          background: rgba(var(--surface-rgb), var(--tab-opacity));
           border-radius: var(--border-radius);
           padding: 1.2rem;
           border: 1px solid var(--border-color);
