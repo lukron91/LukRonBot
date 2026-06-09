@@ -15,7 +15,7 @@ export default function DashboardLayout({ children }) {
   const [user, setUser] = useState(null);
   const [guilds, setGuilds] = useState([]);
   const [selectedGuildId, setSelectedGuildId] = useState(null);
-  const [mongoStatus, setMongoStatus] = useState(null);
+  const [dbStatus, setDbStatus] = useState(null);
   const [botOnGuild, setBotOnGuild] = useState(null);
   const [isOwner, setIsOwner] = useState(false);
   const [clientActive, setClientActive] = useState(false);
@@ -39,10 +39,10 @@ export default function DashboardLayout({ children }) {
         const statusRes = await fetch("/api/proxy/api/status");
         setServerActive(statusRes.ok);
         const data = await statusRes.json();
-        setMongoStatus(data.mongo === true);
+        setDbStatus(data.db === true);
       } catch {
         setServerActive(false);
-        setMongoStatus(false);
+        setDbStatus(false);
       }
     };
     checkStatuses();
@@ -288,10 +288,10 @@ export default function DashboardLayout({ children }) {
                 <span>{serverActive ? 'Server aktywny' : 'Server nieaktywny'}</span>
                 {serverActive ? <FiCheckCircle /> : <FiXCircle />}
               </div>
-              <div className={`status-item ${mongoStatus ? 'online' : 'offline'}`}>
+              <div className={`status-item ${dbStatus ? 'online' : 'offline'}`}>
                 <FiDatabase />
-                <span>{mongoStatus ? 'Połączenie z bazą' : 'Brak połączenia z bazą'}</span>
-                {mongoStatus ? <FiCheckCircle /> : <FiXCircle />}
+                <span>{dbStatus ? 'Baza danych SQLite' : 'Brak bazy danych'}</span>
+                {dbStatus ? <FiCheckCircle /> : <FiXCircle />}
               </div>
             </div>
           </div>

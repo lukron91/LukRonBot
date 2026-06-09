@@ -6,7 +6,7 @@ const fs      = require('fs');
 const path    = require('path');
 const http    = require('http');
 const { WebSocketServer } = require('ws');
-const { connectDB, initDbStructure, setLogger, BOT_ENV } = require('./db');
+const { connectDB, initDbStructure, setLogger, setupDatabaseExplorer, BOT_ENV } = require('./db');
 
 // ─── Express ──────────────────────────────────────────────────────────────────
 
@@ -153,7 +153,7 @@ app.post('/api/modules/reload', (req, res) => {
 
 // Status połączenia z bazą i środowisko — używane przez panel
 app.get('/api/status', (req, res) => {
-  res.json({ mongo: app.locals.isDbConnected(), env: BOT_ENV });
+  res.json({ db: app.locals.isDbConnected(), env: BOT_ENV });
 });
 
 // Statystyki serwera Discord — używane przez panel (lista serwerów i dashboard)
@@ -222,7 +222,10 @@ async function startBot() {
   loadAllModules();
   logger.system('info', `Załadowano ${loadedModules.size} modułów`, 'modules');
 
-  // 3. Discord
+  // 3. Eksplorator bazy (endpointy API do podglądu baz SQLite)
+  setupDatabaseExplorer(app);
+
+  // 4. Discord
   try {
     await client.login(process.env.DISCORD_BOT_TOKEN);
     logger.system('info', `Discord: zalogowano jako ${client.user?.tag}`, 'core');
@@ -230,7 +233,7 @@ async function startBot() {
     logger.system('error', `Discord: błąd logowania — ${err.message}`, 'core');
   }
 
-  // 4. HTTP + WebSocket
+  // 5. HTTP + WebSocket
   const PORT = process.env.API_PORT || 3001;
   const httpServer = http.createServer(app);
   setupWebSocket(httpServer);

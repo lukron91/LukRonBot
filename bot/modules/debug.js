@@ -1,4 +1,4 @@
-const { makeModel, mongoose, BOT_ENV } = require('../db');
+const { getDb, BOT_ENV } = require('../db');
 
 module.exports = (app, client, registerModule, unregisterModule, moduleName) => {
   registerModule(moduleName, false, 'Moduł testowy i debug');
@@ -12,14 +12,10 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
   // Test zapisu do bazy — zapisuje do global_config żeby zobaczyć log DB
   app.post('/api/db/test-write', async (req, res) => {
     try {
-      const GlobalConfig = mongoose.models.global_config;
-      if (!GlobalConfig) return res.status(503).json({ error: 'Model global_config nie załadowany' });
-
-      await GlobalConfig.findOneAndUpdate(
-        { key: 'debug_test_write' },
-        { key: 'debug_test_write', value: 'zapis z panelu: ' + new Date().toISOString(), updatedAt: new Date() },
-        { upsert: true }
-      );
+      const db = getDb('global');
+      db.prepare(`INSERT INTO global_config (key, value, updated_at) VALUES (?, ?, datetime('now'))
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')`)
+        .run('debug_test_write', 'zapis z panelu: ' + new Date().toISOString());
 
       logger.activity('info', 'Test zapisu do bazy [' + BOT_ENV + '] — sukces', 'debug');
       res.json({ success: true, environment: BOT_ENV, timestamp: new Date().toISOString() });

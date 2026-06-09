@@ -1,38 +1,23 @@
-const { makeModel, mongoose } = require('../db');
+const { getDb } = require('../db');
 
 module.exports = (app, client, registerModule, unregisterModule, moduleName) => {
   registerModule(moduleName, false, 'System moderacji i kar');
   const logger = app.locals.logger;
 
-  // Model kar — używa kolekcji 'punishments' zdefiniowanej w db.js
-  // makeModel nie rejestruje duplikatu jeśli model już istnieje
-  const Punishment = makeModel('punishments', new mongoose.Schema({
-    guildId:     { type: String, required: true },
-    userId:      { type: String, required: true },
-    moderatorId: { type: String, required: true },
-    type:        { type: String, required: true, enum: ['warn', 'mute', 'ban', 'kick', 'unmute', 'unban'] },
-    banType:     { type: String, enum: ['discord', 'role'] },
-    reason:      { type: String, default: 'Brak powodu' },
-    duration:    Number,
-    expiresAt:   Date,
-    active:      { type: Boolean, default: true },
-  }, { timestamps: true }));
-
-  // Model ustawień moderacji per serwer
-  const ModerationSettings = makeModel('moderation_settings', new mongoose.Schema({
-    guildId:            { type: String, required: true, unique: true },
-    banType:            { type: String, default: 'discord', enum: ['discord', 'role'] },
-    banRoleId:          String,
-    appealChannelId:    String,
-    modLogChannel:      String,
-    autoModEnabled:     { type: Boolean, default: false },
-    blockLinks:         { type: Boolean, default: false },
-    blockInvites:       { type: Boolean, default: false },
-    warnThreshold:      { type: Number, default: 3 },
-    muteRoleId:         String,
-    commandPermissions: { type: mongoose.Schema.Types.Mixed, default: {} },
-    commandEnabled:     { type: mongoose.Schema.Types.Mixed, default: {} },
-  }, { timestamps: true }));
+  // ── Helper: dodaj karę ───────────────────────────────────────────────────
+  function addPunishment(guildId, data) {
+    const db = getDb(guildId);
+    const info = db.prepare(`INSERT INTO punishments
+      (guild_id, user_id, moderator_id, type, ban_type, reason, duration, expires_at, active)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    const result = info.run(
+      guildId, data.userId, data.moderatorId || 'panel', data.type,
+      data.banType || null, data.reason || 'Brak powodu',
+      data.duration || null, data.expiresAt || null,
+      data.active !== undefined ? (data.active ? 1 : 0) : 1
+    );
+    return result.lastInsertRowid;
+  }
 
   // ── Endpointy kar ─────────────────────────────────────────────────────────
 
@@ -44,14 +29,14 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
     const { userId, moderatorId, reason, duration, banType: banMethod, bannedRoleId } = req.body;
 
     try {
-      const punishment = await Punishment.create({
-        guildId, userId,
+      const punishmentId = addPunishment(guildId, {
+        userId,
         moderatorId: moderatorId || 'panel',
         type: action,
         reason: reason || 'Brak powodu',
-        duration: action === 'mute' ? duration : undefined,
-        expiresAt: (action === 'mute' && duration) ? new Date(Date.now() + duration * 60000) : undefined,
-        banType: action === 'ban' ? banMethod : undefined,
+        duration: action === 'mute' ? duration : null,
+        expiresAt: (action === 'mute' && duration) ? new Date(Date.now() + duration * 60000).toISOString() : null,
+        banType: action === 'ban' ? banMethod : null,
         active: true,
       });
 
@@ -78,7 +63,7 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
         }
       }
 
-      res.json({ success: true, punishmentId: punishment._id });
+      res.json({ success: true, punishmentId });
     } catch (err) {
       logger.activity('error', 'Błąd kary ' + action + ': ' + err.message, 'moderation');
       res.status(500).json({ error: err.message });
@@ -94,8 +79,10 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
         const member = guild.members.cache.get(userId) || await guild.members.fetch(userId).catch(() => null);
         if (member) await member.timeout(null, 'Odciszenie przez panel');
       }
-      await Punishment.updateMany({ guildId, userId, type: 'mute', active: true }, { active: false });
-      await Punishment.create({ guildId, userId, moderatorId: 'panel', type: 'unmute', reason: 'Odciszenie przez panel', active: false });
+      const db = getDb(guildId);
+      db.prepare('UPDATE punishments SET active = 0 WHERE guild_id = ? AND user_id = ? AND type = ? AND active = 1')
+        .run(guildId, userId, 'mute');
+      addPunishment(guildId, { userId, moderatorId: 'panel', type: 'unmute', reason: 'Odciszenie przez panel', active: false });
       res.json({ success: true });
     } catch (err) {
       logger.activity('error', 'Błąd unmute: ' + err.message, 'moderation');
@@ -109,8 +96,10 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
     try {
       const guild = client.guilds.cache.get(guildId);
       if (guild) await guild.members.unban(userId, 'Odbanowanie przez panel').catch(() => {});
-      await Punishment.updateMany({ guildId, userId, type: 'ban', active: true }, { active: false });
-      await Punishment.create({ guildId, userId, moderatorId: 'panel', type: 'unban', reason: 'Odbanowanie przez panel', active: false });
+      const db = getDb(guildId);
+      db.prepare('UPDATE punishments SET active = 0 WHERE guild_id = ? AND user_id = ? AND type = ? AND active = 1')
+        .run(guildId, userId, 'ban');
+      addPunishment(guildId, { userId, moderatorId: 'panel', type: 'unban', reason: 'Odbanowanie przez panel', active: false });
       res.json({ success: true });
     } catch (err) {
       logger.activity('error', 'Błąd unban: ' + err.message, 'moderation');
@@ -121,10 +110,10 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
   // Historia kar użytkownika
   app.get('/api/guilds/:guildId/punishments/:userId', async (req, res) => {
     try {
-      const punishments = await Punishment.find({
-        guildId: req.params.guildId,
-        userId: req.params.userId,
-      }).sort({ createdAt: -1 });
+      const db = getDb(req.params.guildId);
+      const punishments = db.prepare(
+        'SELECT * FROM punishments WHERE guild_id = ? AND user_id = ? ORDER BY created_at DESC'
+      ).all(req.params.guildId, req.params.userId);
       res.json({ success: true, punishments });
     } catch (err) { res.status(500).json({ error: err.message }); }
   });
@@ -132,8 +121,13 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
   // Aktywne kary użytkownika
   app.get('/api/guilds/:guildId/punishments/:userId/active', async (req, res) => {
     try {
-      const mute = await Punishment.findOne({ guildId: req.params.guildId, userId: req.params.userId, type: 'mute', active: true });
-      const ban  = await Punishment.findOne({ guildId: req.params.guildId, userId: req.params.userId, type: 'ban',  active: true });
+      const db = getDb(req.params.guildId);
+      const mute = db.prepare(
+        'SELECT * FROM punishments WHERE guild_id = ? AND user_id = ? AND type = ? AND active = 1 LIMIT 1'
+      ).get(req.params.guildId, req.params.userId, 'mute');
+      const ban = db.prepare(
+        'SELECT * FROM punishments WHERE guild_id = ? AND user_id = ? AND type = ? AND active = 1 LIMIT 1'
+      ).get(req.params.guildId, req.params.userId, 'ban');
       res.json({ success: true, mute: mute || null, ban: ban || null });
     } catch (err) { res.status(500).json({ error: err.message }); }
   });
@@ -141,8 +135,11 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
   // Usuwanie warna
   app.delete('/api/guilds/:guildId/punishments/warn/:warnId', async (req, res) => {
     try {
-      const result = await Punishment.deleteOne({ _id: req.params.warnId, guildId: req.params.guildId, type: 'warn' });
-      if (result.deletedCount === 0) return res.status(404).json({ error: 'Warn nie znaleziony' });
+      const db = getDb(req.params.guildId);
+      const result = db.prepare(
+        'DELETE FROM punishments WHERE id = ? AND guild_id = ? AND type = ?'
+      ).run(req.params.warnId, req.params.guildId, 'warn');
+      if (result.changes === 0) return res.status(404).json({ error: 'Warn nie znaleziony' });
       res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
   });
@@ -150,7 +147,8 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
   // Ustawienia moderacji
   app.get('/api/guilds/:guildId/moderation/settings', async (req, res) => {
     try {
-      const settings = await ModerationSettings.findOne({ guildId: req.params.guildId });
+      const db = getDb(req.params.guildId);
+      const settings = db.prepare('SELECT * FROM moderation_settings WHERE guild_id = ?').get(req.params.guildId);
       res.json(settings || {});
     } catch (err) { res.status(500).json({ error: err.message }); }
   });
@@ -161,7 +159,7 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
       const guild = client.guilds.cache.get(req.params.guildId);
       if (!guild) return res.status(404).json({ error: 'Serwer nie znaleziony' });
       const channels = guild.channels.cache
-        .filter(c => c.type === 0) // tylko tekstowe
+        .filter(c => c.type === 0)
         .map(c => ({ id: c.id, name: c.name, type: c.type }));
       res.json(channels);
     } catch (err) { res.status(500).json({ error: err.message }); }

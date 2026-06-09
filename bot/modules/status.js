@@ -1,31 +1,30 @@
 const { ActivityType } = require('discord.js');
-const { makeModel, mongoose } = require('../db');
+const { getDb } = require('../db');
 
 module.exports = (app, client, registerModule, unregisterModule, moduleName) => {
   registerModule(moduleName, false, 'Status bota — zapisywany w bazie, przywracany przy restarcie');
   const logger = app.locals.logger;
 
-  // global_config — klucz-wartość, status bota i ustawienia właściciela
-  const GlobalConfig = makeModel('global_config', new mongoose.Schema({
-    key:       { type: String, required: true, unique: true },
-    value:     { type: mongoose.Schema.Types.Mixed },
-    updatedAt: { type: Date, default: Date.now },
-  }));
+  // Używamy global_config z pierwszej dostępnej bazy (lub tworzymy dedykowaną)
+  // Dla ustawień globalnych używamy boty o guildId = 'global'
+  function getGlobalDb() {
+    return getDb('global');
+  }
 
   async function getConfig(key) {
     try {
-      const doc = await GlobalConfig.findOne({ key });
-      return doc?.value ?? null;
+      const db = getGlobalDb();
+      const row = db.prepare('SELECT value FROM global_config WHERE key = ?').get(key);
+      return row ? JSON.parse(row.value) : null;
     } catch { return null; }
   }
 
   async function setConfig(key, value) {
     try {
-      await GlobalConfig.findOneAndUpdate(
-        { key },
-        { key, value, updatedAt: new Date() },
-        { upsert: true }
-      );
+      const db = getGlobalDb();
+      db.prepare(`INSERT INTO global_config (key, value, updated_at) VALUES (?, ?, datetime('now'))
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')`)
+        .run(key, JSON.stringify(value));
     } catch (err) {
       logger.db('error', 'Błąd zapisu global_config [' + key + ']: ' + err.message);
     }
@@ -70,7 +69,6 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
 
       await client.user.setPresence(presenceData);
 
-      // Zapisz do bazy — przywrócone przy restarcie
       await setConfig('bot_status', newStatus);
       await setConfig('custom_status', newCustomText);
 

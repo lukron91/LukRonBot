@@ -1,43 +1,41 @@
-const { makeModel, mongoose } = require('../db');
+const { getDb } = require('../db');
 
 module.exports = (app, client, registerModule, unregisterModule, moduleName) => {
   registerModule(moduleName, false, 'Statystyki aktywności serwerów');
   const logger = app.locals.logger;
 
-  const Activity = makeModel('activities', new mongoose.Schema({
-    guildId:       { type: String, required: true },
-    date:          { type: Date,   required: true },
-    messages:      { type: Number, default: 0 },
-    membersJoined: { type: Number, default: 0 },
-    membersLeft:   { type: Number, default: 0 },
-    topChannels:   [{ channelId: String, channelName: String, count: Number }],
-    topUsers:      [{ userId: String, username: String, avatar: String, count: Number }],
-  }, { timestamps: true }));
+  function getTodayStr() {
+    return new Date().toISOString().split('T')[0];
+  }
 
-  function getToday() {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
+  function getOrCreateActivity(guildId) {
+    const db = getDb(guildId);
+    const today = getTodayStr();
+    let act = db.prepare('SELECT * FROM activities WHERE guild_id = ? AND date = ?').get(guildId, today);
+    if (!act) {
+      db.prepare('INSERT INTO activities (guild_id, date) VALUES (?, ?)').run(guildId, today);
+      act = db.prepare('SELECT * FROM activities WHERE guild_id = ? AND date = ?').get(guildId, today);
+    }
+    return { db, act };
   }
 
   client.on('messageCreate', async (message) => {
     if (message.author.bot || !message.guild) return;
     try {
-      const today = getToday();
-      let act = await Activity.findOne({ guildId: message.guild.id, date: today });
-      if (!act) act = new Activity({ guildId: message.guild.id, date: today });
+      const { db, act } = getOrCreateActivity(message.guild.id);
+      const topChannels = JSON.parse(act.top_channels || '[]');
+      const topUsers = JSON.parse(act.top_users || '[]');
 
-      act.messages += 1;
+      const chIdx = topChannels.findIndex(c => c.channelId === message.channel.id);
+      if (chIdx >= 0) { topChannels[chIdx].count += 1; topChannels[chIdx].channelName = message.channel.name; }
+      else topChannels.push({ channelId: message.channel.id, channelName: message.channel.name, count: 1 });
 
-      const chIdx = act.topChannels.findIndex(c => c.channelId === message.channel.id);
-      if (chIdx >= 0) { act.topChannels[chIdx].count += 1; act.topChannels[chIdx].channelName = message.channel.name; }
-      else act.topChannels.push({ channelId: message.channel.id, channelName: message.channel.name, count: 1 });
+      const uIdx = topUsers.findIndex(u => u.userId === message.author.id);
+      if (uIdx >= 0) topUsers[uIdx].count += 1;
+      else topUsers.push({ userId: message.author.id, username: message.author.username, avatar: message.author.avatar, count: 1 });
 
-      const uIdx = act.topUsers.findIndex(u => u.userId === message.author.id);
-      if (uIdx >= 0) act.topUsers[uIdx].count += 1;
-      else act.topUsers.push({ userId: message.author.id, username: message.author.username, avatar: message.author.avatar, count: 1 });
-
-      await act.save();
+      db.prepare('UPDATE activities SET messages = messages + 1, top_channels = ?, top_users = ? WHERE id = ?')
+        .run(JSON.stringify(topChannels), JSON.stringify(topUsers), act.id);
     } catch (err) {
       logger.activity('error', 'Błąd zapisu aktywności: ' + err.message, 'activity');
     }
@@ -45,56 +43,60 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
 
   client.on('guildMemberAdd', async (member) => {
     try {
-      const today = getToday();
-      let act = await Activity.findOne({ guildId: member.guild.id, date: today });
-      if (!act) act = new Activity({ guildId: member.guild.id, date: today });
-      act.membersJoined += 1;
-      await act.save();
+      const { db, act } = getOrCreateActivity(member.guild.id);
+      db.prepare('UPDATE activities SET members_joined = members_joined + 1 WHERE id = ?').run(act.id);
       logger.activity('info', 'Dołączył: ' + member.user.tag, 'activity');
     } catch (err) { logger.activity('error', 'Błąd guildMemberAdd: ' + err.message, 'activity'); }
   });
 
   client.on('guildMemberRemove', async (member) => {
     try {
-      const today = getToday();
-      let act = await Activity.findOne({ guildId: member.guild.id, date: today });
-      if (!act) act = new Activity({ guildId: member.guild.id, date: today });
-      act.membersLeft += 1;
-      await act.save();
+      const { db, act } = getOrCreateActivity(member.guild.id);
+      db.prepare('UPDATE activities SET members_left = members_left + 1 WHERE id = ?').run(act.id);
       logger.activity('info', 'Opuścił: ' + member.user.tag, 'activity');
     } catch (err) { logger.activity('error', 'Błąd guildMemberRemove: ' + err.message, 'activity'); }
   });
 
   app.get('/api/guilds/:guildId/activity/joined-today', async (req, res) => {
     try {
-      const act = await Activity.findOne({ guildId: req.params.guildId, date: getToday() });
-      res.json({ success: true, count: act?.membersJoined || 0 });
+      const db = getDb(req.params.guildId);
+      const act = db.prepare('SELECT members_joined FROM activities WHERE guild_id = ? AND date = ?')
+        .get(req.params.guildId, getTodayStr());
+      res.json({ success: true, count: act?.members_joined || 0 });
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
   });
 
   app.get('/api/guilds/:guildId/activity/left-today', async (req, res) => {
     try {
-      const act = await Activity.findOne({ guildId: req.params.guildId, date: getToday() });
-      res.json({ success: true, count: act?.membersLeft || 0 });
+      const db = getDb(req.params.guildId);
+      const act = db.prepare('SELECT members_left FROM activities WHERE guild_id = ? AND date = ?')
+        .get(req.params.guildId, getTodayStr());
+      res.json({ success: true, count: act?.members_left || 0 });
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
   });
 
   app.get('/api/guilds/:guildId/activity/active-7days', async (req, res) => {
     try {
+      const db = getDb(req.params.guildId);
       const since = new Date(); since.setDate(since.getDate() - 7);
-      const acts = await Activity.find({ guildId: req.params.guildId, date: { $gte: since } });
+      const sinceStr = since.toISOString().split('T')[0];
+      const acts = db.prepare('SELECT top_users FROM activities WHERE guild_id = ? AND date >= ?')
+        .all(req.params.guildId, sinceStr);
       const unique = new Set();
-      acts.forEach(a => a.topUsers.forEach(u => unique.add(u.userId)));
+      acts.forEach(a => JSON.parse(a.top_users || '[]').forEach(u => unique.add(u.userId)));
       res.json({ success: true, count: unique.size });
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
   });
 
   app.get('/api/guilds/:guildId/activity/trend', async (req, res) => {
     try {
+      const db = getDb(req.params.guildId);
       const since = new Date(); since.setDate(since.getDate() - 7);
-      const acts = await Activity.find({ guildId: req.params.guildId, date: { $gte: since } }).sort({ date: 1 });
+      const sinceStr = since.toISOString().split('T')[0];
+      const acts = db.prepare('SELECT date, messages FROM activities WHERE guild_id = ? AND date >= ? ORDER BY date ASC')
+        .all(req.params.guildId, sinceStr);
       const trend = acts.map(a => ({
-        label: new Date(a.date).toLocaleDateString('pl-PL', { weekday: 'short' }).slice(0, 3),
+        label: new Date(a.date + 'T00:00:00').toLocaleDateString('pl-PL', { weekday: 'short' }).slice(0, 3),
         count: a.messages,
       }));
       res.json({ success: true, trend });
@@ -103,8 +105,11 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
 
   app.get('/api/guilds/:guildId/activity/top-channels', async (req, res) => {
     try {
-      const act = await Activity.findOne({ guildId: req.params.guildId, date: getToday() });
-      const channels = (act?.topChannels || []).sort((a, b) => b.count - a.count).slice(0, 5)
+      const db = getDb(req.params.guildId);
+      const act = db.prepare('SELECT top_channels FROM activities WHERE guild_id = ? AND date = ?')
+        .get(req.params.guildId, getTodayStr());
+      const channels = (JSON.parse(act?.top_channels || '[]'))
+        .sort((a, b) => b.count - a.count).slice(0, 5)
         .map(c => ({ channelId: c.channelId, name: c.channelName || 'Nieznany', count: c.count }));
       res.json({ success: true, channels });
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
@@ -112,8 +117,11 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
 
   app.get('/api/guilds/:guildId/activity/top-users', async (req, res) => {
     try {
-      const act = await Activity.findOne({ guildId: req.params.guildId, date: getToday() });
-      const users = (act?.topUsers || []).sort((a, b) => b.count - a.count).slice(0, 5)
+      const db = getDb(req.params.guildId);
+      const act = db.prepare('SELECT top_users FROM activities WHERE guild_id = ? AND date = ?')
+        .get(req.params.guildId, getTodayStr());
+      const users = (JSON.parse(act?.top_users || '[]'))
+        .sort((a, b) => b.count - a.count).slice(0, 5)
         .map(u => ({ id: u.userId, username: u.username, avatar: u.avatar, count: u.count }));
       res.json({ success: true, users });
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }

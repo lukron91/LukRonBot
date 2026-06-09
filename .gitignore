@@ -29,6 +29,12 @@ dist/
 Thumbs.db
 desktop.ini
 
+# SQLite databases (created per guild at runtime)
+bot/data/
+
+# IDE configs
+.continue/
+
 # Logs
 logs/
 *.log
@@ -41,3 +47,5 @@ tmp/
 # Logi
 bot/logs/
 *.log
+
+.deepseek/secrets.local

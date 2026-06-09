@@ -1,4 +1,6 @@
-const mongoose = require('mongoose');
+const path = require('path');
+const fs = require('fs');
+const Database = require('better-sqlite3');
 
 // ─── Środowisko ───────────────────────────────────────────────────────────────
 
@@ -8,10 +10,6 @@ if (!['main', 'test'].includes(BOT_ENV)) {
   console.error(`❌ Nieprawidłowa wartość BOT_ENV: "${BOT_ENV}". Dozwolone: "main", "test"`);
   process.exit(1);
 }
-
-const MONGODB_URI = BOT_ENV === 'main'
-  ? process.env.MONGODB_URI_MAIN
-  : process.env.MONGODB_URI_TEST;
 
 // ─── Logger (ustawiany przez index.js po inicjalizacji) ───────────────────────
 
@@ -29,187 +27,276 @@ function dbLog(type, message) {
   }
 }
 
-// ─── Mongoose plugin — automatyczne logowanie operacji ────────────────────────
-// Podpięty globalnie — każdy model w każdym module jest automatycznie objęty logowaniem.
-// Moduły nie muszą nic robić.
+// ─── Folder danych ────────────────────────────────────────────────────────────
 
-function dbLoggingPlugin(schema, options) {
-  const collectionName = options?.collection || 'unknown';
+const DATA_DIR = path.join(__dirname, 'data');
 
-  // Przed zapytaniem — loguj co jest odpytywane
-  schema.pre(['find', 'findOne', 'findOneAndUpdate', 'findOneAndDelete', 'countDocuments'], function() {
-    const filter = JSON.stringify(this.getFilter ? this.getFilter() : {});
-    dbLog('debug', `[${collectionName}] query: ${this.op} ${filter}`);
-  });
-
-  // Po zapisie dokumentu
-  schema.post('save', function(doc) {
-    dbLog('info', `[${collectionName}] save: _id=${doc._id}`);
-  });
-
-  // Po updateOne / updateMany
-  schema.post(['updateOne', 'updateMany', 'findOneAndUpdate'], function(result) {
-    const modified = result?.modifiedCount ?? result?.nModified ?? (result?._id ? 1 : 0);
-    dbLog('info', `[${collectionName}] update: zmodyfikowano ${modified} dok.`);
-  });
-
-  // Po deleteOne / deleteMany
-  schema.post(['deleteOne', 'deleteMany', 'findOneAndDelete'], function(result) {
-    const deleted = result?.deletedCount ?? result?.n ?? 0;
-    dbLog('info', `[${collectionName}] delete: usunięto ${deleted} dok.`);
-  });
-
-  // Po insertMany
-  schema.post('insertMany', function(result) {
-    dbLog('info', `[${collectionName}] insertMany: wstawiono ${result?.length ?? 0} dok.`);
-  });
-
-  // Błędy
-  schema.post(['find', 'findOne', 'findOneAndUpdate', 'findOneAndDelete',
-               'updateOne', 'updateMany', 'deleteOne', 'deleteMany', 'save', 'insertMany'],
-    function(err, result, next) {
-      if (err) {
-        dbLog('error', `[${collectionName}] błąd: ${err.message}`);
-        if (next) next(err);
-      }
-    }
-  );
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// ─── Połączenie ───────────────────────────────────────────────────────────────
+// ─── Cache otwartych baz ──────────────────────────────────────────────────────
+
+const dbCache = new Map();
+
+// ─── Schematy tabel ───────────────────────────────────────────────────────────
+
+const SCHEMAS = {
+  config: `
+    CREATE TABLE IF NOT EXISTS config (
+      key   TEXT PRIMARY KEY,
+      value TEXT
+    );
+  `,
+  guild_config: `
+    CREATE TABLE IF NOT EXISTS guild_config (
+      guild_id          TEXT PRIMARY KEY,
+      prefix            TEXT DEFAULT '!',
+      language          TEXT DEFAULT 'pl',
+      timezone          TEXT DEFAULT 'Europe/Warsaw',
+      command_limit     INTEGER DEFAULT 10,
+      auto_delete_cmds  INTEGER DEFAULT 0,
+      response_delay    INTEGER DEFAULT 0,
+      updated_at        TEXT DEFAULT (datetime('now'))
+    );
+  `,
+  moderation_settings: `
+    CREATE TABLE IF NOT EXISTS moderation_settings (
+      guild_id            TEXT PRIMARY KEY,
+      ban_type            TEXT DEFAULT 'discord',
+      ban_role_id         TEXT,
+      appeal_channel_id   TEXT,
+      mod_log_channel     TEXT,
+      auto_mod_enabled    INTEGER DEFAULT 0,
+      block_links         INTEGER DEFAULT 0,
+      block_invites       INTEGER DEFAULT 0,
+      warn_threshold      INTEGER DEFAULT 3,
+      mute_role_id        TEXT,
+      command_permissions TEXT DEFAULT '{}',
+      command_enabled     TEXT DEFAULT '{}',
+      updated_at          TEXT DEFAULT (datetime('now'))
+    );
+  `,
+  punishments: `
+    CREATE TABLE IF NOT EXISTS punishments (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      guild_id      TEXT NOT NULL,
+      user_id       TEXT NOT NULL,
+      moderator_id  TEXT NOT NULL,
+      type          TEXT NOT NULL CHECK(type IN ('warn','mute','ban','kick','unmute','unban')),
+      ban_type      TEXT CHECK(ban_type IN ('discord','role')),
+      reason        TEXT DEFAULT 'Brak powodu',
+      duration      INTEGER,
+      expires_at    TEXT,
+      active        INTEGER DEFAULT 1,
+      created_at    TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_punishments_guild ON punishments(guild_id);
+    CREATE INDEX IF NOT EXISTS idx_punishments_user ON punishments(guild_id, user_id);
+    CREATE INDEX IF NOT EXISTS idx_punishments_active ON punishments(guild_id, active);
+  `,
+  activities: `
+    CREATE TABLE IF NOT EXISTS activities (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      guild_id        TEXT NOT NULL,
+      date            TEXT NOT NULL,
+      messages        INTEGER DEFAULT 0,
+      members_joined  INTEGER DEFAULT 0,
+      members_left    INTEGER DEFAULT 0,
+      top_channels    TEXT DEFAULT '[]',
+      top_users       TEXT DEFAULT '[]',
+      created_at      TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_activities_guild ON activities(guild_id, date);
+  `,
+  global_config: `
+    CREATE TABLE IF NOT EXISTS global_config (
+      key        TEXT PRIMARY KEY,
+      value      TEXT,
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+  `,
+  welcome_settings: `
+    CREATE TABLE IF NOT EXISTS welcome_settings (
+      guild_id   TEXT PRIMARY KEY,
+      enabled    INTEGER DEFAULT 0,
+      channel_id TEXT,
+      message    TEXT DEFAULT 'Witaj {user} na serwerze {server}!',
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+  `,
+  role_groups: `
+    CREATE TABLE IF NOT EXISTS role_groups (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      guild_id        TEXT NOT NULL,
+      parent_role_id  TEXT NOT NULL,
+      parent_role_name TEXT,
+      mode            TEXT DEFAULT 'multiple' CHECK(mode IN ('single','multiple')),
+      child_roles     TEXT DEFAULT '[]',
+      created_at      TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_role_groups_guild ON role_groups(guild_id);
+  `,
+  tickets: `
+    CREATE TABLE IF NOT EXISTS tickets (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      guild_id   TEXT NOT NULL,
+      user_id    TEXT NOT NULL,
+      channel_id TEXT,
+      status     TEXT DEFAULT 'open' CHECK(status IN ('open','closed','resolved')),
+      reason     TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_tickets_guild ON tickets(guild_id, status);
+  `,
+};
+
+// ─── Otwórz bazę dla konkretnego guildId ──────────────────────────────────────
+
+function getDb(guildId) {
+  if (dbCache.has(guildId)) return dbCache.get(guildId);
+
+  const dbPath = path.join(DATA_DIR, `${BOT_ENV}_${guildId}.db`);
+  const db = new Database(dbPath);
+
+  // Włącz WAL dla wydajności
+  db.pragma('journal_mode = WAL');
+
+  // Utwórz wszystkie tabele
+  for (const [name, sql] of Object.entries(SCHEMAS)) {
+    try {
+      db.exec(sql);
+      dbLog('debug', `[${guildId}] tabela '${name}' gotowa`);
+    } catch (err) {
+      dbLog('error', `[${guildId}] błąd tworzenia tabeli '${name}': ${err.message}`);
+    }
+  }
+
+  dbCache.set(guildId, db);
+  dbLog('info', `[${guildId}] baza otwarta: ${BOT_ENV}_${guildId}.db`);
+  return db;
+}
+
+// ─── Zamknij bazę ─────────────────────────────────────────────────────────────
+
+function closeDb(guildId) {
+  if (dbCache.has(guildId)) {
+    try {
+      dbCache.get(guildId).close();
+      dbCache.delete(guildId);
+      dbLog('info', `[${guildId}] baza zamknięta`);
+    } catch (err) {
+      dbLog('error', `[${guildId}] błąd zamykania bazy: ${err.message}`);
+    }
+  }
+}
+
+// ─── Połączenie (dla kompatybilności z index.js) ──────────────────────────────
 
 async function connectDB() {
-  if (!MONGODB_URI) {
-    console.warn(`⚠️  Brak MONGODB_URI_${BOT_ENV.toUpperCase()} w .env — baza nie zostanie uruchomiona`);
-    return false;
-  }
-  try {
-    dbLog('info', `Łączenie z MongoDB [${BOT_ENV}]...`);
-
-    // Eventy połączenia mongoose
-    mongoose.connection.on('connected',    () => dbLog('info',  `MongoDB połączone [${BOT_ENV}]`));
-    mongoose.connection.on('disconnected', () => dbLog('warn',  `MongoDB rozłączone [${BOT_ENV}]`));
-    mongoose.connection.on('reconnected',  () => dbLog('info',  `MongoDB ponownie połączone [${BOT_ENV}]`));
-    mongoose.connection.on('error',        err => dbLog('error', `MongoDB błąd połączenia: ${err.message}`));
-
-    await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
-    return true;
-  } catch (err) {
-    dbLog('error', `Błąd połączenia [${BOT_ENV}]: ${err.message}`);
-    if (err.message.includes('auth failed'))
-      dbLog('error', '→ Sprawdź login/hasło w URI');
-    if (err.message.includes('ENOTFOUND') || err.message.includes('timeout'))
-      dbLog('error', '→ Sprawdź whitelist IP w MongoDB Atlas');
-    return false;
-  }
+  dbLog('info', `SQLite gotowy [${BOT_ENV}], katalog: ${DATA_DIR}`);
+  return true;
 }
 
-// ─── Inicjalizacja struktury bazy ─────────────────────────────────────────────
-// Tworzy kolekcje i indeksy jeśli nie istnieją.
-// Nie wstawia żadnych danych — to zadanie modułów.
-// Bezpieczne: wywołanie wielokrotne nic nie nadpisuje.
-
-function makeModel(name, schema) {
-  schema.plugin(dbLoggingPlugin, { collection: name });
-  return mongoose.models[name] || mongoose.model(name, schema, name);
-}
+// ─── Inicjalizacja struktury (dla kompatybilności) ────────────────────────────
 
 async function initDbStructure() {
-  try {
-    dbLog('info', 'Inicjalizacja struktury bazy...');
+  dbLog('info', `Struktura SQLite gotowa — tabele tworzone automatycznie przy pierwszym dostępie`);
+  return true;
+}
 
-    // ── global_config ─────────────────────────────────────────────────────
-    makeModel('global_config', new mongoose.Schema({
-      key:       { type: String, required: true, unique: true },
-      value:     { type: mongoose.Schema.Types.Mixed },
-      updatedAt: { type: Date, default: Date.now },
-    }));
+// ─── Eksplorator bazy — endpointy ─────────────────────────────────────────────
 
-    // ── guild_config ──────────────────────────────────────────────────────
-    makeModel('guild_config', new mongoose.Schema({
-      guildId:            { type: String, required: true, unique: true },
-      prefix:             { type: String, default: '!' },
-      language:           { type: String, default: 'pl' },
-      timezone:           { type: String, default: 'Europe/Warsaw' },
-      commandLimit:       { type: Number, default: 10 },
-      autoDeleteCommands: { type: Boolean, default: false },
-      responseDelay:      { type: Number, default: 0 },
-    }, { timestamps: true }));
+function setupDatabaseExplorer(app) {
+  // Lista wszystkich baz (serwerów)
+  app.get('/api/database/list', (req, res) => {
+    try {
+      const files = fs.readdirSync(DATA_DIR)
+        .filter(f => f.endsWith('.db'))
+        .map(f => ({
+          name: f.replace(/\.db$/, ''),
+          path: f,
+          size: fs.statSync(path.join(DATA_DIR, f)).size,
+        }));
+      res.json({ success: true, databases: files, env: BOT_ENV });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 
-    // ── moderation_settings ───────────────────────────────────────────────
-    makeModel('moderation_settings', new mongoose.Schema({
-      guildId:            { type: String, required: true, unique: true },
-      banType:            { type: String, default: 'discord', enum: ['discord', 'role'] },
-      banRoleId:          String,
-      appealChannelId:    String,
-      modLogChannel:      String,
-      autoModEnabled:     { type: Boolean, default: false },
-      blockLinks:         { type: Boolean, default: false },
-      blockInvites:       { type: Boolean, default: false },
-      warnThreshold:      { type: Number, default: 3 },
-      muteRoleId:         String,
-      commandPermissions: { type: mongoose.Schema.Types.Mixed, default: {} },
-      commandEnabled:     { type: mongoose.Schema.Types.Mixed, default: {} },
-    }, { timestamps: true }));
+  // Lista tabel w bazie serwera
+  app.get('/api/database/:guildId/tables', (req, res) => {
+    try {
+      const db = getDb(req.params.guildId);
+      const tables = db.prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+      ).all();
+      res.json({ success: true, tables: tables.map(t => t.name) });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 
-    // ── punishments ───────────────────────────────────────────────────────
-    const PunishmentModel = makeModel('punishments', new mongoose.Schema({
-      guildId:     { type: String, required: true },
-      userId:      { type: String, required: true },
-      moderatorId: { type: String, required: true },
-      type:        { type: String, required: true, enum: ['warn', 'mute', 'ban', 'kick', 'unmute', 'unban'] },
-      banType:     { type: String, enum: ['discord', 'role'] },
-      reason:      { type: String, default: 'Brak powodu' },
-      duration:    Number,
-      expiresAt:   Date,
-      active:      { type: Boolean, default: true },
-    }, { timestamps: true }));
-    await PunishmentModel.collection.createIndex({ guildId: 1, userId: 1 });
-    await PunishmentModel.collection.createIndex({ guildId: 1, active: 1 });
+  // Dane z tabeli
+  app.get('/api/database/:guildId/:table', (req, res) => {
+    try {
+      const { guildId, table } = req.params;
+      const limit = Math.min(parseInt(req.query.limit) || 50, 500);
+      const offset = parseInt(req.query.offset) || 0;
 
-    // ── welcome_settings ──────────────────────────────────────────────────
-    makeModel('welcome_settings', new mongoose.Schema({
-      guildId:   { type: String, required: true, unique: true },
-      enabled:   { type: Boolean, default: false },
-      channelId: String,
-      message:   { type: String, default: 'Witaj {user} na serwerze {server}!' },
-    }, { timestamps: true }));
+      const db = getDb(guildId);
 
-    // ── role_groups ───────────────────────────────────────────────────────
-    const RoleGroupModel = makeModel('role_groups', new mongoose.Schema({
-      guildId:        { type: String, required: true },
-      parentRoleId:   { type: String, required: true },
-      parentRoleName: String,
-      mode:           { type: String, default: 'multiple', enum: ['single', 'multiple'] },
-      childRoles:     [{ roleId: String, roleName: String }],
-    }, { timestamps: true }));
-    await RoleGroupModel.collection.createIndex({ guildId: 1 });
+      // Walidacja — tylko znane tabele
+      const validTables = Object.keys(SCHEMAS);
+      if (!validTables.includes(table)) {
+        return res.status(400).json({ error: `Nieznana tabela: ${table}. Dozwolone: ${validTables.join(', ')}` });
+      }
 
-    // ── tickets ───────────────────────────────────────────────────────────
-    const TicketModel = makeModel('tickets', new mongoose.Schema({
-      guildId:   { type: String, required: true },
-      userId:    { type: String, required: true },
-      channelId: String,
-      status:    { type: String, default: 'open', enum: ['open', 'closed', 'resolved'] },
-      reason:    String,
-    }, { timestamps: true }));
-    await TicketModel.collection.createIndex({ guildId: 1, status: 1 });
+      const rows = db.prepare(`SELECT * FROM "${table}" LIMIT ? OFFSET ?`).all(limit, offset);
+      const count = db.prepare(`SELECT COUNT(*) as total FROM "${table}"`).get();
 
-    dbLog('info', 'Struktura bazy gotowa: global_config, guild_config, moderation_settings, punishments, welcome_settings, role_groups, tickets');
+      // Pobierz info o kolumnach
+      const columns = db.prepare(`PRAGMA table_info("${table}")`).all();
 
-  } catch (err) {
-    dbLog('error', `Błąd inicjalizacji struktury: ${err.message}`);
-    throw err;
-  }
+      res.json({
+        success: true,
+        table,
+        columns: columns.map(c => ({ name: c.name, type: c.type })),
+        rows,
+        total: count.total,
+        limit,
+        offset,
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Wykonaj własne zapytanie SQL (tylko SELECT)
+  app.post('/api/database/query', (req, res) => {
+    try {
+      const { guildId, sql } = req.body;
+      if (!sql || !sql.trim().toUpperCase().startsWith('SELECT')) {
+        return res.status(400).json({ error: 'Dozwolone tylko SELECT' });
+      }
+      const db = getDb(guildId);
+      const rows = db.prepare(sql).all();
+      res.json({ success: true, rows });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 }
 
 // ─── Eksport ──────────────────────────────────────────────────────────────────
 
 module.exports = {
+  BOT_ENV,
+  setLogger,
   connectDB,
   initDbStructure,
-  setLogger,        // wywoływane przez index.js zaraz po inicjalizacji loggera
-  mongoose,         // moduły importują stąd — jeden obiekt mongoose w całym projekcie
-  BOT_ENV,
-  makeModel,        // moduły używają do rejestracji własnych modeli z automatycznym logowaniem
+  getDb,
+  closeDb,
+  setupDatabaseExplorer,
+  dbLog,
 };
