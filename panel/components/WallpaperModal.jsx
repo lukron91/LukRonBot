@@ -5,17 +5,31 @@ import { FiX } from 'react-icons/fi';
 
 const WALLPAPERS = [
   { id: 'none', name: 'Brak tła', css: '' },
-  { id: 'dark-purple', name: 'Ciemny fiolet', css: 'radial-gradient(circle at 20% 50%, #1a1a2e 0%, #0a0a0f 100%)' },
-  { id: 'navy-mist', name: 'Granatowa mgła', css: 'radial-gradient(circle at 80% 20%, #0f172a 0%, #0a0a0f 100%)' },
-  { id: 'emerald', name: 'Szmaragdowa głąb', css: 'radial-gradient(circle at 50% 80%, #064e3b 0%, #0a0a0f 100%)' },
-  { id: 'ruby', name: 'Rubinowy glow', css: 'radial-gradient(circle at 30% 30%, #2d0a0a 0%, #0a0a0f 100%)' },
-  { id: 'cobalt', name: 'Kobaltowy blask', css: 'radial-gradient(circle at 70% 60%, #172554 0%, #0a0a0f 100%)' },
-  { id: 'amber', name: 'Bursztynowa poświata', css: 'radial-gradient(circle at 50% 20%, #451a03 0%, #0a0a0f 100%)' },
-  { id: 'lavender', name: 'Lawendowy sen', css: 'radial-gradient(circle at 80% 80%, #2e1065 0%, #0a0a0f 100%)' },
-  { id: 'forest', name: 'Leśny cień', css: 'radial-gradient(circle at 20% 80%, #052e16 0%, #0a0a0f 100%)' },
-  { id: 'steel', name: 'Stalowy chłód', css: 'radial-gradient(circle at 60% 40%, #1e293b 0%, #0a0a0f 100%)' },
-  { id: 'cherry', name: 'Ciemna wiśnia', css: 'radial-gradient(circle at 40% 70%, #2d0a0a 0%, #1a0a0a 50%, #0a0a0f 100%)' },
-  { id: 'night-sky', name: 'Nocne niebo', css: 'radial-gradient(circle at 50% 50%, #0f172a 0%, #020617 50%, #0a0a0f 100%)' },
+
+  // === GRADIENTY KOLOROWE (wyraziste) ===
+  { id: 'sunset', name: 'Zachód słońca', css: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 30%, #f093fb 60%, #4facfe 100%)' },
+  { id: 'ocean', name: 'Oceaniczny', css: 'linear-gradient(135deg, #0c3483 0%, #a2b6df 50%, #6b8cce 75%, #a2b6df 100%)' },
+  { id: 'neon', name: 'Neonowy', css: 'linear-gradient(135deg, #0f0c29 0%, #302b63 40%, #24243e 70%, #00d2ff 100%)' },
+  { id: 'aurora', name: 'Aurora', css: 'linear-gradient(135deg, #0f2027 0%, #203a43 40%, #2c5364 70%, #00b4db 100%)' },
+  { id: 'candy', name: 'Cukierkowy', css: 'linear-gradient(135deg, #f12711 0%, #f5af19 40%, #f12711 70%, #f5af19 100%)' },
+  { id: 'galaxy', name: 'Galaktyka', css: 'linear-gradient(135deg, #0d0d2b 0%, #1a1a4e 30%, #2d1b69 60%, #6b3fa0 100%)' },
+  { id: 'lava', name: 'Lawa', css: 'linear-gradient(135deg, #0f0c29 0%, #302b63 30%, #8b0000 60%, #ff4500 100%)' },
+  { id: 'forest-new', name: 'Las', css: 'linear-gradient(135deg, #0b1d0b 0%, #1a3a1a 30%, #2d5a2d 60%, #4caf50 100%)' },
+  { id: 'twilight', name: 'Zmierzch', css: 'linear-gradient(135deg, #1a0033 0%, #330066 30%, #660099 60%, #cc66ff 100%)' },
+  { id: 'cyberpunk', name: 'Cyberpunk', css: 'linear-gradient(135deg, #0d0221 0%, #150534 20%, #ff0066 50%, #00ffff 80%, #0d0221 100%)' },
+
+  // === WZORY (repeating gradients) ===
+  { id: 'dots', name: 'Kropki', css: 'radial-gradient(circle, #3b82f6 1px, transparent 1px) 0 0 / 20px 20px repeat, linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%)' },
+  { id: 'stripes', name: 'Paski', css: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(59,130,246,0.1) 10px, rgba(59,130,246,0.1) 20px), linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%)' },
+  { id: 'checker', name: 'Szachownica', css: 'repeating-conic-gradient(rgba(59,130,246,0.08) 0% 25%, transparent 0% 50%) 0 0 / 30px 30px, linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%)' },
+  { id: 'waves', name: 'Fale', css: 'repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(139,92,246,0.06) 20px, rgba(139,92,246,0.06) 21px), repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(139,92,246,0.06) 20px, rgba(139,92,246,0.06) 21px), linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%)' },
+  { id: 'hex', name: 'Plastry miodu', css: 'radial-gradient(circle at 25% 25%, rgba(255,255,255,0.03) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(255,255,255,0.03) 0%, transparent 50%), linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%)' },
+  { id: 'matrix', name: 'Matrix', css: 'linear-gradient(90deg, rgba(0,255,0,0.03) 1px, transparent 1px), linear-gradient(0deg, rgba(0,255,0,0.03) 1px, transparent 1px), linear-gradient(135deg, #000a00 0%, #001a00 100%)' },
+  { id: 'circuit', name: 'Obwody', css: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.02) 0%, transparent 60%), repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(59,130,246,0.04) 40px, rgba(59,130,246,0.04) 41px), repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(59,130,246,0.04) 40px, rgba(59,130,246,0.04) 41px), linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%)' },
+  { id: 'zigzag', name: 'Zygzak', css: 'repeating-linear-gradient(-45deg, transparent, transparent 15px, rgba(236,72,153,0.06) 15px, rgba(236,72,153,0.06) 16px), repeating-linear-gradient(45deg, transparent, transparent 15px, rgba(236,72,153,0.06) 15px, rgba(236,72,153,0.06) 16px), linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%)' },
+  { id: 'bubbles', name: 'Bąbelki', css: 'radial-gradient(circle at 10% 20%, rgba(255,255,255,0.04) 0%, transparent 15px), radial-gradient(circle at 80% 40%, rgba(255,255,255,0.04) 0%, transparent 20px), radial-gradient(circle at 30% 80%, rgba(255,255,255,0.04) 0%, transparent 12px), radial-gradient(circle at 70% 90%, rgba(255,255,255,0.04) 0%, transparent 18px), linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%)' },
+  { id: 'grid', name: 'Siatka', css: 'linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(0deg, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%)' },
+  { id: 'stardust', name: 'Gwiezdny pył', css: 'radial-gradient(circle at 15% 25%, rgba(255,255,255,0.05) 0%, transparent 2px), radial-gradient(circle at 45% 65%, rgba(255,255,255,0.05) 0%, transparent 3px), radial-gradient(circle at 85% 15%, rgba(255,255,255,0.05) 0%, transparent 2px), radial-gradient(circle at 60% 85%, rgba(255,255,255,0.05) 0%, transparent 2px), radial-gradient(circle at 25% 50%, rgba(255,255,255,0.05) 0%, transparent 3px), linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%)' },
 ];
 
 export default function WallpaperModal({ isOpen, onClose }) {
