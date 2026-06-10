@@ -3,7 +3,6 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useTheme } from '@/lib/theme-context';
 import Modal from '@/components/Modal';
-import LoadingScreen from '@/components/LoadingScreen';
 import {
   FiShield, FiPlus, FiEdit2, FiTrash2, FiCopy, FiRefreshCw,
   FiUsers, FiChevronUp, FiChevronDown, FiSearch, FiAlertTriangle,
@@ -354,7 +353,7 @@ export default function RolesPage() {
     <div className="rp-empty">Wybierz serwer z lewego menu.</div>
   );
   if (loading) return (
-    <LoadingScreen message="Ładowanie ról..." />
+    <div className="rp-empty">Ładowanie ról...</div>
   );
   if (error) return (
     <div className="rp-error-wrap">
@@ -791,7 +790,7 @@ export default function RolesPage() {
         .rp-managed-notice { margin: 1rem 1.25rem 0; padding: 0.75rem 1rem; background: rgba(var(--surface-rgb), 0.5); border: 1px solid var(--border-color); border-radius: var(--border-radius); color: var(--text-muted); font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; }
 
         .rp-editor { flex: 1; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem; }
-        .rp-section { background: rgba(var(--surface-rgb), var(--tab-opacity)); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 1.25rem; }
+        .rp-section { background: rgba(var(--surface-rgb), var(--surface-opacity)); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 1.25rem; }
         .rp-section-title { font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent-color); margin-bottom: 1rem; }
         .rp-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
         .rp-section-head .rp-section-title { margin-bottom: 0; }

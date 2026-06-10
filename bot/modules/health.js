@@ -18,10 +18,9 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
 
   app.get('/api/bot/health', (req, res) => {
     try {
-      const isReady = client.isReady();
       const uptime = Math.floor((Date.now() - startTime) / 1000);
-      const ping = isReady && client.ws ? Math.round(client.ws.ping) : 0;
-      const guildCount = isReady ? client.guilds.cache.size : 0;
+      const ping = client.ws ? Math.round(client.ws.ping) : 0;
+      const guildCount = client.guilds.cache.size;
       const cpuUsage = getCpuUsage();
       const memoryUsage = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
 
@@ -37,13 +36,13 @@ module.exports = (app, client, registerModule, unregisterModule, moduleName) => 
       } catch (err) {}
 
       res.json({
-        running: isReady,
+        running: true,
         ping: ping,
         uptime: uptime,
         guilds: guildCount,
         cpu: cpuUsage,
         ram: memoryUsage,
-        status: isReady ? (client.user?.presence?.status || 'online') : 'offline',
+        status: client.user?.presence?.status || 'online',
         customStatus: customStatus,
         environment: app.locals.activeDatabase ? app.locals.activeDatabase() : 'unknown',
         dbConnected: app.locals.isDbConnected ? app.locals.isDbConnected() : false,

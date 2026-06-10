@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
+const { Client, GatewayIntentBits } = require('discord.js');
 const express = require('express');
 const cors    = require('cors');
 const fs      = require('fs');
@@ -157,17 +157,6 @@ app.get('/api/status', (req, res) => {
 });
 
 // Statystyki serwera Discord — używane przez panel (lista serwerów i dashboard)
-// Lista serwerów z nazwami — dla panelu (eksplorator bazy danych)
-app.get('/api/guilds', (req, res) => {
-  const guilds = client.guilds.cache.map(g => ({
-    id: g.id,
-    name: g.name,
-    icon: g.icon,
-    memberCount: g.memberCount,
-  }));
-  res.json({ success: true, guilds });
-});
-
 const statsCache = new Map();
 setInterval(() => statsCache.clear(), 30000);
 
@@ -183,96 +172,6 @@ app.get('/api/guilds/:guildId/stats', (req, res) => {
   };
   statsCache.set(guildId, stats);
   res.json(stats);
-});
-
-// Sprawdzenie uprawnień użytkownika na serwerze
-app.get('/api/guilds/:guildId/permissions/:userId', async (req, res) => {
-  const { guildId, userId } = req.params;
-  const guild = client.guilds.cache.get(guildId);
-  if (!guild) return res.status(404).json({ error: 'Bot nie jest na tym serwerze' });
-
-  try {
-    const member = await guild.members.fetch(userId);
-    if (!member) return res.json({ onServer: false, isAdmin: false, permissions: [] });
-
-    const perms = member.permissions;
-    const permList = [];
-    if (perms.has(PermissionsBitField.Flags.Administrator)) permList.push('ADMINISTRATOR');
-    if (perms.has(PermissionsBitField.Flags.ManageGuild)) permList.push('MANAGE_GUILD');
-    if (perms.has(PermissionsBitField.Flags.KickMembers)) permList.push('KICK_MEMBERS');
-    if (perms.has(PermissionsBitField.Flags.BanMembers)) permList.push('BAN_MEMBERS');
-    if (perms.has(PermissionsBitField.Flags.ModerateMembers)) permList.push('MODERATE_MEMBERS');
-    if (perms.has(PermissionsBitField.Flags.ManageMessages)) permList.push('MANAGE_MESSAGES');
-    if (perms.has(PermissionsBitField.Flags.ManageRoles)) permList.push('MANAGE_ROLES');
-    if (perms.has(PermissionsBitField.Flags.ManageChannels)) permList.push('MANAGE_CHANNELS');
-
-    res.json({
-      onServer: true,
-      isAdmin: perms.has(PermissionsBitField.Flags.Administrator),
-      isOwner: guild.ownerId === userId,
-      permissions: permList,
-    });
-  } catch (err) {
-    // User nie jest na serwerze lub błąd fetcha
-    res.json({ onServer: false, isAdmin: false, permissions: [] });
-  }
-});
-
-// Pełne dane użytkownika z Discorda (profil)
-app.get('/api/guilds/:guildId/users/:userId', async (req, res) => {
-  const { guildId, userId } = req.params;
-  const guild = client.guilds.cache.get(guildId);
-  if (!guild) return res.status(404).json({ error: 'Bot nie jest na tym serwerze' });
-
-  try {
-    const member = await guild.members.fetch(userId);
-    if (!member) return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
-
-    const user = member.user;
-    const perms = member.permissions;
-
-    // Role (bez @everyone)
-    const roles = member.roles.cache
-      .filter(r => r.id !== guild.id)
-      .map(r => ({ id: r.id, name: r.name, color: r.hexColor, position: r.position }))
-      .sort((a, b) => b.position - a.position);
-
-    // Uprawnienia
-    const permList = [];
-    if (perms.has(PermissionsBitField.Flags.Administrator)) permList.push('ADMINISTRATOR');
-    if (perms.has(PermissionsBitField.Flags.ManageGuild)) permList.push('MANAGE_GUILD');
-    if (perms.has(PermissionsBitField.Flags.KickMembers)) permList.push('KICK_MEMBERS');
-    if (perms.has(PermissionsBitField.Flags.BanMembers)) permList.push('BAN_MEMBERS');
-    if (perms.has(PermissionsBitField.Flags.ModerateMembers)) permList.push('MODERATE_MEMBERS');
-    if (perms.has(PermissionsBitField.Flags.ManageMessages)) permList.push('MANAGE_MESSAGES');
-    if (perms.has(PermissionsBitField.Flags.ManageRoles)) permList.push('MANAGE_ROLES');
-    if (perms.has(PermissionsBitField.Flags.ManageChannels)) permList.push('MANAGE_CHANNELS');
-
-    res.json({
-      id: user.id,
-      username: user.username,
-      globalName: user.globalName,
-      displayName: member.displayName,
-      avatar: user.avatar,
-      banner: user.banner,
-      accentColor: user.hexAccentColor,
-      createdAt: user.createdAt,
-      bot: user.bot,
-      // Guild-specific
-      joinedAt: member.joinedAt,
-      nickname: member.nickname,
-      isOwner: guild.ownerId === userId,
-      isAdmin: perms.has(PermissionsBitField.Flags.Administrator),
-      permissions: permList,
-      roles,
-      // Boost
-      premiumSince: member.premiumSince,
-      // Avatar na serwerze (jeśli inny)
-      guildAvatar: member.avatar,
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
 });
 
 // ─── WebSocket ────────────────────────────────────────────────────────────────

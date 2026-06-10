@@ -20,12 +20,7 @@ html, body {
   --text-muted: #6b6b76;
   --accent-color: #3b82f6;
   --border-radius: 12px;
-  --surface-opacity: 0.8;
-  --surface-color: rgba(20, 20, 28, 0.8);
-  --panel-opacity: 0.8;
-  --tab-opacity: 0.8;
-  --window-opacity: 0.8;
-  --bg-pattern: none;
+  --surface-opacity: 0.9;
   --bg-intensity: 100%;
 
   /* BUTTON SYSTEM TOKENS */
@@ -45,6 +40,7 @@ html, body {
 }
 
 body {
+  background-color: var(--bg-color);
   color: var(--text-color);
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -79,8 +75,8 @@ body {
 }
 
 .section-card {
-  background: rgba(var(--surface-rgb), var(--tab-opacity));
-  border: 1px solid var(--accent-color);
+  background: rgba(var(--surface-rgb), var(--surface-opacity));
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
   padding: 1.5rem;
   margin-bottom: 1.5rem;
@@ -90,7 +86,6 @@ body {
 
 .section-card:hover {
   border-color: var(--accent-color);
-  box-shadow: 0 0 15px rgba(var(--accent-color), 0.2);
 }
 
 .section-card h2 {
@@ -300,7 +295,7 @@ body {
   margin-bottom: 2rem;
 }
 .stat-card {
-  background: rgba(var(--surface-rgb), var(--tab-opacity));
+  background: rgba(var(--surface-rgb), var(--surface-opacity));
   border-radius: var(--border-radius);
   padding: 1.25rem;
   border: 1px solid var(--border-color);
@@ -358,7 +353,7 @@ body {
   font-size: 0.85rem;
 }
 .settings-card {
-  background: rgba(var(--surface-rgb), var(--tab-opacity));
+  background: rgba(var(--surface-rgb), var(--surface-opacity));
   border-radius: var(--border-radius);
   padding: 1.5rem;
   margin-bottom: 1.8rem;
@@ -933,7 +928,7 @@ input:checked + .toggle-slider-modern:before {
   gap: 1rem;
 }
 .health-card {
-  background: rgba(var(--surface-rgb), var(--tab-opacity));
+  background: rgba(var(--surface-rgb), var(--surface-opacity));
   border-radius: var(--border-radius);
   padding: 0.75rem 1rem;
   display: flex;
@@ -977,7 +972,7 @@ input:checked + .toggle-slider-modern:before {
 
 /* KOMUNIKAT BRAKU BOTA */
 .bot-missing-card {
-  background: rgba(var(--surface-rgb), var(--tab-opacity));
+  background: rgba(var(--surface-rgb), var(--surface-opacity));
   border-radius: var(--border-radius);
   padding: 2rem;
   text-align: center;
@@ -1030,7 +1025,7 @@ input:checked + .toggle-slider-modern:before {
   justify-content: center;
 }
 .login-card {
-  background: rgba(var(--surface-rgb), var(--window-opacity));
+  background: rgba(var(--surface-rgb), var(--surface-opacity));
   backdrop-filter: blur(12px);
   border-radius: var(--border-radius);
   padding: 2rem;

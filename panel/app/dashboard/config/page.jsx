@@ -213,7 +213,7 @@ export default function ConfigPage() {
           gap: 1.5rem;
         }
         .section {
-          background: rgba(var(--surface-rgb), var(--tab-opacity));
+          background: rgba(var(--surface-rgb), var(--surface-opacity));
           border: 1px solid var(--border-color);
           border-radius: var(--border-radius);
           padding: 1.5rem;

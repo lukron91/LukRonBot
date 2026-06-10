@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from '@/lib/theme-context';
 import Modal from '@/components/Modal';
-import LoadingScreen from '@/components/LoadingScreen';
 import {
   FiHome, FiGrid, FiSettings, FiMessageSquare, FiShield,
   FiUsers, FiClipboard, FiActivity, FiLogOut, FiServer,
@@ -23,14 +22,6 @@ export default function DashboardLayout({ children }) {
   const [serverActive, setServerActive] = useState(false);
   const [serverDropdownOpen, setServerDropdownOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [userPermissions, setUserPermissions] = useState(null);
-  const [botGuildIds, setBotGuildIds] = useState(new Set());
-  const [viewMode, setViewMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('viewMode') || 'admin';
-    }
-    return 'admin';
-  });
   const { theme, accentColor } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
@@ -79,17 +70,6 @@ export default function DashboardLayout({ children }) {
       } else {
         router.push("/servers");
       }
-
-      // Pobierz serwery na których jest bot
-      (async () => {
-        try {
-          const botRes = await fetch('/api/proxy/api/guilds');
-          const botData = await botRes.json();
-          if (botData.success) {
-            setBotGuildIds(new Set((botData.guilds || []).map(g => g.id)));
-          }
-        } catch {}
-      })();
     } catch (err) {
       console.error(err);
       router.push("/");
@@ -97,50 +77,15 @@ export default function DashboardLayout({ children }) {
   }, [router, pathname, searchParams]);
 
   useEffect(() => {
-    if (!selectedGuildId) { setBotOnGuild(null); setUserPermissions(null); return; }
+    if (!selectedGuildId) { setBotOnGuild(null); return; }
     const checkBot = async () => {
       try {
         const res = await fetch('/api/proxy/api/guilds/' + selectedGuildId + '/stats');
-        if (res.ok) {
-          setBotOnGuild(true);
-        } else if (res.status === 404) {
-          setBotOnGuild(false); // Bot nie jest na tym serwerze
-        } else {
-          // Inny błąd (np. 500) - bot może nie odpowiadać
-          setBotOnGuild('error');
-        }
-      } catch { setBotOnGuild('error'); }
+        setBotOnGuild(res.ok);
+      } catch { setBotOnGuild(false); }
     };
     checkBot();
   }, [selectedGuildId]);
-
-  // Przy zmianie trybu sprawdź czy obecny serwer jest dostępny
-  useEffect(() => {
-    if (!selectedGuildId || !guilds.length) return;
-    // W trybie User czekaj aż botGuildIds się załaduje
-    if (viewMode === 'user' && botGuildIds.size === 0) return;
-    const availableIds = viewMode === 'admin'
-      ? guilds.filter(g => (BigInt(g.permissions) & 0x8n) !== 0n).map(g => g.id)
-      : guilds.filter(g => botGuildIds.has(g.id)).map(g => g.id);
-    if (!availableIds.includes(selectedGuildId)) {
-      router.push('/servers');
-    }
-  }, [viewMode, selectedGuildId, guilds, botGuildIds, router]);
-
-  // Fetch uprawnień użytkownika na wybranym serwerze
-  useEffect(() => {
-    if (!selectedGuildId || !user?.userId) { setUserPermissions(null); return; }
-    const fetchPerms = async () => {
-      try {
-        const res = await fetch(`/api/proxy/api/guilds/${selectedGuildId}/permissions/${user.userId}`);
-        if (res.ok) {
-          const data = await res.json();
-          setUserPermissions(data);
-        }
-      } catch { setUserPermissions(null); }
-    };
-    fetchPerms();
-  }, [selectedGuildId, user?.userId]);
 
   const handleLogout = () => {
     setShowLogoutModal(true);
@@ -163,33 +108,9 @@ export default function DashboardLayout({ children }) {
   const getLink = (path) => selectedGuildId ? `${path}?guild=${selectedGuildId}` : path;
   const isActive = (path) => pathname === path;
 
-  // Helper: czy user ma dane uprawnienie na wybranym serwerze
-  const hasPerm = (perm) => userPermissions?.permissions?.includes(perm) || false;
-  const canView = (section) => {
-    if (viewMode === 'user') {
-      // W widoku usera pokaz tylko sekcje dostępne dla każdego
-      return ['tickets', 'welcome', 'music'].includes(section);
-    }
-    // W widoku admina — sprawdzaj uprawnienia
-    if (isOwner) return true;
-    switch (section) {
-      case 'admin': return hasPerm('ADMINISTRATOR');
-      case 'moderation': return hasPerm('KICK_MEMBERS') || hasPerm('BAN_MEMBERS') || hasPerm('MODERATE_MEMBERS');
-      case 'roles': return hasPerm('MANAGE_ROLES') || hasPerm('ADMINISTRATOR');
-      case 'config': return hasPerm('MANAGE_GUILD') || hasPerm('ADMINISTRATOR');
-      case 'logs': return hasPerm('MANAGE_GUILD') || hasPerm('ADMINISTRATOR');
-      case 'automod': return hasPerm('MANAGE_MESSAGES') || hasPerm('ADMINISTRATOR');
-      case 'bot-settings': return isOwner;
-      default: return true;
-    }
-  };
-
-  if (!user) return <LoadingScreen fullPage />;
+  if (!user) return null;
   const selectedGuild = guilds.find(g => g.id === selectedGuildId);
   const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || "1511561628733276280";
-  const userAvatarUrl = user.avatar
-    ? `https://cdn.discordapp.com/avatars/${user.userId}/${user.avatar}.png`
-    : null;
 
   return (
     <div className="dashboard-layout">
@@ -202,47 +123,6 @@ export default function DashboardLayout({ children }) {
               <span>Panel sterowania</span>
             </div>
           </div>
-        </div>
-
-        {/* ─── Profil użytkownika ─── */}
-        <div className="user-profile">
-          <div className="user-avatar-wrapper">
-            {userAvatarUrl ? (
-              <img src={userAvatarUrl} alt={user.username} className="user-avatar" />
-            ) : (
-              <div className="user-avatar user-avatar-fallback" style={{ background: accentColor }}>
-                {(user.username || 'U').charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div className={`user-status-dot ${clientActive ? 'online' : 'offline'}`} />
-          </div>
-          <div className="user-info-text">
-            <span className="user-name">{user.global_name || user.username}</span>
-            <span className="user-tag">@{user.username}</span>
-            {isOwner && <span className="user-badge owner-badge">WŁAŚCICIEL</span>}
-            {userPermissions?.isAdmin && !isOwner && <span className="user-badge admin-badge">ADMIN</span>}
-            {userPermissions?.onServer && !userPermissions?.isAdmin && !isOwner && <span className="user-badge member-badge">UŻYTKOWNIK</span>}
-          </div>
-        </div>
-
-        {/* ─── Przełącznik widoku ─── */}
-        <div className="view-toggle">
-          <button
-            className={`view-toggle-btn ${viewMode === 'admin' ? 'active' : ''}`}
-            onClick={() => { setViewMode('admin'); localStorage.setItem('viewMode', 'admin'); window.dispatchEvent(new Event('viewModeChange')); }}
-            style={viewMode === 'admin' ? { background: accentColor, borderColor: accentColor } : {}}
-          >
-            <FiShield size={14} />
-            <span>Admin</span>
-          </button>
-          <button
-            className={`view-toggle-btn ${viewMode === 'user' ? 'active' : ''}`}
-            onClick={() => { setViewMode('user'); localStorage.setItem('viewMode', 'user'); window.dispatchEvent(new Event('viewModeChange')); }}
-            style={viewMode === 'user' ? { background: accentColor, borderColor: accentColor } : {}}
-          >
-            <FiSmile size={14} />
-            <span>User</span>
-          </button>
         </div>
 
         {guilds.length > 0 && (
@@ -258,7 +138,7 @@ export default function DashboardLayout({ children }) {
               </button>
               {serverDropdownOpen && (
                 <div className="server-dropdown-list">
-                  {(viewMode === 'admin' ? guilds.filter(g => (BigInt(g.permissions) & 0x8n) !== 0n) : guilds.filter(g => botGuildIds.has(g.id))).map((guild) => (
+                  {guilds.map((guild) => (
                     <button
                       key={guild.id}
                       className={`dropdown-item ${selectedGuildId === guild.id ? 'active' : ''}`}
@@ -291,33 +171,27 @@ export default function DashboardLayout({ children }) {
                   <FiHome />
                   <span>Przegląd</span>
                 </Link>
-                {canView('config') && (
-                  <Link href={getLink("/dashboard/config")} className={`nav-link ${pathname.includes("/dashboard/config") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/config") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/config") ? accentColor : 'transparent' }}>
-                    <FiSettings />
-                    <span>Konfiguracja ogólna</span>
-                  </Link>
-                )}
-                {canView('roles') && (
-                  <Link href={getLink("/dashboard/roles")} className={`nav-link ${pathname.includes("/dashboard/roles") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/roles") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/roles") ? accentColor : 'transparent' }}>
-                    <FiShield />
-                    <span>Zarządzanie rolami</span>
-                  </Link>
-                )}
-                <Link href={getLink("/dashboard/users")} className={`nav-link ${pathname.includes("/dashboard/users") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/users") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/users") ? accentColor : 'transparent' }}>
-                  <FiUsers />
-                  <span>Lista użytkowników</span>
+                <Link href={getLink("/dashboard/config")} className={`nav-link ${pathname.includes("/dashboard/config") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/config") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/config") ? accentColor : 'transparent' }}>
+                  <FiSettings />
+                  <span>Konfiguracja ogólna</span>
+                </Link>
+                <Link href={getLink("/dashboard/roles")} className={`nav-link ${pathname.includes("/dashboard/roles") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/roles") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/roles") ? accentColor : 'transparent' }}>
+                  <FiShield />
+                  <span>Zarządzanie rolami</span>
                 </Link>
               </div>
 
-              {canView('moderation') && (
-                <div className="nav-section">
-                  <div className="nav-section-title">MODERACJA</div>
-                  <Link href={getLink("/dashboard/moderation/settings")} className={`nav-link ${pathname.includes("/dashboard/moderation/settings") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/moderation/settings") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/moderation/settings") ? accentColor : 'transparent' }}>
-                    <FiShield />
-                    <span>Ustawienia moderacji</span>
-                  </Link>
-                </div>
-              )}
+              <div className="nav-section">
+                <div className="nav-section-title">MODERACJA</div>
+                <Link href={getLink("/dashboard/moderation/users")} className={`nav-link ${pathname.includes("/dashboard/moderation/users") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/moderation/users") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/moderation/users") ? accentColor : 'transparent' }}>
+                  <FiUsers />
+                  <span>Lista użytkowników</span>
+                </Link>
+                <Link href={getLink("/dashboard/moderation/settings")} className={`nav-link ${pathname.includes("/dashboard/moderation/settings") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/moderation/settings") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/moderation/settings") ? accentColor : 'transparent' }}>
+                  <FiShield />
+                  <span>Ustawienia moderacji</span>
+                </Link>
+              </div>
 
               <div className="nav-section">
                 <div className="nav-section-title">TICKETY</div>
@@ -327,15 +201,13 @@ export default function DashboardLayout({ children }) {
                 </Link>
               </div>
 
-              {canView('automod') && (
-                <div className="nav-section">
-                  <div className="nav-section-title">AUTO-MOD</div>
-                  <Link href={getLink("/dashboard/automod")} className={`nav-link ${pathname.includes("/dashboard/automod") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/automod") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/automod") ? accentColor : 'transparent' }}>
-                    <FiZap />
-                    <span>Automod</span>
-                  </Link>
-                </div>
-              )}
+              <div className="nav-section">
+                <div className="nav-section-title">AUTO-MOD</div>
+                <Link href={getLink("/dashboard/automod")} className={`nav-link ${pathname.includes("/dashboard/automod") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/automod") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/automod") ? accentColor : 'transparent' }}>
+                  <FiZap />
+                  <span>Automod</span>
+                </Link>
+              </div>
 
               <div className="nav-section">
                 <div className="nav-section-title">POWITANIA</div>
@@ -345,15 +217,13 @@ export default function DashboardLayout({ children }) {
                 </Link>
               </div>
 
-              {canView('logs') && (
-                <div className="nav-section">
-                  <div className="nav-section-title">LOGI</div>
-                  <Link href={getLink("/dashboard/logs")} className={`nav-link ${pathname.includes("/dashboard/logs") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/logs") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/logs") ? accentColor : 'transparent' }}>
-                    <FiClipboard />
-                    <span>Logi</span>
-                  </Link>
-                </div>
-              )}
+              <div className="nav-section">
+                <div className="nav-section-title">LOGI</div>
+                <Link href={getLink("/dashboard/logs")} className={`nav-link ${pathname.includes("/dashboard/logs") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/logs") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/logs") ? accentColor : 'transparent' }}>
+                  <FiClipboard />
+                  <span>Logi</span>
+                </Link>
+              </div>
 
               <div className="nav-section">
                 <div className="nav-section-title">USTAWIENIA</div>
@@ -363,15 +233,13 @@ export default function DashboardLayout({ children }) {
                 </Link>
               </div>
 
-              {canView('bot-settings') && (
-                <div className="nav-section">
-                  <div className="nav-section-title">ZARZĄDZANIE BOTEM</div>
-                  <Link href={getLink("/dashboard/bot-settings")} className={`nav-link ${pathname === "/dashboard/bot-settings" ? 'active' : ''}`} style={{ color: pathname === "/dashboard/bot-settings" ? accentColor : '', borderLeftColor: pathname === "/dashboard/bot-settings" ? accentColor : 'transparent' }}>
-                    <FiActivity />
-                    <span>Health & Status</span>
-                  </Link>
-                </div>
-              )}
+              <div className="nav-section">
+                <div className="nav-section-title">ZARZĄDZANIE BOTEM</div>
+                <Link href={getLink("/dashboard/bot-settings")} className={`nav-link ${pathname === "/dashboard/bot-settings" ? 'active' : ''}`} style={{ color: pathname === "/dashboard/bot-settings" ? accentColor : '', borderLeftColor: pathname === "/dashboard/bot-settings" ? accentColor : 'transparent' }}>
+                  <FiActivity />
+                  <span>Health & Status</span>
+                </Link>
+              </div>
             </>
           )}
         </nav>
@@ -429,15 +297,7 @@ export default function DashboardLayout({ children }) {
           </div>
         </header>
 
-        {selectedGuildId && botOnGuild === 'error' ? (
-          <div className="bot-warning">
-            <div className="warning-content">
-              <h1>🔌 Bot nie odpowiada</h1>
-              <p>Serwer bota jest offline lub wystąpił błąd połączenia. Statusy na górze strony pokazują szczegóły.</p>
-              <p className="refresh-hint">Spróbuj odświeżyć stronę za chwilę (F5).</p>
-            </div>
-          </div>
-        ) : selectedGuildId && botOnGuild === false ? (
+        {selectedGuildId && botOnGuild === false ? (
           <div className="bot-warning">
             <div className="warning-content">
               <h1>🤖 Bot nie jest dodany do tego serwera</h1>
@@ -455,7 +315,7 @@ export default function DashboardLayout({ children }) {
             </div>
           </div>
         ) : (
-          <div className="page-content-wrapper">
+          <div className="page-content-wrapper" style={{ borderColor: accentColor }}>
             {children}
           </div>
         )}
@@ -475,7 +335,7 @@ export default function DashboardLayout({ children }) {
         .dashboard-layout {
           display: flex;
           min-height: 100vh;
-          background: transparent;
+          background: var(--bg-color, #0a0a0f);
           color: var(--text-color, #ffffff);
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           margin: 0;
@@ -674,21 +534,19 @@ export default function DashboardLayout({ children }) {
           display: flex;
           flex-direction: column;
           overflow-y: auto;
-          overflow-x: hidden;
           min-width: 0;
-          background: transparent;
+          background: var(--bg-color);
           padding: 2rem;
         }
 
         .page-content-wrapper {
           width: 100%;
           max-width: 1100px;
-          margin: 1.5rem auto 0;
-          border: 1px solid var(--border-color);
+          margin: 0 auto;
+          border: 1px solid;
           border-radius: var(--border-radius);
           overflow: hidden;
-          background: rgba(var(--surface-rgb), var(--panel-opacity));
-          backdrop-filter: blur(12px);
+          background: var(--bg-color);
         }
 
         .top-bar {
@@ -696,8 +554,10 @@ export default function DashboardLayout({ children }) {
           height: 200px;
           overflow: hidden;
           flex-shrink: 0;
-          margin: -2rem -2rem 0 -2rem;
+          border-bottom: 1px solid var(--border-color, #1e1e26);
+          margin: 0;
           padding: 0;
+          width: 100%;
           display: block;
         }
 
@@ -807,11 +667,6 @@ export default function DashboardLayout({ children }) {
         .warning-content {
           text-align: center;
           max-width: 500px;
-          background: rgba(var(--surface-rgb), var(--surface-opacity));
-          border: 1px solid var(--border-color);
-          border-radius: var(--border-radius);
-          padding: 2.5rem 2rem;
-          backdrop-filter: blur(12px);
         }
 
         .warning-content h1 {
@@ -843,134 +698,6 @@ export default function DashboardLayout({ children }) {
           font-size: 0.85rem;
           margin-top: 1rem;
           color: var(--text-muted, #6b6b76);
-        }
-
-        /* ─── Profil użytkownika ─── */
-        .user-profile {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 0.75rem 1rem;
-          border-bottom: 1px solid var(--border-color, #1e1e26);
-        }
-
-        .user-avatar-wrapper {
-          position: relative;
-          flex-shrink: 0;
-        }
-
-        .user-avatar {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          object-fit: cover;
-        }
-
-        .user-avatar-fallback {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: bold;
-          font-size: 1.1rem;
-          color: #fff;
-        }
-
-        .user-status-dot {
-          position: absolute;
-          bottom: 0;
-          right: 0;
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-          border: 2px solid var(--bg-color, #0a0a0f);
-        }
-
-        .user-status-dot.online { background: #10b981; }
-        .user-status-dot.offline { background: #ef4444; }
-
-        .user-info-text {
-          display: flex;
-          flex-direction: column;
-          gap: 0.1rem;
-          min-width: 0;
-          flex: 1;
-        }
-
-        .user-name {
-          font-size: 0.85rem;
-          font-weight: 600;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .user-tag {
-          font-size: 0.7rem;
-          color: var(--text-muted, #6b6b76);
-        }
-
-        .user-badge {
-          font-size: 0.6rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          padding: 0.15rem 0.4rem;
-          border-radius: 4px;
-          display: inline-block;
-          width: fit-content;
-          margin-top: 0.15rem;
-        }
-
-        .owner-badge {
-          background: rgba(234, 179, 8, 0.2);
-          color: #eab308;
-          border: 1px solid rgba(234, 179, 8, 0.3);
-        }
-
-        .admin-badge {
-          background: rgba(59, 130, 246, 0.2);
-          color: #3b82f6;
-          border: 1px solid rgba(59, 130, 246, 0.3);
-        }
-
-        .member-badge {
-          background: rgba(16, 185, 129, 0.2);
-          color: #10b981;
-          border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-
-        /* ─── Przełącznik widoku ─── */
-        .view-toggle {
-          display: flex;
-          gap: 0.25rem;
-          padding: 0.5rem 1rem;
-          border-bottom: 1px solid var(--border-color, #1e1e26);
-        }
-
-        .view-toggle-btn {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.35rem;
-          padding: 0.4rem 0.5rem;
-          background: transparent;
-          border: 1px solid var(--border-color, #1e1e26);
-          border-radius: 8px;
-          color: var(--text-muted, #6b6b76);
-          cursor: pointer;
-          font-size: 0.75rem;
-          font-weight: 600;
-          transition: all 0.2s;
-        }
-
-        .view-toggle-btn:hover {
-          color: var(--text-color, #fff);
-          border-color: var(--text-muted);
-        }
-
-        .view-toggle-btn.active {
-          color: #fff;
         }
       `}</style>
     </div>

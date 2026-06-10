@@ -29,7 +29,7 @@ export default function Modal({ isOpen, onClose, title, children, width = '440px
       className="modal-overlay-custom"
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
-      <div className="modal-container-custom" style={{ maxWidth: width, background: `rgba(${rgb}, var(--window-opacity, 0.95))` }}>
+      <div className="modal-container-custom" style={{ maxWidth: width, background: `rgba(${rgb}, var(--surface-opacity, 0.95))` }}>
         <div className="modal-header-custom">
           <h2 style={{ color: 'var(--accent-color)' }}>{title}</h2>
           <button onClick={onClose} className="modal-close-custom" title="Zamknij">

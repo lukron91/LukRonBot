@@ -2,18 +2,17 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTheme } from '@/lib/theme-context';
-import { useToast } from '@/components/Toast';
 import { FiSave, FiShield, FiLock, FiBell, FiHash, FiAlertTriangle, FiList, FiEye, FiEyeOff, FiUserCheck, FiLink, FiUserX, FiSettings, FiRefreshCw } from 'react-icons/fi';
 
 export default function ModerationSettings() {
   const { accentColor } = useTheme();
-  const { addToast } = useToast();
   const searchParams = useSearchParams();
   const guildId = searchParams.get("guild");
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
   const [roles, setRoles] = useState([]);
   const [channels, setChannels] = useState([]);
   const [expanded, setExpanded] = useState({ 
@@ -96,6 +95,7 @@ export default function ModerationSettings() {
 
   const handleSave = async () => {
     setSaving(true);
+    setMessage("");
     try {
       const res = await fetch('/api/proxy/api/guilds/' + guildId + '/config/moderation', {
         method: 'POST',
@@ -124,10 +124,10 @@ export default function ModerationSettings() {
       const text = await res.text();
       let data = {};
       try { data = JSON.parse(text); } catch { /* non-JSON response */ }
-      if (res.ok) addToast('Ustawienia moderacji zapisane pomyślnie', 'success');
-      else addToast('Błąd: ' + (data.error || 'Brak połączenia z serwerem'), 'error');
+      if (res.ok) setMessage('✅ Ustawienia zapisane');
+      else setMessage('❌ Błąd: ' + (data.error || 'Brak połączenia z serwerem'));
     } catch (err) {
-      addToast('Błąd połączenia: ' + err.message, 'error');
+      setMessage('❌ Błąd połączenia: ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -438,6 +438,8 @@ export default function ModerationSettings() {
         {saving ? "Zapisywanie..." : "Zapisz wszystkie ustawienia"}
       </button>
       
+      {message && <div className={`message ${message.startsWith('✅') ? 'success' : 'error'}`}>{message}</div>}
+
       <style jsx>{`
         .moderation-settings {
           max-width: 900px;

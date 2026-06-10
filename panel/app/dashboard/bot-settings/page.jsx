@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTheme } from '@/lib/theme-context';
-import DatabaseExplorer from './DatabaseExplorer';
 import { FiWifi, FiClock, FiCpu, FiHardDrive, FiServer, FiActivity, FiPower, FiPackage, FiList, FiInfo, FiDatabase, FiRefreshCw, FiTerminal, FiPlus, FiTrash2, FiCheckSquare, FiSquare, FiGlobe, FiCopy, FiX, FiZap, FiAlertCircle } from 'react-icons/fi';
 
 export default function BotSettingsPage() {
@@ -270,9 +269,6 @@ export default function BotSettingsPage() {
         </button>
         <button className={`tab ${activeTab === 'db' ? 'active' : ''}`} onClick={() => setActiveTab('db')} style={activeTab === 'db' ? { borderBottomColor: accentColor, color: accentColor } : {}}>
           <FiDatabase /> Logi bazy
-        </button>
-        <button className={`tab ${activeTab === 'dbexplorer' ? 'active' : ''}`} onClick={() => setActiveTab('dbexplorer')} style={activeTab === 'dbexplorer' ? { borderBottomColor: accentColor, color: accentColor } : {}}>
-          <FiDatabase /> Baza danych
         </button>
       </div>
 
@@ -556,8 +552,6 @@ export default function BotSettingsPage() {
         </div>
       )}
 
-      {activeTab === 'dbexplorer' && <DatabaseExplorer guildId={guildId} accentColor={accentColor} />}
-
 {showModal && selectedModule && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -626,7 +620,7 @@ export default function BotSettingsPage() {
           color: #fff;
         }
         .section {
-          background: rgba(var(--surface-rgb), var(--tab-opacity));
+          background: rgba(var(--surface-rgb), var(--surface-opacity));
           border: 1px solid var(--border-color);
           border-radius: var(--border-radius);
           padding: 1.5rem;
@@ -859,5 +853,3 @@ export default function BotSettingsPage() {
     </div>
   );
 }
-
-// DatabaseExplorer, TableView i formatValue są w DatabaseExplorer.jsx
