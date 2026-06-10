@@ -56,7 +56,8 @@ export default function WallpaperModal({ isOpen, onClose }) {
             <div
               className="wp-preview"
               style={{
-                background: wp.css || 'var(--bg-color)',
+                background: wp.css && !wp.css.startsWith('/') ? wp.css : 'var(--bg-color)',
+                backgroundImage: wp.css && wp.css.startsWith('/') ? `url(${wp.css})` : undefined,
                 border: wp.id === 'none' ? '2px dashed var(--border-color)' : 'none',
               }}
             >
