@@ -1,4 +1,4 @@
-﻿"use client";
+﻿﻿"use client";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FiX, FiRefreshCw, FiUser, FiShield, FiSearch, FiCalendar, FiClock, FiAward, FiDollarSign, FiTrendingUp, FiMessageSquare, FiHash, FiStar } from 'react-icons/fi';
@@ -33,7 +33,7 @@ export default function UsersPage() {
       const v = getViewMode();
       setViewMode(v);
     };
-    // Od┼Ťwie┼╝ przy ka┼╝dym klikni─Öciu (toggle zmienia localStorage)
+    // Odśwież przy każdym kliknięciu (toggle zmienia localStorage)
     document.addEventListener('click', check);
     window.addEventListener('viewModeChange', check);
     window.addEventListener('storage', check);
@@ -125,10 +125,10 @@ export default function UsersPage() {
         body: JSON.stringify(body),
       });
       if (res.ok) {
-        setPunishResult({ success: true, message: 'Kara zosta┼éa na┼éo┼╝ona.' });
+        setPunishResult({ success: true, message: 'Kara została nałożona.' });
         setPunishReason("");
         setPunishDuration("");
-        // Od┼Ťwie┼╝ dane
+        // Odśwież dane
         const [pRes, aRes, hRes] = await Promise.all([
           fetch('/api/proxy/api/guilds/' + guildId + '/punishments/' + selectedUser.id),
           fetch('/api/proxy/api/guilds/' + guildId + '/punishments/' + selectedUser.id + '/active'),
@@ -142,10 +142,10 @@ export default function UsersPage() {
         setHistory(hData?.punishments || []);
       } else {
         const err = await res.json().catch(() => ({}));
-        setPunishResult({ success: false, message: err?.error || err?.message || 'Nie uda┼éo si─Ö na┼éo┼╝y─ç kary.' });
+        setPunishResult({ success: false, message: err?.error || err?.message || 'Nie udało się nałożyć kary.' });
       }
     } catch {
-      setPunishResult({ success: false, message: 'B┼é─ůd po┼é─ůczenia z serwerem.' });
+      setPunishResult({ success: false, message: 'Błąd połączenia z serwerem.' });
     }
     setPunishing(false);
   };
@@ -161,8 +161,8 @@ export default function UsersPage() {
     setPunishDuration("");
   };
 
-  const formatDate = (d) => d ? new Date(d).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' }) : 'ÔÇö';
-  const formatDateTime = (d) => d ? new Date(d).toLocaleString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'ÔÇö';
+  const formatDate = (d) => d ? new Date(d).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+  const formatDateTime = (d) => d ? new Date(d).toLocaleString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
 
   const avatarUrl = (u) => u.avatar ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png` : null;
   const guildAvatarUrl = (u) => u.guildAvatar ? `https://cdn.discordapp.com/guilds/${guildId}/users/${u.id}/avatars/${u.guildAvatar}.png` : null;
@@ -172,20 +172,20 @@ export default function UsersPage() {
       {/* Header */}
       <div className="up-header">
         <div className="up-header-left">
-          <h2 className="up-title">Lista u┼╝ytkownik├│w</h2>
-          <p className="up-sub">{users.length} cz┼éonk├│w</p>
+          <h2 className="up-title">Lista użytkowników</h2>
+          <p className="up-sub">{users.length} członków</p>
         </div>
         <div className="up-search-wrap">
           <FiSearch className="up-search-icon" />
-          <input className="up-search" placeholder="Szukaj u┼╝ytkownika..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input className="up-search" placeholder="Szukaj użytkownika..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
       </div>
 
       {/* Lista */}
       {loading ? (
-        <div className="up-loading">┼üadowanie...</div>
+        <div className="up-loading">Ładowanie...</div>
       ) : filtered.length === 0 ? (
-        <div className="up-empty">Brak u┼╝ytkownik├│w{search ? ' dla tego wyszukiwania' : ''}.</div>
+        <div className="up-empty">Brak użytkowników{search ? ' dla tego wyszukiwania' : ''}.</div>
       ) : (
         <div className="up-list">
           {filtered.map(u => (
@@ -218,7 +218,7 @@ export default function UsersPage() {
         <DraggableWindow
           isOpen={true}
           onClose={closeProfile}
-          title={'U┼╝ytkownik: ' + (selectedUser?.displayName || selectedUser?.username || '')}
+          title={'Użytkownik: ' + (selectedUser?.displayName || selectedUser?.username || '')}
           width={600}
           height="auto"
           id="user-profile"
@@ -236,7 +236,7 @@ export default function UsersPage() {
 
           <div className="up-modal-body">
               {profileLoading ? (
-                <div className="up-loading">┼üadowanie danych...</div>
+                <div className="up-loading">Ładowanie danych...</div>
               ) : profileTab === 'profile' && profile ? (
                 <div className="up-profile">
                   {/* Avatar + podstawowe info */}
@@ -257,18 +257,18 @@ export default function UsersPage() {
                       <h3 className="up-profile-name">{profile.globalName || profile.displayName || profile.username}</h3>
                       <span className="up-profile-tag">@{profile.username}</span>
                       <div className="up-profile-badges">
-                        {profile.isOwner && <span className="up-badge owner">W┼üA┼ÜCICIEL</span>}
+                        {profile.isOwner && <span className="up-badge owner">WACICIEL</span>}
                         {profile.isAdmin && !profile.isOwner && <span className="up-badge admin">ADMIN</span>}
-                        {profile.nickname && <span className="up-badge nick">­čôŁ {profile.nickname}</span>}
-                        {profile.premiumSince && <span className="up-badge boost">ÔşÉ Boostuje od {formatDate(profile.premiumSince)}</span>}
+                        {profile.nickname && <span className="up-badge nick">📝 {profile.nickname}</span>}
+                        {profile.premiumSince && <span className="up-badge boost">⭐ Boostuje od {formatDate(profile.premiumSince)}</span>}
                       </div>
                     </div>
                   </div>
 
-                  {/* Szczeg├│┼éy */}
+                  {/* Szczegóy */}
                   <div className="up-profile-details">
                     <div className="up-detail-row"><FiCalendar /> <span>Konto utworzone</span> <strong>{formatDateTime(profile.createdAt)}</strong></div>
-                    <div className="up-detail-row"><FiClock /> <span>Do┼é─ůczy┼é</span> <strong>{formatDateTime(profile.joinedAt)}</strong></div>
+                    <div className="up-detail-row"><FiClock /> <span>Dołączył</span> <strong>{formatDateTime(profile.joinedAt)}</strong></div>
                     {profile.accentColor && <div className="up-detail-row"><FiStar /> <span>Kolor akcentu</span> <strong><span className="up-color-dot" style={{ background: profile.accentColor }} /> {profile.accentColor}</strong></div>}
                   </div>
 
@@ -298,20 +298,20 @@ export default function UsersPage() {
                     </div>
                   )}
 
-                  {/* Miejsce na przysz┼ée funkcje: poziom, waluta itp */}
+                  {/* Miejsce na przyszłe funkcje: poziom, waluta itp */}
                   <div className="up-section-block up-future">
                     <h4><FiTrendingUp /> Poziomy i ekonomia</h4>
-                    <p className="up-future-text">Funkcje w przygotowaniu ÔÇö poziom, XP, waluta i inne pojawi─ů si─Ö wkr├│tce.</p>
+                    <p className="up-future-text">Funkcje w przygotowaniu — poziom, XP, waluta i inne pojawią się wkrótce.</p>
                   </div>
                 </div>
               ) : profileTab === 'moderation' ? (
                 <div className="up-moderation">
-                  <h3 className="up-mod-title">Dzia┼éania moderacyjne dla {selectedUser?.username}</h3>
+                  <h3 className="up-mod-title">Działania moderacyjne dla {selectedUser?.username}</h3>
 
                   {/* Podtaby moderacji */}
                   <div className="up-mod-subtabs">
                     <button className={`up-mod-subtab ${modTab === 'punish' ? 'active' : ''}`} onClick={() => setModTab('punish')} style={modTab === 'punish' ? { borderBottomColor: accentColor, color: accentColor } : {}}>
-                      Na┼é├│┼╝ kar─Ö
+                      Nałożenie kary
                     </button>
                     <button className={`up-mod-subtab ${modTab === 'active' ? 'active' : ''}`} onClick={() => setModTab('active')} style={modTab === 'active' ? { borderBottomColor: accentColor, color: accentColor } : {}}>
                       Aktywne kary
@@ -325,15 +325,15 @@ export default function UsersPage() {
                   </div>
 
                   <div className="up-mod-content">
-                    {/* Podtab: Na┼é├│┼╝ kar─Ö */}
+                    {/* Podtab: Nałożenie kary */}
                     {modTab === 'punish' && (
                       <div className="up-punish-form">
                         <div className="up-punish-types">
                           {[
-                            { id: 'warn', icon: 'ÔÜá´ŞĆ', label: 'Warn', desc: 'Ostrze┼╝enie' },
-                            { id: 'mute', icon: '­čöç', label: 'Wycisz', desc: 'Czasowe wyciszenie' },
-                            { id: 'ban', icon: '­čöĘ', label: 'Ban', desc: 'Blokada dost─Öpu' },
-                            { id: 'kick', icon: '­čĹó', label: 'Kick', desc: 'Wyrzucenie' },
+                            { id: 'warn', icon: '⚠️', label: 'Warn', desc: 'Ostrzeżenie' },
+                            { id: 'mute', icon: '🔇', label: 'Wycisz', desc: 'Czasowe wyciszenie' },
+                            { id: 'ban', icon: '🔨', label: 'Ban', desc: 'Blokada dostępu' },
+                            { id: 'kick', icon: '👢', label: 'Kick', desc: 'Wyrzucenie' },
                           ].map(t => (
                             <button
                               key={t.id}
@@ -381,11 +381,11 @@ export default function UsersPage() {
                         )}
 
                         <div className="up-punish-reason">
-                          <label>Pow├│d:</label>
+                          <label>Powód:</label>
                           <div className="up-textarea-wrap">
                             <textarea
                               className="up-textarea"
-                              placeholder="Podaj pow├│d kary..."
+                              placeholder="Podaj powód kary..."
                               value={punishReason}
                               onChange={e => setPunishReason(e.target.value)}
                               rows={3}
@@ -399,7 +399,7 @@ export default function UsersPage() {
                           disabled={punishing || !punishReason.trim()}
                           style={{ background: accentColor }}
                         >
-                          {punishing ? 'Nak┼éadanie...' : `Na┼é├│┼╝ ${punishType === 'warn' ? 'Warna' : punishType === 'mute' ? 'Wyciszenie' : punishType === 'ban' ? 'Bana' : 'Kicka'}`}
+                          {punishing ? 'Nakładanie...' : `Nałóż ${punishType === 'warn' ? 'Warna' : punishType === 'mute' ? 'Wyciszenie' : punishType === 'ban' ? 'Bana' : 'Kicka'}`}
                         </button>
 
                         {punishResult && (
@@ -415,8 +415,8 @@ export default function UsersPage() {
                       <div>
                         {(activePunishments.mute || activePunishments.ban) ? (
                           <div className="up-section-block">
-                            {activePunishments.mute && <div className="up-active-pun">­čöç Wyciszony ÔÇö wygasa: {formatDateTime(activePunishments.mute.expiresAt)}</div>}
-                            {activePunishments.ban && <div className="up-active-pun">­čöĘ Zbanowany ÔÇö {activePunishments.ban.reason || 'brak powodu'}</div>}
+                            {activePunishments.mute && <div className="up-active-pun">🔇 Wyciszony — wygasa: {formatDateTime(activePunishments.mute.expiresAt)}</div>}
+                            {activePunishments.ban && <div className="up-active-pun">🔨 Zbanowany — {activePunishments.ban.reason || 'brak powodu'}</div>}
                           </div>
                         ) : (
                           <p className="up-empty" style={{ padding: '1.5rem' }}>Brak aktywnych kar.</p>
@@ -438,7 +438,7 @@ export default function UsersPage() {
                             ))}
                           </div>
                         ) : (
-                          <p className="up-empty" style={{ padding: '1.5rem' }}>Brak warn├│w.</p>
+                          <p className="up-empty" style={{ padding: '1.5rem' }}>Brak warnów.</p>
                         )}
                       </div>
                     )}

@@ -1,10 +1,22 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from 'react';
-import Draggable from 'react-draggable';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { FiX, FiMinus, FiMaximize2, FiMinimize2 } from 'react-icons/fi';
 import { useTheme } from '@/lib/theme-context';
 
 let globalZIndex = 1000;
+
+function calcCenter(width, height) {
+  if (typeof window === 'undefined') return { x: 0, y: 20 };
+  const parsedW = typeof width === 'number' ? width : parseInt(width) || 600;
+  const parsedH = height ? (typeof height === 'number' ? height : parseInt(height) || 400) : 400;
+  const w = Math.min(parsedW, window.innerWidth - 40);
+  const h = Math.min(parsedH, window.innerHeight - 40);
+  return {
+    x: Math.max(0, (window.innerWidth - w) / 2),
+    y: Math.max(0, (window.innerHeight - h) / 3),
+  };
+}
 
 export default function DraggableWindow({
   isOpen,
@@ -17,46 +29,46 @@ export default function DraggableWindow({
   id,
   showOverlay,
   resizable = false,
-  defaultPosition = { x: 0, y: 0 },
+  defaultPosition: propDefaultPos = { x: 0, y: 0 },
 }) {
   const { theme } = useTheme();
   const nodeRef = useRef(null);
   const [zIndex, setZIndex] = useState(globalZIndex);
   const [minimized, setMinimized] = useState(false);
   const [maximized, setMaximized] = useState(false);
-  const [position, setPosition] = useState(defaultPosition);
-  const [restoredPosition, setRestoredPosition] = useState(null);
-  const overlayRef = useRef(null);
-  const initialized = useRef(false);
-
-  const effectiveOverlay = showOverlay !== undefined ? showOverlay : type === 'modal';
-
-  // Wczytaj zapamiętaną pozycję z localStorage
-  useEffect(() => {
+  // Inicjalizacja pozycji — wyliczana synchronicznie przed pierwszym renderem
+  const [position, setPosition] = useState(() => {
     if (id && typeof window !== 'undefined') {
       try {
         const saved = localStorage.getItem(`dw_pos_${id}`);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          setPosition(parsed);
-        }
+        if (saved) return JSON.parse(saved);
       } catch {}
     }
-  }, [id]);
+    return calcCenter(width, height);
+  });
+  const [restoredPosition, setRestoredPosition] = useState(null);
+  const overlayRef = useRef(null);
+  const dragging = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0, posX: 0, posY: 0 });
+  const wasOpen = useRef(false);
 
-  // Auto-center przy pierwszym otwarciu
+  const effectiveOverlay = showOverlay !== undefined ? showOverlay : type === 'modal';
+
+  // Reset pozycji przy otwarciu — tylko gdy faktycznie otwieramy (nie przy pierwszym renderze)
   useEffect(() => {
-    if (isOpen && !initialized.current && typeof window !== 'undefined') {
-      initialized.current = true;
-      // Jeśli nie ma zapisanej pozycji, wyśrodkuj
-      if (!id || !localStorage.getItem(`dw_pos_${id}`)) {
-        const w = Math.min(parseInt(width), window.innerWidth - 40);
-        const h = height ? Math.min(parseInt(height), window.innerHeight - 40) : 400;
-        setPosition({
-          x: Math.max(0, (window.innerWidth - w) / 2),
-          y: Math.max(0, (window.innerHeight - h) / 3),
-        });
+    if (isOpen && !wasOpen.current) {
+      wasOpen.current = true;
+      let pos;
+      if (id && typeof window !== 'undefined') {
+        try {
+          const saved = localStorage.getItem(`dw_pos_${id}`);
+          if (saved) pos = JSON.parse(saved);
+        } catch {}
       }
+      if (!pos) pos = calcCenter(width, height);
+      setPosition(pos);
+    } else if (!isOpen) {
+      wasOpen.current = false;
     }
   }, [isOpen, id, width, height]);
 
@@ -92,15 +104,95 @@ export default function DraggableWindow({
     setZIndex(globalZIndex);
   }, []);
 
-  const handleStop = useCallback((e, data) => {
-    const newPos = { x: data.x, y: data.y };
-    setPosition(newPos);
-    if (id && typeof window !== 'undefined') {
-      try {
-        localStorage.setItem(`dw_pos_${id}`, JSON.stringify(newPos));
-      } catch {}
+  // Własna implementacja przeciągania — używamy natywnych eventów (Next.js portal issue)
+  const posRef = useRef(position);
+  posRef.current = position;
+  const dragCleanup = useRef(null);
+
+  const attachDragListeners = useCallback(() => {
+    if (!isOpen || minimized || !nodeRef.current) return;
+    const headerEl = nodeRef.current.querySelector('.dw-header');
+    if (!headerEl) return;
+
+    // Cleanup previous
+    if (dragCleanup.current) {
+      dragCleanup.current();
+      dragCleanup.current = null;
     }
-  }, [id]);
+
+    const onMouseDown = (e) => {
+      if (e.button !== 0) return;
+      dragging.current = true;
+      dragStart.current = {
+        x: e.clientX,
+        y: e.clientY,
+        posX: posRef.current.x,
+        posY: posRef.current.y,
+      };
+
+      const onMove = (ev) => {
+        if (!dragging.current) return;
+        const dx = ev.clientX - dragStart.current.x;
+        const dy = ev.clientY - dragStart.current.y;
+        setPosition({
+          x: dragStart.current.posX + dx,
+          y: dragStart.current.posY + dy,
+        });
+      };
+
+      const onUp = () => {
+        dragging.current = false;
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        const w = nodeRef.current?.offsetWidth || parseInt(width) || 600;
+        const h = nodeRef.current?.offsetHeight || 400;
+        const maxX = Math.max(0, window.innerWidth - w - 20);
+        const maxY = Math.max(0, window.innerHeight - h - 20);
+        const clamped = {
+          x: Math.min(Math.max(posRef.current.x, 20 - w + Math.min(w, window.innerWidth)), maxX),
+          y: Math.min(Math.max(posRef.current.y, 0), maxY),
+        };
+        setPosition(clamped);
+        if (id && typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(`dw_pos_${id}`, JSON.stringify(clamped));
+          } catch {}
+        }
+      };
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    };
+
+    headerEl.addEventListener('mousedown', onMouseDown);
+    dragCleanup.current = () => headerEl.removeEventListener('mousedown', onMouseDown);
+  }, [isOpen, minimized, id, width]);
+
+  // Użyj useEffect do podpięcia listenerów — obserwuj nodeRef.current
+  useEffect(() => {
+    if (!isOpen || minimized) return;
+
+    // Retry until nodeRef.current is available
+    let attempts = 0;
+    const tryAttach = () => {
+      attempts++;
+      if (!nodeRef.current) {
+        if (attempts < 100) {
+          setTimeout(tryAttach, 50);
+        }
+        return;
+      }
+      attachDragListeners();
+    };
+    tryAttach();
+
+    return () => {
+      if (dragCleanup.current) {
+        dragCleanup.current();
+        dragCleanup.current = null;
+      }
+    };
+  }, [isOpen, minimized, attachDragListeners]);
 
   const toggleMinimize = useCallback(() => {
     if (!minimized) {
@@ -164,7 +256,7 @@ export default function DraggableWindow({
     </div>
   );
 
-  return (
+  const portal = (
     <>
       {/* Nakładka (tylko dla typu modal) */}
       {effectiveOverlay && (
@@ -176,24 +268,21 @@ export default function DraggableWindow({
         />
       )}
 
-      {/* Przeciągalne okno */}
-      {maximized ? (
-        windowContent
-      ) : (
-        <Draggable
-          nodeRef={nodeRef}
-          handle=".dw-header"
-          position={minimized ? { x: 0, y: 0 } : undefined}
-          defaultPosition={defaultPosition}
-          onStop={handleStop}
-          bounds="parent"
-          disabled={minimized}
-        >
-          <div ref={nodeRef} style={{ position: 'fixed', zIndex }}>
-            {windowContent}
-          </div>
-        </Draggable>
-      )}
+      {/* Okno z pozycjonowaniem */}
+      <div
+        ref={nodeRef}
+        className="dw-portal-container"
+        style={{
+          position: 'fixed',
+          left: minimized ? 'auto' : position.x + 'px',
+          top: minimized ? 'auto' : position.y + 'px',
+          zIndex,
+          right: minimized ? '1rem' : 'auto',
+          bottom: minimized ? '0' : 'auto',
+        }}
+      >
+        {windowContent}
+      </div>
 
       <style jsx>{`
         .dw-overlay {
@@ -303,4 +392,8 @@ export default function DraggableWindow({
       `}</style>
     </>
   );
+
+  return typeof window !== 'undefined'
+    ? createPortal(portal, document.body)
+    : portal;
 }
