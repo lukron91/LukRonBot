@@ -30,6 +30,9 @@ const WALLPAPERS = [
   { id: 'bubbles', name: 'Bąbelki', css: 'radial-gradient(circle at 10% 20%, rgba(255,255,255,0.04) 0%, transparent 15px), radial-gradient(circle at 80% 40%, rgba(255,255,255,0.04) 0%, transparent 20px), radial-gradient(circle at 30% 80%, rgba(255,255,255,0.04) 0%, transparent 12px), radial-gradient(circle at 70% 90%, rgba(255,255,255,0.04) 0%, transparent 18px), linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%)' },
   { id: 'grid', name: 'Siatka', css: 'linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(0deg, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%)' },
   { id: 'stardust', name: 'Gwiezdny pył', css: 'radial-gradient(circle at 15% 25%, rgba(255,255,255,0.05) 0%, transparent 2px), radial-gradient(circle at 45% 65%, rgba(255,255,255,0.05) 0%, transparent 3px), radial-gradient(circle at 85% 15%, rgba(255,255,255,0.05) 0%, transparent 2px), radial-gradient(circle at 60% 85%, rgba(255,255,255,0.05) 0%, transparent 2px), radial-gradient(circle at 25% 50%, rgba(255,255,255,0.05) 0%, transparent 3px), linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%)' },
+
+  // === TAPETA Z PLIKU ===
+  { id: 'abstract-dark', name: 'Ciemna abstrakcja', css: '/resources/wallpapers/abstract-dark.jpg' },
 ];
 
 export default function WallpaperModal({ isOpen, onClose }) {
