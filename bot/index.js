@@ -156,6 +156,17 @@ app.get('/api/status', (req, res) => {
   res.json({ db: app.locals.isDbConnected(), env: BOT_ENV });
 });
 
+// Lista serwerów na których jest bot — używana przez panel do listy serwerów
+app.get('/api/guilds', (req, res) => {
+  const guilds = client.guilds.cache.map(g => ({
+    id: g.id,
+    name: g.name,
+    icon: g.icon,
+    memberCount: g.memberCount,
+  }));
+  res.json({ success: true, guilds });
+});
+
 // Statystyki serwera Discord — używane przez panel (lista serwerów i dashboard)
 const statsCache = new Map();
 setInterval(() => statsCache.clear(), 30000);

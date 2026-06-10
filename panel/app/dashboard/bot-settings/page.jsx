@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTheme } from '@/lib/theme-context';
+import LoadingScreen from '@/components/LoadingScreen';
 import { FiWifi, FiClock, FiCpu, FiHardDrive, FiServer, FiActivity, FiPower, FiPackage, FiList, FiInfo, FiDatabase, FiRefreshCw, FiTerminal, FiPlus, FiTrash2, FiCheckSquare, FiSquare, FiGlobe, FiCopy, FiX, FiZap, FiAlertCircle } from 'react-icons/fi';
 
 export default function BotSettingsPage() {
@@ -213,7 +214,7 @@ export default function BotSettingsPage() {
     }
   };
 
-  if (loading) return <div className="loading">Ładowanie...</div>;
+  if (loading) return <LoadingScreen />;
   if (health?.error) return <div className="error">Błąd: {health.error}</div>;
 
   const statusOptions = [

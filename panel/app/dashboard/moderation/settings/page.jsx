@@ -3,6 +3,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTheme } from '@/lib/theme-context';
 import { FiSave, FiShield, FiLock, FiBell, FiHash, FiAlertTriangle, FiList, FiEye, FiEyeOff, FiUserCheck, FiLink, FiUserX, FiSettings, FiRefreshCw } from 'react-icons/fi';
+import LoadingScreen from '@/components/LoadingScreen';
 
 export default function ModerationSettings() {
   const { accentColor } = useTheme();
@@ -141,11 +142,7 @@ export default function ModerationSettings() {
     </div>
   );
 
-  if (loading) return (
-    <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-      Ładowanie ustawień...
-    </div>
-  );
+  if (loading) return <LoadingScreen />;
 
   if (error || !config) return (
     <div style={{ padding: '2rem', maxWidth: '600px', margin: '2rem auto' }}>

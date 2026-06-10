@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { FiX, FiRefreshCw, FiTrash2, FiUnlock, FiBell, FiAlertTriangle, FiClock, FiList, FiSlash, FiAlertCircle } from 'react-icons/fi';
 import { useTheme } from '@/lib/theme-context';
 import Modal from '@/components/Modal';
+import LoadingScreen from '@/components/LoadingScreen';
 
 export default function UsersPage() {
   const { theme, accentColor } = useTheme();
@@ -273,7 +274,7 @@ export default function UsersPage() {
       </div>
 
       {loading && !refreshing ? (
-        <div className="loading">Ładowanie użytkowników...</div>
+        <LoadingScreen />
       ) : (
         <div className="users-grid">
           {filteredUsers.length === 0 ? (

@@ -2,8 +2,8 @@
 
 **Profesjonalny bot Discord z panelem zarządzania webowym.**
 
-[![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-green)](https://www.mongodb.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
+[![SQLite](https://img.shields.io/badge/SQLite-better--sqlite3-blue)](https://github.com/WiseLibs/better-sqlite3)
 [![Discord](https://img.shields.io/badge/Discord-API-5865f2)](https://discord.com/developers/)
 
 ---
@@ -11,11 +11,13 @@
 ## ✨ Funkcje
 
 - 🎛️ **Panel webowy** — pełna kontrola nad botem przez przeglądarkę
-- 🎨 **System motywów** — dark/light mode, własny kolor akcentu, glassmorphism
+- 🎨 **System motywów** — dark/light mode, własny kolor akcentu, przezroczystość, wzory tła
 - ⚡ **Dynamiczny loader komend** — Slash Commands rejestrowane automatycznie
 - 🛡️ **Moderacja** — warny, mute, bany (Discord + rangowy shadow-ban)
-- 📊 **Statystyki** — aktywność użytkowników, logi systemowe
+- 📊 **Statystyki** — aktywność użytkowników, logi systemowe, trend 7 dni
 - 🔐 **Logowanie przez Discord OAuth**
+- 🗄️ **SQLite** — osobna baza danych na każdy serwer
+- 🔄 **WebSocket** — eventy Discord w czasie rzeczywistym
 
 ---
 
@@ -23,9 +25,11 @@
 
 ```
 LukRonBot/
-├── bot/           # Bot Discord (Node.js + Express)
-├── panel/         # Panel webowy (Next.js 14 App Router)
-└── .arena/        # System ciągłości agentów AI
+├── bot/           # Bot Discord (Node.js + Express + SQLite)
+├── panel/         # Panel webowy (Next.js 16 App Router)
+├── botmanager/    # Zarządzanie procesami (port 3002)
+├── .docs/         # Dokumentacja projektu
+└── .deepseek/     # System ciągłości agentów AI
 ```
 
 ---
@@ -34,7 +38,6 @@ LukRonBot/
 
 ### Wymagania
 - Node.js 18+
-- MongoDB Atlas (lub lokalna instancja)
 - Aplikacja Discord (Bot + OAuth2)
 
 ### Instalacja
@@ -47,7 +50,7 @@ cd LukRonBot
 cd bot
 npm install
 cp .env.example .env   # skonfiguruj tokeny
-npm start
+node index.js
 
 # Panel
 cd ../panel
@@ -61,17 +64,34 @@ npm run dev
 **Bot (.env):**
 ```
 DISCORD_BOT_TOKEN=xxx
-MONGODB_URI=mongodb+srv://...
 BOT_ENV=test
 BOT_API_PORT=3001
 ```
 
 **Panel (.env.local):**
 ```
-NEXT_PUBLIC_DISCORD_CLIENT_ID=xxx
+DISCORD_CLIENT_ID=xxx
 DISCORD_CLIENT_SECRET=xxx
+REDIRECT_URI=http://localhost:3000/api/auth/callback
+BOT_API_URL=http://localhost:3001
+NEXT_PUBLIC_DISCORD_CLIENT_ID=xxx
 NEXT_PUBLIC_BOT_API_URL=http://localhost:3001
+NEXT_PUBLIC_OWNER_ID=xxx
 ```
+
+---
+
+## 📚 Dokumentacja
+
+Szczegółowa dokumentacja znajduje się w folderze `.docs/project/`:
+
+| Plik | Opis |
+|------|------|
+| [ARCHITECTURE.md](.docs/project/ARCHITECTURE.md) | Architektura projektu |
+| [BOT.md](.docs/project/BOT.md) | Bot Discord — endpointy, moduły |
+| [PANEL.md](.docs/project/PANEL.md) | Panel webowy — strony, motywy, komponenty |
+| [DATABASE.md](.docs/project/DATABASE.md) | Baza danych SQLite — schematy, tabele |
+| [BOTMANAGER.md](.docs/project/BOTMANAGER.md) | Bot Manager — zarządzanie procesami |
 
 ---
 
@@ -79,18 +99,21 @@ NEXT_PUBLIC_BOT_API_URL=http://localhost:3001
 
 | Etap | Status |
 |------|--------|
-| Fundamenty (baza, logi, index.js) | 🟡 W trakcie |
-| Silnik i moduły (komendy) | ✅ Gotowe |
+| Fundamenty (baza SQLite, logi, moduły) | ✅ Gotowe |
+| Silnik i moduły (komendy, role) | ✅ Gotowe |
+| System motywów (opacity, wzory, style) | ✅ Gotowe |
 | Logika moderacji (bany, odwołania) | ⏸️ Zaplanowane |
-| Szlify panelu (UI) | 🟡 W trakcie |
+| System ticketów | ⏳ Planowane |
+| Automod | ⏳ Planowane |
+| Powitania | ⏳ Planowane |
 
 ---
 
 ## 🤖 AI Agent Continuity
 
-Ten projekt jest rozwijany z pomocą agentów AI na Arena.ai. System `.arena/` umożliwia płynne wznawianie pracy w nowych sesjach.
+Ten projekt jest rozwijany z pomocą agentów AI. System `.deepseek/` umożliwia płynne wznawianie pracy w nowych sesjach.
 
-Zobacz [.arena/AGENT.md](.arena/AGENT.md) jeśli jesteś agentem AI.
+Zobacz [AGENTS.md](AGENTS.md) dla globalnych wytycznych agentów.
 
 ---
 

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTheme } from '@/lib/theme-context';
 import { FiDatabase, FiTable, FiChevronRight, FiChevronDown, FiSearch, FiRefreshCw } from 'react-icons/fi';
+import LoadingScreen from '@/components/LoadingScreen';
 
 export default function DatabaseExplorer() {
   const { accentColor } = useTheme();
@@ -216,7 +217,7 @@ export default function DatabaseExplorer() {
             </div>
           )}
 
-          {loading && <div className="db-loading">Ładowanie...</div>}
+          {loading && <LoadingScreen />}
         </div>
       </div>
 

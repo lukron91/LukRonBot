@@ -3,6 +3,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useTheme } from '@/lib/theme-context';
 import Modal from '@/components/Modal';
+import LoadingScreen from '@/components/LoadingScreen';
 import {
   FiShield, FiPlus, FiEdit2, FiTrash2, FiCopy, FiRefreshCw,
   FiUsers, FiChevronUp, FiChevronDown, FiSearch, FiAlertTriangle,
@@ -352,9 +353,7 @@ export default function RolesPage() {
   if (!guildId) return (
     <div className="rp-empty">Wybierz serwer z lewego menu.</div>
   );
-  if (loading) return (
-    <div className="rp-empty">Ładowanie ról...</div>
-  );
+  if (loading) return <LoadingScreen />;
   if (error) return (
     <div className="rp-error-wrap">
       <div className="rp-error">

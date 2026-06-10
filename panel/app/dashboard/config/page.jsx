@@ -3,6 +3,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTheme } from '@/lib/theme-context';
 import { FiSettings, FiSave, FiAlertTriangle, FiRefreshCw } from 'react-icons/fi';
+import LoadingScreen from '@/components/LoadingScreen';
 
 export default function ConfigPage() {
   const searchParams = useSearchParams();
@@ -76,11 +77,7 @@ export default function ConfigPage() {
     </div>
   );
 
-  if (loading) return (
-    <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-      Ładowanie konfiguracji...
-    </div>
-  );
+  if (loading) return <LoadingScreen />;
 
   if (error || !config) return (
     <div style={{ padding: '2rem', maxWidth: '560px', margin: '2rem auto' }}>
