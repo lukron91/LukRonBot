@@ -142,12 +142,12 @@ export default function DashboardLayout({ children }) {
     fetchPerms();
   }, [selectedGuildId, user?.userId]);
 
-  // Wallpaper — dodaje/usuwa klasę has-wallpaper na body
+  // Wallpaper — dodaje/usuwa klasę has-wallpaper na html
   useEffect(() => {
     if (theme?.bgWallpaper) {
-      document.body.classList.add('has-wallpaper');
+      document.documentElement.classList.add('has-wallpaper');
     } else {
-      document.body.classList.remove('has-wallpaper');
+      document.documentElement.classList.remove('has-wallpaper');
     }
   }, [theme?.bgWallpaper]);
 
