@@ -8,9 +8,14 @@ const DEFAULT_THEME = {
   accentColor: '#3b82f6',
   borderRadius: '12px',
   surfaceOpacity: '0.9',
+  panelOpacity: '0.9',
+  tabOpacity: '0.8',
+  windowOpacity: '0.85',
   bgIntensity: '100%',
-  bgStyle: 'gradient', // 'solid' | 'gradient' | 'aurora'
-  buttonStyle: 'filled', // 'filled' | 'outline'
+  bgStyle: 'gradient',
+  bgWallpaper: '',
+  bgBrightness: '100%',
+  buttonStyle: 'filled',
 };
 
 const PALETTES = {
@@ -59,8 +64,13 @@ export function ThemeProvider({ children }) {
     root.style.setProperty('--accent-color', theme?.accentColor || DEFAULT_THEME.accentColor);
     root.style.setProperty('--border-radius', theme?.borderRadius || DEFAULT_THEME.borderRadius);
     root.style.setProperty('--surface-opacity', theme?.surfaceOpacity || DEFAULT_THEME.surfaceOpacity);
+    root.style.setProperty('--panel-opacity', theme?.panelOpacity || DEFAULT_THEME.panelOpacity);
+    root.style.setProperty('--tab-opacity', theme?.tabOpacity || DEFAULT_THEME.tabOpacity);
+    root.style.setProperty('--window-opacity', theme?.windowOpacity || DEFAULT_THEME.windowOpacity);
     root.style.setProperty('--bg-intensity', theme?.bgIntensity || DEFAULT_THEME.bgIntensity);
     root.style.setProperty('--bg-style', theme?.bgStyle || DEFAULT_THEME.bgStyle);
+    root.style.setProperty('--bg-wallpaper', theme?.bgWallpaper ? `url("${theme.bgWallpaper}")` : 'none');
+    root.style.setProperty('--bg-brightness', theme?.bgBrightness || DEFAULT_THEME.bgBrightness);
 
     // Button style — klasa na <html> zamiast CSS variable (działa z selektorem html.btn-outline-mode)
     if ((theme?.buttonStyle || DEFAULT_THEME.buttonStyle) === 'outline') {

@@ -1,17 +1,24 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useTheme } from '@/lib/theme-context';
-import { FiSun, FiMoon, FiCheck, FiSettings, FiSliders } from 'react-icons/fi';
+import { FiSun, FiMoon, FiCheck, FiSettings, FiSliders, FiImage } from 'react-icons/fi';
+import WallpaperModal from '@/components/WallpaperModal';
 
 export default function ThemeSettings() {
   const { theme, updateTheme } = useTheme();
+  const [showWallpaperModal, setShowWallpaperModal] = useState(false);
   
   // Safe destructuring with defaults
   const accentColor = theme?.accentColor || '#3b82f6';
   const mode = theme?.mode || 'dark';
   const borderRadius = theme?.borderRadius || '12px';
   const surfaceOpacity = theme?.surfaceOpacity || '0.9';
+  const panelOpacity = theme?.panelOpacity || '0.9';
+  const tabOpacity = theme?.tabOpacity || '0.8';
+  const windowOpacity = theme?.windowOpacity || '0.85';
   const bgIntensity = theme?.bgIntensity || '100%';
+  const bgWallpaper = theme?.bgWallpaper || '';
+  const bgBrightness = theme?.bgBrightness || '100%';
   const buttonStyle = theme?.buttonStyle || 'filled';
 
   const applyColor = (color) => {
@@ -120,27 +127,70 @@ export default function ThemeSettings() {
         </div>
 
         <div className="custom-setting">
-          <label>Przezroczystość paneli: {Math.round(surfaceOpacity * 100)}%</label>
+          <label>Przezroczystość paneli: {Math.round(parseFloat(panelOpacity) * 100)}%</label>
           <input 
             type="range" 
             min="0.1" max="1" step="0.05" 
-            value={surfaceOpacity} 
-            onChange={(e) => updateTheme({ surfaceOpacity: e.target.value })}
+            value={panelOpacity} 
+            onChange={(e) => updateTheme({ panelOpacity: e.target.value })}
             className="theme-slider"
           />
         </div>
 
         <div className="custom-setting">
-          <label>Intensywność tła: {bgIntensity}</label>
+          <label>Przezroczystość zakładek: {Math.round(parseFloat(tabOpacity) * 100)}%</label>
           <input 
             type="range" 
-            min="50" max="150" step="1" 
-            value={parseInt(bgIntensity)} 
-            onChange={(e) => updateTheme({ bgIntensity: `${e.target.value}%` })}
+            min="0.1" max="1" step="0.05" 
+            value={tabOpacity} 
+            onChange={(e) => updateTheme({ tabOpacity: e.target.value })}
+            className="theme-slider"
+          />
+        </div>
+
+        <div className="custom-setting">
+          <label>Przezroczystość okien: {Math.round(parseFloat(windowOpacity) * 100)}%</label>
+          <input 
+            type="range" 
+            min="0.1" max="1" step="0.05" 
+            value={windowOpacity} 
+            onChange={(e) => updateTheme({ windowOpacity: e.target.value })}
             className="theme-slider"
           />
         </div>
       </div>
+
+      <div className="theme-section">
+        <h2 style={{ color: accentColor }}>Tło</h2>
+        <p className="section-description">Wybierz tapetę i dostosuj jej jasność.</p>
+
+        <div className="custom-setting">
+          <label>Tapeta</label>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            <button className="wallpaper-select-btn" onClick={() => setShowWallpaperModal(true)}>
+              <FiImage /> {bgWallpaper ? 'Zmień tapetę' : 'Wybierz tapetę'}
+            </button>
+            {bgWallpaper && (
+              <button className="wallpaper-remove-btn" onClick={() => updateTheme({ bgWallpaper: '' })}>
+                Usuń tapetę
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="custom-setting">
+          <label>Jasność tła: {parseInt(bgBrightness)}%</label>
+          <input 
+            type="range" 
+            min="5" max="100" step="1" 
+            value={parseInt(bgBrightness)} 
+            onChange={(e) => updateTheme({ bgBrightness: `${e.target.value}%` })}
+            className="theme-slider"
+          />
+        </div>
+      </div>
+
+      <WallpaperModal isOpen={showWallpaperModal} onClose={() => setShowWallpaperModal(false)} />
 
       <div className="theme-section">
         <h2 style={{ color: accentColor }}>Styl przycisków</h2>
@@ -397,6 +447,40 @@ export default function ThemeSettings() {
           font-size: 0.85rem;
           font-weight: 600;
           color: var(--text-color);
+        }
+
+        .wallpaper-select-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.6rem 1.2rem;
+          background: var(--accent-color);
+          color: #fff;
+          border: none;
+          border-radius: var(--border-radius);
+          cursor: pointer;
+          font-weight: 600;
+          font-size: 0.85rem;
+          transition: opacity 0.2s;
+        }
+        .wallpaper-select-btn:hover { opacity: 0.85; }
+        .wallpaper-remove-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.6rem 1.2rem;
+          background: transparent;
+          color: var(--text-muted);
+          border: 1px solid var(--border-color);
+          border-radius: var(--border-radius);
+          cursor: pointer;
+          font-weight: 600;
+          font-size: 0.85rem;
+          transition: all 0.2s;
+        }
+        .wallpaper-remove-btn:hover {
+          color: #ef4444;
+          border-color: #ef4444;
         }
       `}</style>
     </div>

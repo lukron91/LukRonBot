@@ -243,18 +243,8 @@ export default function UsersPage() {
   }
 
   return (
+    <>
     <div className="users-page">
-
-      {/* Modal potwierdzenia — zamiast window.confirm */}
-      {confirmModal && (
-        <Modal isOpen={true} onClose={() => setConfirmModal(null)} title="Potwierdzenie" width="400px">
-          <p style={{ marginBottom: '1.5rem', color: 'var(--text-color)' }}>{confirmModal.label}</p>
-          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-            <button className="btn-base btn-standard" onClick={() => setConfirmModal(null)}>Anuluj</button>
-            <button className="btn-base btn-danger" onClick={() => { confirmModal.onConfirm(); setConfirmModal(null); }}>Potwierdź</button>
-          </div>
-        </Modal>
-      )}
 
       <div className="page-header">
         <h1>Lista użytkowników</h1>
@@ -300,12 +290,26 @@ export default function UsersPage() {
         </div>
       )}
 
+      </div> {/* koniec users-page */}
+
+      {/* Modal potwierdzenia — zamiast window.confirm */}
+      {confirmModal && (
+        <Modal isOpen={true} onClose={() => setConfirmModal(null)} title="Potwierdzenie" width="400px" id="user-confirm">
+          <p style={{ marginBottom: '1.5rem', color: 'var(--text-color)' }}>{confirmModal.label}</p>
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+            <button className="btn-base btn-standard" onClick={() => setConfirmModal(null)}>Anuluj</button>
+            <button className="btn-base btn-danger" onClick={() => { confirmModal.onConfirm(); setConfirmModal(null); }}>Potwierdź</button>
+          </div>
+        </Modal>
+      )}
+
       {actionMenu && selectedUser && (
         <Modal
           isOpen={!!actionMenu}
           onClose={closeActionMenu}
           title={'Akcje dla ' + (selectedUser?.displayName || selectedUser?.username || '')}
           width="650px"
+          id="user-actions"
         >
           <div className="modal-tabs">
             <button className={'modal-tab' + (activeTab === 'apply' ? ' active' : '')} onClick={() => setActiveTab('apply')}><FiSlash /> Nałóż karę</button>
@@ -484,6 +488,6 @@ export default function UsersPage() {
         .punishment-reason { color: var(--text-color); font-size: 0.9rem; margin-bottom: 0.2rem; }
         .punishment-meta { font-size: 0.75rem; color: var(--text-muted); }
       `}</style>
-    </div>
+    </>
   );
 }

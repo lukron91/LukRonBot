@@ -605,7 +605,7 @@ export default function RolesPage() {
 
       {/* ── Modal: Utwórz ── */}
       {modal === 'create' && (
-        <Modal isOpen={true} onClose={() => setModal(null)} title="Nowa rola" width="560px">
+        <Modal isOpen={true} onClose={() => setModal(null)} title="Nowa rola" width="560px" id="role-create">
           <div className="modal-tab-content">
             <div className="modal-section">
               <div className="modal-section-title">Podstawowe</div>
@@ -644,7 +644,7 @@ export default function RolesPage() {
 
       {/* ── Modal: Usuń ── */}
       {modal === 'delete' && selected && (
-        <Modal isOpen={true} onClose={() => setModal(null)} title="Usuń rolę" width="400px">
+        <Modal isOpen={true} onClose={() => setModal(null)} title="Usuń rolę" width="400px" id="role-delete">
           <div className="modal-tab-content">
             <p style={{ color: 'var(--text-color)', marginBottom: '1.5rem' }}>
               Czy na pewno chcesz usunąć rolę{' '}
@@ -661,7 +661,7 @@ export default function RolesPage() {
 
       {/* ── Modal: Nadaj / odbierz ── */}
       {modal === 'assign' && selected && (
-        <Modal isOpen={true} onClose={() => setModal(null)} title={'Nadaj / odbierz: ' + selected.name} width="520px">
+        <Modal isOpen={true} onClose={() => setModal(null)} title={'Nadaj / odbierz: ' + selected.name} width="520px" id="role-assign">
           <div className="modal-tab-content">
             <input className="modal-input" placeholder="Szukaj użytkownika..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} />
             {membersLoading ? (
@@ -703,7 +703,7 @@ export default function RolesPage() {
 
       {/* ── Modal: Członkowie ── */}
       {modal === 'members' && selected && (
-        <Modal isOpen={true} onClose={() => setModal(null)} title={'Członkowie: ' + selected.name} width="460px">
+        <Modal isOpen={true} onClose={() => setModal(null)} title={'Członkowie: ' + selected.name} width="460px" id="role-members">
           <div className="modal-tab-content">
             <input className="modal-input" placeholder="Szukaj..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} />
             {membersLoading ? (

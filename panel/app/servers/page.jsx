@@ -261,7 +261,7 @@ export default function ServersPage() {
       </div>
 
       {/* Modal wylogowania */}
-      <Modal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} title="Potwierdź wylogowanie" width="380px">
+      <Modal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} title="Potwierdź wylogowanie" width="380px" id="logout-servers">
         <div className="modal-tab-content">
           <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
             Czy na pewno chcesz się wylogować?

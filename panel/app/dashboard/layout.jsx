@@ -142,6 +142,15 @@ export default function DashboardLayout({ children }) {
     fetchPerms();
   }, [selectedGuildId, user?.userId]);
 
+  // Wallpaper — dodaje/usuwa klasę has-wallpaper na body
+  useEffect(() => {
+    if (theme?.bgWallpaper) {
+      document.body.classList.add('has-wallpaper');
+    } else {
+      document.body.classList.remove('has-wallpaper');
+    }
+  }, [theme?.bgWallpaper]);
+
   const handleLogout = () => {
     setShowLogoutModal(true);
   };
@@ -282,7 +291,7 @@ export default function DashboardLayout({ children }) {
                     <span>Zarządzanie rolami</span>
                   </Link>
                 )}
-                <Link href={getLink("/dashboard/users")} className={`nav-link ${pathname.includes("/dashboard/users") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/users") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/users") ? accentColor : 'transparent' }}>
+                <Link href={getLink("/dashboard/moderation/users")} className={`nav-link ${pathname.includes("/dashboard/moderation/users") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/moderation/users") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/moderation/users") ? accentColor : 'transparent' }}>
                   <FiUsers />
                   <span>Lista użytkowników</span>
                 </Link>
@@ -457,7 +466,7 @@ export default function DashboardLayout({ children }) {
             {children}
           </div>
         )}
-      <Modal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} title="Potwierdź wylogowanie">
+      <Modal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} title="Potwierdź wylogowanie" width="440px" id="logout">
         <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
           Czy na pewno chcesz się wylogować? Będziesz musiał ponownie zalogować się przez Discord, aby uzyskać dostęp do panelu.
         </p>

@@ -21,7 +21,12 @@ html, body {
   --accent-color: #3b82f6;
   --border-radius: 12px;
   --surface-opacity: 0.9;
+  --panel-opacity: 0.9;
+  --tab-opacity: 0.8;
+  --window-opacity: 0.85;
   --bg-intensity: 100%;
+  --bg-wallpaper: none;
+  --bg-brightness: 100%;
 
   /* BUTTON SYSTEM TOKENS */
   --btn-height: 2.4rem;
@@ -1065,4 +1070,146 @@ input:checked + .toggle-slider-modern:before {
   margin-top: 1.5rem;
   font-size: 0.7rem;
   color: var(--text-muted);
+}
+
+/* ================================================
+   WALLPAPER — tapeta tła z kontrolą jasności
+   ================================================ */
+
+body.has-wallpaper::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--bg-wallpaper);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: calc(var(--bg-brightness) / 100);
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+/* ================================================
+   DRAGGABLE WINDOW SYSTEM
+   ================================================ */
+
+/* Kontener dla react-draggable — ogranicza obszar przeciągania */
+.draggable-wrapper {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  pointer-events: none;
+}
+.draggable-wrapper > * {
+  pointer-events: auto;
+}
+
+/* Nakładka modala */
+.dw-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  animation: dwFadeIn 0.2s ease;
+}
+@keyframes dwFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Okno */
+.draggable-window {
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(12px);
+  color: var(--text-color);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  animation: dwSlideUp 0.25s ease;
+  overflow: hidden;
+}
+.draggable-window.dw-window {
+  border-color: rgba(var(--accent-color), 0.3);
+}
+.draggable-window.dw-minimized {
+  width: 280px !important;
+  height: auto !important;
+  position: fixed !important;
+  bottom: 0 !important;
+  right: 1rem !important;
+  border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+}
+.draggable-window.dw-maximized {
+  position: fixed !important;
+  inset: 0 !important;
+  border-radius: 0 !important;
+  border: none !important;
+}
+@keyframes dwSlideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Nagłówek — uchwyt do przeciągania */
+.dw-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  cursor: grab;
+  user-select: none;
+  flex-shrink: 0;
+  min-height: 48px;
+}
+.dw-header:active {
+  cursor: grabbing;
+}
+.dw-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--accent-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dw-header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+.dw-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.3rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-size: 0.95rem;
+  height: 2rem;
+  width: 2rem;
+}
+.dw-btn:hover {
+  color: var(--text-color);
+  background: rgba(128, 128, 128, 0.15);
+  border-color: var(--border-color);
+}
+.dw-btn-close:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Treść okna */
+.dw-body {
+  padding: 1.25rem;
+  overflow-y: auto;
+  flex: 1;
 }
