@@ -70,7 +70,9 @@ export function ThemeProvider({ children }) {
     root.style.setProperty('--window-opacity', theme?.windowOpacity || DEFAULT_THEME.windowOpacity);
     root.style.setProperty('--bg-intensity', theme?.bgIntensity || DEFAULT_THEME.bgIntensity);
     root.style.setProperty('--bg-style', theme?.bgStyle || DEFAULT_THEME.bgStyle);
-    root.style.setProperty('--bg-wallpaper', theme?.bgWallpaper ? `url("${theme.bgWallpaper}")` : 'none');
+    const wallpaper = theme?.bgWallpaper || '';
+    const isGradient = wallpaper.startsWith('radial-') || wallpaper.startsWith('linear-') || wallpaper.startsWith('conic-');
+    root.style.setProperty('--bg-wallpaper', wallpaper ? (isGradient ? wallpaper : `url("${wallpaper}")`) : 'none');
     root.style.setProperty('--bg-brightness', theme?.bgBrightness || DEFAULT_THEME.bgBrightness);
     root.style.setProperty('--blur-intensity', theme?.blurIntensity || DEFAULT_THEME.blurIntensity);
 
