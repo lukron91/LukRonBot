@@ -291,7 +291,7 @@ export default function DashboardLayout({ children }) {
                     <span>Zarządzanie rolami</span>
                   </Link>
                 )}
-                <Link href={getLink("/dashboard/moderation/users")} className={`nav-link ${pathname.includes("/dashboard/moderation/users") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/moderation/users") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/moderation/users") ? accentColor : 'transparent' }}>
+                <Link href={getLink("/dashboard/users")} className={`nav-link ${pathname.includes("/dashboard/users") ? 'active' : ''}`} style={{ color: pathname.includes("/dashboard/users") ? accentColor : '', borderLeftColor: pathname.includes("/dashboard/users") ? accentColor : 'transparent' }}>
                   <FiUsers />
                   <span>Lista użytkowników</span>
                 </Link>

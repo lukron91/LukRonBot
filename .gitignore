@@ -49,3 +49,4 @@ bot/logs/
 *.log
 
 .deepseek/secrets.local
+certificates
