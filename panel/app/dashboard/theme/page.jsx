@@ -16,6 +16,7 @@ export default function ThemeSettings() {
   const panelOpacity = theme?.panelOpacity || '0.9';
   const tabOpacity = theme?.tabOpacity || '0.8';
   const windowOpacity = theme?.windowOpacity || '0.85';
+  const blurIntensity = theme?.blurIntensity || '4px';
   const bgIntensity = theme?.bgIntensity || '100%';
   const bgWallpaper = theme?.bgWallpaper || '';
   const bgBrightness = theme?.bgBrightness || '100%';
@@ -155,6 +156,17 @@ export default function ThemeSettings() {
             min="0.1" max="1" step="0.05" 
             value={windowOpacity} 
             onChange={(e) => updateTheme({ windowOpacity: e.target.value })}
+            className="theme-slider"
+          />
+        </div>
+
+        <div className="custom-setting">
+          <label>Rozmycie tła okien: {parseInt(blurIntensity)}px</label>
+          <input 
+            type="range" 
+            min="0" max="24" step="1" 
+            value={parseInt(blurIntensity)} 
+            onChange={(e) => updateTheme({ blurIntensity: `${e.target.value}px` })}
             className="theme-slider"
           />
         </div>

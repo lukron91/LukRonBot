@@ -16,6 +16,7 @@ const DEFAULT_THEME = {
   bgWallpaper: '',
   bgBrightness: '100%',
   buttonStyle: 'filled',
+  blurIntensity: '4px',
 };
 
 const PALETTES = {
@@ -71,6 +72,7 @@ export function ThemeProvider({ children }) {
     root.style.setProperty('--bg-style', theme?.bgStyle || DEFAULT_THEME.bgStyle);
     root.style.setProperty('--bg-wallpaper', theme?.bgWallpaper ? `url("${theme.bgWallpaper}")` : 'none');
     root.style.setProperty('--bg-brightness', theme?.bgBrightness || DEFAULT_THEME.bgBrightness);
+    root.style.setProperty('--blur-intensity', theme?.blurIntensity || DEFAULT_THEME.blurIntensity);
 
     // Button style — klasa na <html> zamiast CSS variable (działa z selektorem html.btn-outline-mode)
     if ((theme?.buttonStyle || DEFAULT_THEME.buttonStyle) === 'outline') {

@@ -289,7 +289,7 @@ export default function DraggableWindow({
           position: fixed;
           inset: 0;
           background: rgba(0, 0, 0, 0.55);
-          backdrop-filter: blur(4px);
+          backdrop-filter: blur(var(--blur-intensity, 4px));
           animation: dwFadeIn 0.2s ease;
         }
         @keyframes dwFadeIn {
@@ -298,7 +298,7 @@ export default function DraggableWindow({
         }
         .draggable-window {
           border: 1px solid var(--border-color);
-          backdrop-filter: blur(12px);
+          backdrop-filter: blur(var(--blur-intensity, 4px));
           color: var(--text-color);
           display: flex;
           flex-direction: column;
